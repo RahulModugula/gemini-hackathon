@@ -7,6 +7,7 @@ import datetime as dt
 import hashlib
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pymupdf
@@ -78,22 +79,79 @@ def render(crop, src):
     return crop
 
 
-def pick(claim, hits, sheets, src, rows):
-    """Prefer current sheets; among the top candidates take the one whose crop holds the most of the claim's
-    identifiers (105A, WC-2, ...). Ties keep search order. Returns (crop dict of the current sheet, superseded id)."""
-    want, best = _id_tokens(claim), None
-    for i, h in enumerate(hits):
-        sid, bbox = h["sheet"], h["bbox"]
+NEGATIONS = {"no", "not", "never", "none", "without", "nor", "neither", "cannot", "isnt", "arent", "doesnt", "dont",
+             "wont", "wasnt", "werent", "hasnt", "havent", "cant"}
+
+
+def positive_query(claim):
+    """Search query with negation words removed ("no grab bar in 105A" -> "grab bar in 105A"). Search only: the judge
+    still sees the claim as written. Falls back to the claim if nothing is left."""
+    kept = [t for t in claim.split() if "".join(c for c in t.lower() if c.isalpha()) not in NEGATIONS]
+    return " ".join(kept) or claim
+
+
+def named_sheets(claim, rows):
+    """Sheet numbers named in the claim (any token equal to a sheet_number once punctuation/case is dropped, so
+    C1.10 matches C110). -> {norm_number: sheet_number}."""
+    nums = {search.norm_number(r["sheet_number"]): r["sheet_number"] for r in rows.values() if r.get("sheet_number")}
+    return {n: nums[n] for n in dict.fromkeys(search.norm_number(t) for t in claim.split()) if n in nums}
+
+
+def best_hit_in(query, sheet):
+    """Best-scoring search hit on one sheet (or None). Uses the index's scored candidates directly."""
+    idx = search.get_index()
+    cand, terms = idx._candidates(query)
+    for sc, d in cand:
+        if d["sheet"] == sheet:
+            return idx._hit(sc, d, terms)
+    return None
+
+
+def _score(claim, crop, i):
+    want = _id_tokens(claim)
+    have = set().union(*(_norm_tokens(w["text"]) for w in crop["words"])) if crop["words"] else set()
+    return (len(want & have), -i)
+
+
+def candidates(claim, sheets, src, rows, n=2, k=4):
+    """-> (list of up to n crops, list of note strings).
+    A claim naming a sheet number is judged on that sheet's CURRENT version only (noting any superseded version).
+    Otherwise the top-k search hits are re-ranked by how many of the claim's identifiers (105A, WC-2) their crop
+    holds, superseded hits are swapped for their current sheet, and the best n distinct sheets are kept."""
+    query, notes, out = positive_query(claim), [], []
+    for num in named_sheets(claim, rows).values():
+        vers = [r for r in rows.values() if r.get("sheet_number") == num and r["sheet"] in sheets]
+        cur = max([r for r in vers if r.get("current") is not False] or vers, key=lambda r: r["issue_order"])
+        hit = best_hit_in(query, cur["sheet"])
+        if hit is None:
+            continue
+        old = [r["sheet"] for r in vers if r["sheet"] != cur["sheet"] and r.get("current") is False]
+        notes.append(f"claim names sheet {num}: judging current {cur['sheet']}"
+                     + (f" (superseded: {', '.join(old)})" if old else ""))
+        s = sheets[cur["sheet"]]
+        out.append(_crop(cur["sheet"], crop_rect(hit["bbox"], s["width"], s["height"]), sheets, src, rows))
+    if out:
+        return out[:n], notes
+    scored = []
+    for i, h in enumerate(search.search_sheets(query, k=k)):
+        sid = h["sheet"]
         if rows.get(sid, {}).get("current") is False and h.get("superseded_by") in sheets:
             sid = h["superseded_by"]           # judge the current version, at the hit's rect
         s = sheets[sid]
-        rect = crop_rect(bbox, s["width"], s["height"])
-        c = _crop(sid, rect, sheets, src, rows)
-        have = set().union(*(_norm_tokens(w["text"]) for w in c["words"])) if c["words"] else set()
-        score = (len(want & have), -i)
-        if best is None or score > best[0]:
-            best = (score, c)
-    return best[1] if best else None
+        c = _crop(sid, crop_rect(h["bbox"], s["width"], s["height"]), sheets, src, rows)
+        scored.append((_score(claim, c, i), c))
+    seen, out = set(), []
+    for _, c in sorted(scored, key=lambda t: t[0], reverse=True):
+        if c["sheet"] not in seen:
+            seen.add(c["sheet"])
+            out.append(c)
+    return out[:n], notes
+
+
+def pick(claim, sheets, src, rows):
+    """Best single candidate (for tests/tools)."""
+    c, _ = candidates(claim, sheets, src, rows, n=1)
+    return c[0] if c else None
 
 
 def superseded_twin(cur, sheets, src, rows):
@@ -119,29 +177,53 @@ def build_parts(claim, crops):
     return parts
 
 
-def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING):
-    sheets, src, rows, narr = _load()
-    hits = search.search_sheets(claim, k=K)
-    cur = pick(claim, hits, sheets, src, rows)
-    now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    card = {"claim": claim, "speaker": None, "timestamp": now, "verdict": "unclear", "confidence": 0.0,
-            "evidence": [], "spec_refs": [], "checks": [], "reason": "", "rfi_draft": None}
-    if cur is None:
-        card["reason"] = "No sheet matched the claim."
-        card["checks"].append({"by": "code", "check": "search", "pass": False, "detail": "no search hits"})
-        return card
-    render(cur, src)
+def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema):
     crops = {"current": cur}
-    old = superseded_twin(cur, sheets, src, rows)
-    if old:
-        crops["superseded"] = render(old, src)
+    if cur.get("twin"):
+        crops["superseded"] = cur["twin"]
     r = rows.get(cur["sheet"], {})
     narrative = [{"action": ch["action"], "text": ch["text"]} for n in narr
                  if n["source"] == cur["source"] and n["sheet_number"] == r.get("sheet_number") for ch in n["changes"]]
-    ctx = {"judge": judge, "second": second, "thinking": thinking, "schema": json.loads(SCHEMA.read_text()),
+    ctx = {"judge": judge, "second": second, "thinking": thinking, "schema": schema,
            "parts": build_parts(claim, crops), "crops": crops, "rows": rows, "narrative": narrative}
-    res = verify.verify(claim, ctx)
-    card.update(verdict=res["verdict"], confidence=res["confidence"], reason=res["reason"], checks=res["checks"])
+    return cur, verify.verify(claim, ctx)
+
+
+def _rank(res):
+    """Grounding must pass, then a real verdict beats unclear, then higher confidence. Ties keep search order."""
+    g = next((c for c in res["checks"] if c.get("check") == "grounding"), {})
+    return (bool(g.get("pass")), res["verdict"] != "unclear", res["confidence"])
+
+
+def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING):
+    sheets, src, rows, narr = _load()
+    now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    card = {"claim": claim, "speaker": None, "timestamp": now, "verdict": "unclear", "confidence": 0.0,
+            "evidence": [], "spec_refs": [], "checks": [], "reason": "", "rfi_draft": None}
+    cands, notes = candidates(claim, sheets, src, rows)
+    if not cands:
+        card["reason"] = "No sheet matched the claim."
+        card["checks"].append({"by": "code", "check": "search", "pass": False, "detail": "no search hits"})
+        return card
+    schema = json.loads(SCHEMA.read_text())
+    for c in cands:          # render here (pymupdf is not thread-safe), then judge every candidate at once
+        render(c, src)
+        twin = superseded_twin(c, sheets, src, rows)
+        c["twin"] = render(twin, src) if twin else None
+    # each candidate runs a judge pair concurrently: at most 2 x 2 = 4 model calls in flight
+    with ThreadPoolExecutor(max_workers=len(cands)) as ex:
+        results = list(ex.map(lambda c: _run_candidate(claim, c, judge, second, thinking, sheets, src, rows, narr,
+                                                       schema), cands))
+    best = max(range(len(results)), key=lambda i: (_rank(results[i][1]), -i))
+    cur, res = results[best]
+    card.update(verdict=res["verdict"], confidence=res["confidence"], reason=res["reason"], checks=list(res["checks"]))
+    for n in notes:
+        card["checks"].append({"by": "code", "check": "named_sheet", "info": True, "pass": True, "detail": n})
+    for i, (c, r) in enumerate(results):
+        if i != best:
+            card["checks"].append({"by": "code", "check": "alternative_candidate", "info": True, "pass": True,
+                                   "sheet": c["sheet"], "chosen_sheet": cur["sheet"], "verdict": r["verdict"],
+                                   "confidence": r["confidence"], "grounding_pass": _rank(r)[0], "detail": r["reason"]})
     # Only boxes on the current sheet are evidence; the superseded image only explains what changed.
     card["evidence"] = [{"sheet": cur["sheet"], "revision": cur["revision"], "bbox": [round(v, 2) for v in e["bbox"]],
                          "crop": cur["path"], "label": e["label"]} for e in res["evidence"] if e["image"] == "current"]

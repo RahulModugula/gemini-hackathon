@@ -16,6 +16,7 @@ import math
 import os
 import random
 import sys
+import threading
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -45,6 +46,7 @@ THINK_DEFAULT = {"gemini-4-hydrogen": "HIGH", "gemini-4-neon": "HIGH", "gemini-4
 _sleep = time.sleep  # injectable for tests
 _today = lambda: dt.datetime.now(dt.timezone.utc).date()  # noqa: E731  injectable for tests
 _client = None
+_client_lock = threading.Lock()
 
 
 class LLMError(Exception):
@@ -258,12 +260,16 @@ def _cache_write(path, entry):
 
 # ---- client / call -----------------------------------------------------------------------------
 def _get_client():
+    """One process-wide client, built under a lock and never closed. Racing lazy init used to build several; the
+    overwritten ones were garbage collected and genai.Client.__del__ closes its http client, killing in-flight calls."""
     global _client
     if _client is None:
-        key = os.environ.get("GEMINI_API_KEY", "").strip()
-        if not key:
-            raise LLMError("GEMINI_API_KEY not set")
-        _client = genai.Client(api_key=key)  # explicit: SDK would otherwise prefer GOOGLE_API_KEY
+        with _client_lock:
+            if _client is None:
+                key = os.environ.get("GEMINI_API_KEY", "").strip()
+                if not key:
+                    raise LLMError("GEMINI_API_KEY not set")
+                _client = genai.Client(api_key=key)  # explicit: SDK would otherwise prefer GOOGLE_API_KEY
     return _client
 
 

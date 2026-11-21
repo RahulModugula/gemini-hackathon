@@ -18,7 +18,7 @@ HERE = Path(__file__).parent
 @pytest.fixture(scope="module")
 def world():
     sheets, src, rows, narr = check._load()
-    cur = check.pick(CLAIM, search.search_sheets(CLAIM, k=3), sheets, src, rows)
+    cur = check.pick(CLAIM, sheets, src, rows)
     return {"sheets": sheets, "src": src, "rows": rows, "cur": cur}
 
 
@@ -165,3 +165,67 @@ def test_box_pt_round_trip():
         assert verify.pt_to_box(pt, rect) == box
     pt = verify.box_to_pt([500, 500, 1000, 1000], rect)
     assert pt == pytest.approx([1328.23, 900.68, 1588.23, 1160.68])
+
+
+# ---- candidate selection, negation, concurrency ------------------------------------------------------
+def test_negation_words_stripped_from_search_query_only(monkeypatch, world):
+    assert check.positive_query("There is no grab bar in Toilet 105A") == "There is grab bar in Toilet 105A"
+    assert check.positive_query("Toilet 105A does not have WC-2") == "Toilet 105A does have WC-2"
+    assert check.positive_query("not") == "not"          # never an empty query
+    seen = []
+    real = search.search_sheets
+    monkeypatch.setattr(search, "search_sheets", lambda q, k=3: seen.append(q) or real(q, k))
+    claim = "There is no WC-3 in Toilet 105A"
+    sheets, src, rows, _ = check._load()
+    check.candidates(claim, sheets, src, rows)
+    assert seen == ["There is WC-3 in Toilet 105A"]
+    parts = check.build_parts(claim, {"current": check.render(world["cur"], world["src"])})
+    assert any(claim in (getattr(p, "text", None) or "") for p in parts)   # the judge still sees the negation
+
+
+def test_named_sheet_restricts_to_current_version(world):
+    sheets, src, rows = world["sheets"], world["src"], world["rows"]
+    assert check.named_sheets("Check C1.10 and p101.", rows).keys() == {"c110", "p101"}
+    cands, notes = check.candidates("Sheet P101 shows WC-2 for all closets in 105A", sheets, src, rows)
+    assert [c["sheet"] for c in cands] == ["add1-p018"]          # never the superseded dwg-p034
+    assert "dwg-p034" in notes[0] and "add1-p018" in notes[0]
+    cands, _ = check.candidates("Sheet C1.10 has a note about erosion control", sheets, src, rows)
+    assert [rows[c["sheet"]]["sheet_number"] for c in cands] == ["C1.10"] and rows[cands[0]["sheet"]]["current"] is not False
+
+
+def test_unnamed_claim_judges_two_candidates_and_keeps_grounded_one(monkeypatch, world):
+    sheets, src, rows = world["sheets"], world["src"], world["rows"]
+    cands, notes = check.candidates(CLAIM, sheets, src, rows)
+    assert len(cands) == 2 and notes == [] and cands[0]["sheet"] == "add1-p018"
+    card = run(monkeypatch, judge_json(world))
+    assert card["evidence"][0]["sheet"] == "add1-p018"
+    alt = [c for c in card["checks"] if c.get("check") == "alternative_candidate"]
+    assert len(alt) == 1 and alt[0]["sheet"] != "add1-p018" and alt[0]["chosen_sheet"] == "add1-p018"
+    assert alt[0]["grounding_pass"] is False     # canned boxes only fit P101
+    # the rule is "grounded beats ungrounded", whatever the confidence or the candidate order
+    r_good = {"verdict": "conflict", "confidence": 0.6, "checks": [{"check": "grounding", "pass": True}]}
+    r_bad = {"verdict": "conflict", "confidence": 0.95, "checks": [{"check": "grounding", "pass": False}]}
+    assert check._rank(r_good) > check._rank(r_bad)
+
+
+def test_concurrency_bounded_and_thread_safe(monkeypatch, world):
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+    lock, state = threading.Lock(), {"now": 0, "max": 0}
+    out = judge_json(world)
+
+    def call(model, parts, *, schema=None, purpose, thinking=None):
+        with lock:
+            state["now"] += 1
+            state["max"] = max(state["max"], state["now"])
+        time.sleep(0.15)
+        with lock:
+            state["now"] -= 1
+        return llm.Result(text=json.dumps(out), json=out)
+
+    monkeypatch.setattr(llm, "call", call)
+    check.check(CLAIM)
+    assert 3 <= state["max"] <= 4                # two candidates x two judges, never more than 4 in flight
+    with ThreadPoolExecutor(8) as ex:            # 8 concurrent whole checks (mocked calls) all return full cards
+        cards = list(ex.map(lambda _: check.check(CLAIM), range(8)))
+    assert all(c["verdict"] == "conflict" and c["evidence"] for c in cards)
