@@ -18,7 +18,7 @@ BUILD = Path(__file__).parent / "build"
 ADDENDA = {"add1": "addendum-1.pdf", "add2": "addendum-2.pdf"}
 ADDENDA_NAME = {"add1": "Addendum 1", "add2": "Addendum 2"}
 LETTER_MAX_W = 700  # pt; drawing sheets are 3024 wide
-_HEAD = re.compile(r"^(Question|Clarification|Specifications|Drawings)\s*:", re.M)
+_HEAD = re.compile(r"^(Question|Clarification|Specifications|Drawings)\s*:", re.M | re.I)
 
 
 def _clean_page(text):
@@ -71,11 +71,11 @@ def parse_qa(pdf_path, tag):
     heads = list(_HEAD.finditer(text))
     out = []
     for n, m in enumerate(heads):
-        if m.group(1) != "Question":
+        if m.group(1).lower() != "question":
             continue
         end = heads[n + 1].start() if n + 1 < len(heads) else len(text)
         body = text[m.end():end]
-        r = re.search(r"^Response\s*:", body, re.M)
+        r = re.search(r"^Response\s*:", body, re.M | re.I)
         if not r:
             raise ValueError(f"{tag}: question at page {page_of(m.start())} has no Response")
         out.append({"id": f"{tag}-q{len(out) + 1}", "source": ADDENDA_NAME[tag], "page": page_of(m.start()),

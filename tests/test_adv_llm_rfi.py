@@ -681,9 +681,6 @@ def test_every_current_real_sheet_is_cited_with_number_title_and_revision(monkey
         assert expect in text, r["sheet"]
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a superseded sheet is cited as if current. Input: evidence sheet "
-                   "'dwg-p003' (current=False, superseded_by='add1-p006') gives 'Sheet G002 ..., rev 06/02/2026' "
-                   "with no mention of the superseding sheet")
 def test_superseded_sheet_is_not_cited_as_current(monkeypatch):
     rows = {r["sheet"]: r for r in _real_rows()}
     assert rows["dwg-p003"]["current"] is False and rows["dwg-p003"]["superseded_by"] == "add1-p006"
@@ -742,10 +739,6 @@ def test_narrative_stops_at_drawings_heading_and_at_wide_pages(tmp_path):
     assert [q["question"] for q in out] == ["First?"]
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: an upper-case 'QUESTION:' header is not recognised (the header regex is "
-                   "case-sensitive), so no error is raised; the Q&A is dropped and its text is absorbed into the "
-                   "previous response. Input: page text 'Question: A?', 'Response: first answer text.', "
-                   "'QUESTION: B?', 'RESPONSE: second answer.'")
 def test_uppercase_question_header_is_not_absorbed_into_previous_response(tmp_path):
     p = make_pdf(tmp_path / "a.pdf", [(["Question: A?", "Response: first answer text.",
                                         "QUESTION: B?", "RESPONSE: second answer."], 612)])
