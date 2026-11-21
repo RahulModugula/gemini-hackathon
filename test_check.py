@@ -164,7 +164,7 @@ def test_dimension_math_mismatch_fails_and_match_passes(monkeypatch, world):
     box = verify.pt_to_box(w["bbox"], world["cur"]["rect"])
     box = [max(0, box[0] - 3), max(0, box[1] - 3), min(1000, box[2] + 3), min(1000, box[3] + 3)]
     size = verify.parse_dim(w["text"])
-    for claim_dim, want_pass in ((f'{size + 5:g}"', False), (w["text"], True)):
+    for claim_dim, want_pass in ((f'{size + 5:g}"', False), (f"0'-{size:g}\"", True)):   # 0'-3" == 3": not a copy of the word
         out = judge_json(world, "consistent", quoted=(w["text"],), box=box)
         monkeypatch.setattr(llm, "call", fake({"A": out, "B": out}))
         res = verify.verify(f"The pipe is {claim_dim}", ctx_for(world, world["rows"], out, out))
@@ -437,3 +437,63 @@ def test_no_crop_is_centred_in_the_title_strip_for_content_claims(world):
                   "Project No. 250081.00 sheet P101"):   # last: its raw best hit is the title block
         for c in check.candidates(claim, sheets, src, rows)[0]:
             assert _centre(c)[0] < 0.88 * sheets[c["sheet"]]["width"], (claim, c["sheet"], c["rect"])
+
+
+# ---- grounding rules: claimed value, superseded boxes, real evidence ------------------------------------
+CLAIM_109B = "On P101, the water closets in Toilet 109B are tagged WC-2."
+
+
+def _box_pt(crop, pt):
+    return verify.pt_to_box(pt, crop["rect"])
+
+
+def test_conflict_quoting_the_claimed_value_is_grounded_109b(world):
+    """Live miss: both judges said conflict and quoted WC-2 (the value the claim asserts) with a box that, rightly,
+    does not contain it."""
+    cur = check.candidates(CLAIM_109B, world["sheets"], world["src"], world["rows"])[0][0]
+    box = _box_pt(cur, [1060, 825, 1110, 872])                      # TOILET 109B, WC-1 and the "1" beside it
+    out = {"verdict": "conflict", "confidence": 0.95, "reason": "r", "quoted_words": ["TOILET", "109B", "WC-1", "1", "WC-2"],
+           "evidence": [{"image": "current", "box_2d": box, "label": "109B closet"}]}
+    problems, acc = verify.grounding_report(out, {"current": cur}, CLAIM_109B)
+    assert problems == []
+    assert acc["WC-2"] == "claim_value" and acc["WC-1"] == "current_box" and acc["109B"] == "current_box"
+    # the same output for a consistent verdict is NOT rescued by (b)-free luck: WC-2 is in the claim, so it passes
+    # (a), and WC-1 is real evidence; what a consistent verdict may not do is quote a word that is nowhere
+    assert verify.grounding({**out, "verdict": "consistent", "quoted_words": ["WC-9"]}, {"current": cur}, CLAIM_109B)
+    # and the check detail records which rule accepted what
+    assert "claim_value" in str(acc)
+
+
+def test_conflict_whose_only_evidence_is_copied_from_the_claim_fails(world):
+    cur = check.candidates(CLAIM_109B, world["sheets"], world["src"], world["rows"])[0][0]
+    box = _box_pt(cur, [1060, 825, 1110, 872])
+    out = {"verdict": "conflict", "confidence": 0.9, "reason": "r", "quoted_words": ["TOILET", "109B"],
+           "evidence": [{"image": "current", "box_2d": box, "label": "just the room tag"}]}
+    problems = verify.grounding(out, {"current": cur}, CLAIM_109B)
+    assert any("not just copied from the claim" in p for p in problems)
+    # a quote the claim never mentioned, inside the box, is what makes it evidence
+    assert verify.grounding({**out, "quoted_words": ["TOILET", "109B", "WC-1"]}, {"current": cur}, CLAIM_109B) == []
+
+
+def test_superseded_box_accepted_for_conflict_but_not_consistent(world):
+    crops, old = two_crops(world)
+    cur = crops["current"]
+    gone = next(w for w in old["words"] if w["text"] == "WC-2" and w["bbox"][0] > 1360 and w["bbox"][1] < 900)  # now WC-3
+    now = next(w for w in cur["words"] if w["text"] == "WC-3" and abs(w["bbox"][1] - gone["bbox"][1]) < 12)
+    claim = "The closet beside Toilet 105A is unchanged."                                      # does not mention WC-2
+    ev = [{"image": "current", "box_2d": verify.pt_to_box(now["bbox"], cur["rect"]), "label": "now"},
+          {"image": "superseded", "box_2d": verify.pt_to_box(gone["bbox"], old["rect"]), "label": "was"}]
+    out = {"verdict": "conflict", "confidence": 0.9, "reason": "r", "quoted_words": ["WC-3", "WC-2"], "evidence": ev}
+    problems, acc = verify.grounding_report(out, crops, claim)
+    assert problems == [] and acc == {"WC-3": "current_box", "WC-2": "superseded_box"}
+    bad = verify.grounding({**out, "verdict": "consistent"}, crops, claim)
+    assert any("'WC-2'" in p for p in bad)                                 # consistent may not lean on the old sheet
+
+
+def test_grounding_check_detail_records_accepted_rules(monkeypatch, world):
+    out = judge_json(world)                                                # quotes 105A, WC-2, WC-3 in a current box
+    monkeypatch.setattr(llm, "call", fake({"A": out, "B": out}))
+    ctx = {"judge": "A", "second": "B", "thinking": "LOW", "schema": {}, "parts": [], "rows": world["rows"],
+           "crops": {"current": world["cur"]}, "narrative": []}
+    g = next(c for c in verify.verify(CLAIM, ctx)["checks"] if c.get("check") == "grounding")
+    assert g["pass"] and g["accepted"]["A"]["WC-3"] == "current_box" and "current_box" in g["detail"]
