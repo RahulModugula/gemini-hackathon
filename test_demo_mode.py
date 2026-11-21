@@ -165,3 +165,44 @@ def test_replay_stream_runs_both_judges_in_parallel_like_a_live_run(env, monkeyp
     judge = [k for k in fx["checks"] if k.get("by") and k["by"] != "code"]
     done_a = next(d for d in ev if d["step"] == "judge_a" and d["status"] == "done")
     assert done_a["model"] == judge[0]["by"] and done_a["verdict"] == judge[0]["verdict"]
+
+
+def test_cards_merge_ledger_first_then_fixtures_deduped(env):
+    c, tmp, _ = env
+    fx = FIXTURES[0]
+    led = [{**CARD, "id": "c_new", "claim": "newer"}, {**CARD, "id": fx["id"], "claim": "ledger copy wins"}]
+    (tmp / "cards.jsonl").write_text("".join(json.dumps(x) + "\n" for x in led))
+    out = c.get("/api/cards").json()
+    ids = [x["id"] for x in out]
+    assert ids[0] == fx["id"] and ids[1] == "c_new"            # ledger is newest-first, so its last line leads
+    assert len(ids) == len(set(ids)) and {f["id"] for f in FIXTURES} <= set(ids)
+    assert out[0]["claim"] == "ledger copy wins"
+
+
+def test_every_sample_card_id_resolves_when_ledger_has_cards(env):
+    c, tmp, _ = env
+    (tmp / "cards.jsonl").write_text(json.dumps({**CARD, "id": "c_other", "claim": "unrelated"}) + "\n")
+    ids = {x["id"] for x in c.get("/api/cards").json()}
+    with_card = [s for s in c.get("/api/samples").json() if s["card_id"]]
+    assert with_card and all(s["card_id"] in ids for s in with_card)
+
+
+def test_sample_and_present_paths_never_call_the_checker(env):
+    """Chips and present mode only read /api/samples, /api/cards and /api/card/<id>: never a live check."""
+    c, tmp, calls = env
+    for s in c.get("/api/samples").json():
+        if s["card_id"]:
+            assert c.get(f"/api/card/{s['card_id']}").status_code == 200
+    c.get("/api/cards")
+    c.get("/api/heldout")
+    c.get("/api/sheetset")
+    assert calls == []
+
+
+def test_ui_sample_click_and_present_use_recorded_card_not_live_run():
+    html = (HERE / "ui" / "index.html").read_text()
+    assert "showRecorded" in html and "/api/card/" in html
+    chip = html.split("b.onclick=")[1].split("\n")[0]
+    assert "runClaim" not in chip and "submitClaim" not in chip
+    present = html.split("async function presentGo()")[1].split("function presentNext")[0]
+    assert "runClaim" not in present

@@ -174,7 +174,7 @@ export function createStage(card, opts = {}) {
     let focus = union(ptBoxes) || (isBox(first.crop_rect_pt) ? first.crop_rect_pt : [ox, oy, ox + W, oy + H]);
     if (room && room.bbox) focus = union([focus, room.bbox]);
     const aspect = (mat.clientWidth || 16) / (mat.clientHeight || 9);
-    target = frame(focus, aspect, [ox, oy, ox + W, oy + H], Math.max(40, (focus[2] - focus[0]) * 0.45), Math.min(340, W));
+    target = frame(focus, aspect, [ox, oy, ox + W, oy + H], Math.max(40, (focus[2] - focus[0]) * 0.45), Math.min(340, W, Math.max(280, (focus[2] - focus[0]) * 2.2)));
     const unit = (target[2] - target[0]) / 100;      // overlay sizes scale with the framed region
     root.style.setProperty('--u', unit.toFixed(3));
 

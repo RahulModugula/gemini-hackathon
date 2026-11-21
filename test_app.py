@@ -40,7 +40,9 @@ def test_check_happy_path_ledger_and_crop_rewrite(env):
     ledger = [json.loads(ln) for ln in (tmp / "cards.jsonl").read_text().splitlines()]
     assert len(ledger) == 1 and ledger[0]["id"] == card["id"]
     c.post("/api/check", json={"claim": "second"})
-    assert [x["claim"] for x in c.get("/api/cards").json()] == ["second", "Toilet 105A is WC-2"]   # newest first
+    out = c.get("/api/cards").json()
+    fixtures = json.loads((HERE / "ui" / "cards.json").read_text())
+    assert [x["claim"] for x in out] == ["second", "Toilet 105A is WC-2"] + [f["claim"] for f in fixtures]   # ledger newest first, then fixtures
 
 
 def test_cards_fall_back_to_fixtures(env):

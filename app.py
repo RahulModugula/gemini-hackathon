@@ -384,7 +384,15 @@ async def api_metrics():
 
 @app.get("/api/cards")
 async def api_cards():
-    return _read_ledger() or _fixtures()
+    """Ledger cards (newest first) then UI fixtures, de-duplicated by id, so every sample's card_id resolves."""
+    out, seen = [], set()
+    for c in _read_ledger() + _fixtures():
+        cid = c.get("id")
+        if cid is not None and cid in seen:
+            continue
+        seen.add(cid)
+        out.append(c)
+    return out
 
 
 @app.post("/api/audio")
@@ -639,7 +647,7 @@ async def api_heldout():
                      "answered": answered, "answered_right": round(float(m.get("selective_accuracy") or 0) * answered)})
     if not runs:
         return None
-    tot = {k: sum(r[k] or 0 for r in runs) for k in ("n", "false_alarms", "answered", "answered_right")}
+    tot = {k: sum(r[k] or 0 for r in runs) for k in ("n", "false_alarms", "answered", "answered_right", "correct")}
     return {**tot, "runs": runs}
 
 

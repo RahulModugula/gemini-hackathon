@@ -285,7 +285,7 @@ main{padding:16px 24px 40px}
 .stage.landed .cropimg{opacity:1}
 .ov{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
 .ebox{opacity:0}
-.ebox rect:first-child{fill:rgba(255,255,255,.0);stroke-width:calc(var(--u)*.42px);stroke-dasharray:1;stroke-dashoffset:1}
+.ebox rect:first-child{fill:rgba(255,255,255,.0);stroke-width:calc(var(--u)*.6px);stroke-dasharray:1;stroke-dashoffset:1}
 .stage.landed .ebox{opacity:1;transition:opacity .15s calc(var(--i)*160ms)}
 .stage.landed .ebox rect:first-child{stroke-dashoffset:0;transition:stroke-dashoffset .5s cubic-bezier(.3,.7,.3,1) calc(var(--i)*160ms)}
 .etag{opacity:.96}
@@ -507,6 +507,8 @@ body.slideOn main,body.slideOn .ask,body.slideOn .strip{visibility:hidden}
 .foot2{margin-top:auto;font-size:15px;color:#b9c8c0}
 .trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:20px}
 .trust .st{display:flex;flex-direction:column;gap:8px;padding:20px;border-top:6px solid var(--amber);background:rgba(0,0,0,.18)}
+.dgCredit{font-size:11px;color:var(--mute,#8a8f98);margin:4px 0 0}
+.trust.one{grid-template-columns:minmax(0,1fr)}
 .trust b{font-size:84px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
 .trust span{font-size:24px}
 @media (max-width:700px){.sl-t{font-size:34px}.sl-k,.counter span{font-size:17px}.counter b{font-size:44px}.slide{padding:16px}.sdpair,.trust{grid-template-columns:1fr}.bigline p{font-size:26px}.bigline .num{font-size:36px}.trust b{font-size:48px}}
@@ -803,9 +805,24 @@ body.noCards .samples,body.noCards .ledger{display:none}body.noCards #cardsView{
 @media (max-width:1180px){.paper{grid-template-columns:minmax(0,1fr)}.paper>.cols>.aside{grid-column:1;grid-row:auto;position:static}}
 @media (max-width:900px){#cardsView{grid-template-columns:1fr}.kbdhint{display:none}}
 @media (max-width:700px){.shead{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.shead .htext{flex:none}.shead .hact{align-self:flex-start}
-  .tab{white-space:nowrap}.brand{font-size:0;gap:0}.brand i{margin-right:4px}.askwrap{flex:1 1 100%}.bar .btn{flex:1}
+  .tab{white-space:nowrap}.brand{font-size:16px;gap:6px;min-width:0;flex:0 1 auto}.askwrap{flex:1 1 100%}.bar .btn{flex:1}
   .tab{padding:6px 8px;font-size:12px}#thmBtn{display:none}.strip .grp{gap:2px 12px}}
 @media (max-width:700px){.dclaim{font-size:18px}.ask{padding:8px 12px 0}main{padding:8px 12px 24px}.top{padding:0 12px}.samples{flex-wrap:nowrap}#claimIn{padding-right:14px}}
+/* 390px: nothing may be wider than the viewport. Flex children may shrink (min-width:0), the header wraps instead of
+   clipping, the button row shares the width, and a tall present slide scrolls instead of being cut off. */
+@media (max-width:700px){
+  .top{min-width:0;flex-wrap:nowrap}.top>*{min-width:0}
+  nav{flex:0 1 auto;min-width:0;margin-left:auto}
+  .tab{padding:6px 7px;font-size:12px;flex:0 1 auto;min-width:0}
+  .bar{flex-wrap:wrap;width:100%}.bar>*{min-width:0}.bar .btn{padding:0 8px;flex:1 1 0}
+  .ask,main,.strip{max-width:100%}
+  .lede p{overflow-wrap:anywhere}
+  .dclaim,.digest-risk,.dgWhat,.paper{overflow-wrap:anywhere}
+  body.slideOn .slideHost{top:48px;overflow-y:auto;overflow-x:hidden}
+  .slide{height:auto;min-height:100%;padding:16px 16px 24px}
+  .presentHud{flex-wrap:nowrap;min-width:0}.ph-l{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+@media (max-width:360px){.tab{padding:6px 5px;font-size:11px}.brand{font-size:14px}}
 </style>
 <script defer src="/assets/plan3d.js"></script>
 </head>
@@ -964,7 +981,7 @@ function renderStrip(){
   const g2=el('div','grp');
   g2.append(el('span','gl','This ledger'));
   const cnt=(n,l,cls)=>{const sp=el('span','cnt '+(cls||''));sp.append(el('b',null,String(n)),l);g2.append(sp);};
-  cnt(cards.length,'cards');
+  cnt(cards.length,cards.length===1?'card':'cards');
   cnt(conflicts,'conflicts found',conflicts?'hot':'');
   cnt(blocked,'RFIs blocked',blocked?'blk':'');
   s.append(g2);
@@ -1063,6 +1080,23 @@ function submitClaim(){
   runClaim(claim,smp?{}:{ask:true});
 }
 $('goBtn').onclick=submitClaim;
+/* A sample chip or a present-mode step never calls a model: it shows the recorded card instantly (GET /api/card/<id>).
+   Only an explicit Ask / Check press runs a live check. A sample with no recorded card just fills the box. */
+async function showRecorded(s,focus){
+  setStatus('');
+  let c=null;
+  if(s.card_id){try{const r=await fetch('/api/card/'+encodeURIComponent(s.card_id));if(r.ok)c=await r.json();}catch(e){}}
+  if(!c){
+    $('claimIn').value=s.claim;
+    if(focus)$('claimIn').focus();
+    setStatus('No recorded answer for this one. Press Check to run it live.');
+    return null;
+  }
+  if(stage){stage.destroy();stage=null;stageCard=null;}
+  addCards([{...c,replayed:true}]);
+  window.scrollTo({top:0});
+  return c;
+}
 function renderSamples(list){
   const box=$('samples');box.textContent='';
   if(!Array.isArray(list)||!list.length)return;
@@ -1073,7 +1107,7 @@ function renderSamples(list){
     const b=el('button','smp'+(s.kind==='question'?' q':''));b.type='button';
     b.append(el('b',null,s.label),el('span',null,s.why||s.claim));
     b.title=s.claim;
-    b.onclick=()=>{if($('goBtn').disabled)return;$('claimIn').value=s.claim;submitClaim();};
+    b.onclick=()=>{if($('goBtn').disabled)return;showRecorded(s,true);};
     box.append(b);
   }
 }
@@ -1263,16 +1297,14 @@ function renderDigest(){
   const d=digestData||{items:[]};
   const head=el('div','dgHead');
   const t=el('div');
-  t.append(el('h2',null,'Addendum digest'),el('p',null,'What every addendum changed, who it hits and why it matters. One Gemini 4 Neon pass read all addenda, the bidder Q&A and the word-level diff of each changed sheet. Code then dropped anything the diff does not support.'));
+  t.append(el('h2',null,'Addendum digest'),el('p',null,'What every addendum changed, who it affects and why it matters. Every line is checked against the drawing changes, and anything the drawings do not support is left out.'),el('p','dgCredit','Read by Gemini 4 Neon'));
   head.append(t);
   if(d.generated_at){
     const m=el('div','dgMeta');
     const row=(k,val)=>{m.append(el('span','k',k),el('span','mono',val));};
-    row('Model',String(d.model||'').replace(/^gemini-4-/,'')+' / '+String(d.thinking||'').toLowerCase());
-    row('Context','~'+Math.round((d.est_tokens||0)/1000)+'K tokens');
-    row('Sheets diffed',String(d.changed_sheets??''));
-    row('Kept / dropped',(d.items||[]).length+' / '+(d.dropped||[]).length);
-    row('Generated',String(d.generated_at).slice(0,10));
+    row('Sheets compared',String(d.changed_sheets??''));
+    row('Changes listed',String((d.items||[]).length));
+    row('Updated',String(d.generated_at).slice(0,10));
     head.append(m);
   }
   const rf=el('button','btn ghost dgRefresh','Refresh digest');rf.type='button';rf.onclick=()=>refreshDigest(rf);
@@ -1287,7 +1319,7 @@ function renderDigest(){
     g.append(h);for(const it of list)g.append(digestItem(it));v.append(g);
   }
   const first=v.querySelector('.dgBtn');if(first)first.click();   // open the first item so the view shows a boxed sheet
-  if((d.dropped||[]).length)v.append(el('div','dgDropped',(d.dropped.length)+' model item'+(d.dropped.length>1?'s were':' was')+' dropped because the diff did not support them.'));
+  if((d.dropped||[]).length)v.append(el('div','dgDropped',(d.dropped.length)+' possible change'+(d.dropped.length>1?'s were':' was')+' left out because the drawings did not support '+(d.dropped.length>1?'them.':'it.')));
 }
 
 function renderLedger(){
@@ -1668,7 +1700,7 @@ async function presentGo(){
   const prev=cards.find(c=>(c.claim||'').trim().toLowerCase()===st.s.claim.trim().toLowerCase());
   if(prev&&st.seen){selId=prev.id;stageCard=null;lastDetailId=null;location.hash='#card='+encodeURIComponent(prev.id);applyRoute();presentHud();return;}
   P.busy=true;presentHud();window.scrollTo({top:0});
-  await runClaim(st.s.claim);
+  await showRecorded(st.s);
   st.seen=true;
   if(gen!==P.gen)return;
   P.busy=false;presentHud();

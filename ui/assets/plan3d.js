@@ -20,7 +20,7 @@
   var FOCUS_POL = 0.7;              // steeper when flown in, so the view looks down into the room
   var INTRO_MS = 1600, FLY_MS = 1500, TOGGLE_MS = 900;
   var COL = {
-    paperEdge: 0x1f2a36, ink: 0x1f2a36, wall: 0xf2eee6, cap: 0x2c3540, bg: 0x10151a, room: 0x5b7fa6,
+    paperEdge: 0x1f2a36, ink: 0x1f2a36, wall: 0xf2eee6, cap: 0x2c3540, bg: 0xffffff, room: 0x5b7fa6,
     conflict: 0xc2453d, consistent: 0x3f8f5f, unclear: 0x8a9099, accent: 0xd99a2b
   };
   var threeP = null;
@@ -73,7 +73,7 @@
   }
 
   var CSS = [
-    '.p3-root{position:relative;width:100%;height:100%;overflow:hidden;background:#10151a;font:12px/1.35 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#d6dde4;user-select:none;-webkit-user-select:none}',
+    '.p3-root{position:relative;width:100%;height:100%;overflow:hidden;background:#ffffff;font:12px/1.35 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#d6dde4;user-select:none;-webkit-user-select:none}',
     '.p3-root canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}',
     '.p3-root canvas.p3-drag{cursor:grabbing}',
     '.p3-labels{position:absolute;inset:0;pointer-events:none}',

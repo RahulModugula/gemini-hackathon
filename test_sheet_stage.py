@@ -94,6 +94,7 @@ def test_heldout_totals_sum_the_frozen_runs(env):
                                                             "correct": 27, "accuracy": 0.628, "accuracy_ci95": [0.479, 0.756], "date": "2026-11-21"}))
     j = c.get("/api/heldout").json()
     assert (j["n"], j["false_alarms"], j["answered"], j["answered_right"]) == (60, 0, 22, 22)
+    assert j["correct"] == 27                      # overall correct is summed across runs too (the trust slide's one denominator)
     v2 = j["runs"][1]
     assert (v2["correct"], v2["n"], v2["accuracy_ci95"], v2["date"]) == (27, 43, [0.479, 0.756], "2026-11-21")
 
