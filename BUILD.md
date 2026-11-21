@@ -39,6 +39,40 @@ Only strengths verified in RESEARCH.md. Each row pairs a model capability with t
 **Weak spots to design around** (RESEARCH §3): symbol counting is about 0.40–0.55 for VLMs → counts from code over
 the text layer. Text-only judging collapses (10% vs 66% with the image) → always send the crop.
 
+## Multimodal intake: one input, every modality (T24)
+One "drop anything" bar. Each input becomes **claims**, and every claim takes the same T7 → T8 path, so adding a
+modality never adds a new trust path.
+
+| Input | Gemini 4 does | Becomes | Ticket |
+|---|---|---|---|
+| Typed text | parse into atomic claims | claims | T7 |
+| Voice clip / live mic | native audio → claims + speaker + time | claims | T9, T18 |
+| Photo of a marked-up print | find the sheet, read the markup | claims pinned to a sheet location | T19 |
+| Site photo / phone video | compare what's built with the current sheet | claims with a frame timestamp | T21 |
+| Addendum or RFI response PDF | find which existing cards it changes | re-opened cards | T22 (L3) |
+
+## 3D: the drawing set as a navigable model (T23, stretch)
+**Why it's not a gimmick:** the 3D view is built *from the drawing's own vector geometry*, not generated, and every pin
+is a real card at its real coordinates. It answers "where in the building are the problems?" at a glance.
+
+**Measured feasibility (2026-11-21, A201 current = add1 p7, 62,515 vector paths):**
+- The heaviest strokes (3.6 / 2.52 pt, 399 segments) are **fire-rating boundaries, not walls**: checked visually, so
+  hypothesis 1 was rejected.
+- Walls are **grey filled polygons** (135 paths with fill 0.55): the envelope and main walls recover cleanly. 292
+  white fills are masks to drop. Some interior partitions are thin double lines and need more work.
+- 29 room numbers (100–161) in the text layer → room labels and pin anchors.
+
+**Build, in increasing ambition (stop at whichever level is solid by the freeze):**
+1. **Level A (always works):** three.js scene with the current A201 rendered as a texture on the floor plane; each
+   card is a pin at its pt bbox (linear pt → metres via the drawing scale); colour = verdict; click → card.
+2. **Level B:** extrude the grey wall polygons to 3 m with `ExtrudeGeometry`; room labels from the text layer.
+3. **Level C:** stack sheets by discipline as layers (arch / plumbing / electrical) you can toggle; superseded sheets
+   shown as ghosted layers under the current one.
+- Libraries: `three` + `OrbitControls` from a CDN, pinned to an exact version (e.g. `three@0.170.0`); no build step. Geometry is exported by a Python script
+  (`export_3d.py` → `build/model3d.json`); the browser only renders.
+- Gemini's role: none in the geometry (code is exact). Gemini supplies the cards that become pins, and (Level C+)
+  classifies ambiguous filled shapes as wall / fixture / casework, verified against layer colour and fill.
+
 ## What the UI should show (judges look for these)
 1. **The sheet, not a chat box.** Crop on the left with the evidence box drawn, card on the right.
 2. **The verifier visibly working:** `checks[]` as ticks: grounding ✓, current revision ✓, math ✓, judges agree ✓.
