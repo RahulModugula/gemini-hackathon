@@ -26,7 +26,6 @@ struct RootView: View {
             n.largeTitleTextAttributes = [.foregroundColor: UIColor(Theme.ink)]
             UINavigationBar.appearance().standardAppearance = n
             UINavigationBar.appearance().scrollEdgeAppearance = n
-            state.loadMockIfNeeded()
         }
     }
 }
@@ -80,8 +79,8 @@ struct SettingsView: View {
                     }
                 } header: { Text("Sheet hint") } footer: { Text("Sent as ?sheet= with video uploads to narrow the search.") }
                 Section {
-                    Toggle("Mock responses (demo)", isOn: $mock)
-                } footer: { Text("Skips the network and loads 3 bundled sample cards.") }
+                    Toggle("Show recorded sample results", isOn: $mock)
+                } footer: { Text("Shows 3 recorded results from our real drawing set when there are no live results. Live checks are disabled while on.") }
             }
             .scrollContentBackground(.hidden)
             .background(BlueprintGrid().ignoresSafeArea())

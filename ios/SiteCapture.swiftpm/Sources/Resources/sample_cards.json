@@ -1,0 +1,517 @@
+[
+ {
+  "id": "ex1_wc_105a_all_wc2",
+  "claim": "All the water closets in Toilet 105A are type WC-2.",
+  "speaker": null,
+  "timestamp": "2026-11-21T18:46:58+00:00",
+  "verdict": "conflict",
+  "confidence": 0.98,
+  "reason": "On the current sheet, Addendum 1 revised two of the three water closets in Toilet 105A from WC-2 to WC-3, leaving only one WC-2.",
+  "evidence": [
+   {
+    "sheet": "add1-p018",
+    "revision": "add1",
+    "bbox": [
+     1396.1,
+     873.2,
+     1422.1,
+     894.0
+    ],
+    "box_2d_on_crop": [
+     468,
+     476,
+     508,
+     526
+    ],
+    "crop": "crops/ex1_wc_105a_all_wc2_current.png",
+    "crop_rect_pt": [
+     1148.6,
+     629.8,
+     1668.6,
+     1149.8
+    ],
+    "label": "TOILET 105A room tag",
+    "sheet_number": "P101"
+   },
+   {
+    "sheet": "add1-p018",
+    "revision": "add1",
+    "bbox": [
+     1343.6,
+     877.3,
+     1390.9,
+     927.2
+    ],
+    "box_2d_on_crop": [
+     476,
+     375,
+     572,
+     466
+    ],
+    "crop": "crops/ex1_wc_105a_all_wc2_current.png",
+    "crop_rect_pt": [
+     1148.6,
+     629.8,
+     1668.6,
+     1149.8
+    ],
+    "label": "Two water closets revised to WC-3 inside addendum cloud",
+    "sheet_number": "P101"
+   },
+   {
+    "sheet": "add1-p018",
+    "revision": "add1",
+    "bbox": [
+     1343.6,
+     948.0,
+     1390.9,
+     972.0
+    ],
+    "box_2d_on_crop": [
+     612,
+     375,
+     658,
+     466
+    ],
+    "crop": "crops/ex1_wc_105a_all_wc2_current.png",
+    "crop_rect_pt": [
+     1148.6,
+     629.8,
+     1668.6,
+     1149.8
+    ],
+    "label": "Third water closet labeled WC-2",
+    "sheet_number": "P101"
+   },
+   {
+    "sheet": "dwg-p034",
+    "revision": "dwg",
+    "bbox": [
+     1340.6,
+     877.3,
+     1387.9,
+     972.0
+    ],
+    "box_2d_on_crop": [
+     476,
+     375,
+     658,
+     466
+    ],
+    "crop": "crops/ex1_wc_105a_all_wc2_superseded.png",
+    "crop_rect_pt": [
+     1145.6,
+     629.8,
+     1665.6,
+     1149.8
+    ],
+    "label": "All three water closets previously labeled WC-2",
+    "sheet_number": "P101"
+   }
+  ],
+  "spec_refs": [],
+  "checks": [
+   {
+    "by": "gemini-4-hydrogen",
+    "verdict": "conflict",
+    "confidence": 0.98,
+    "note": "On the current sheet, Addendum 1 revised two of the three water closets in Toilet 105A from WC-2 to WC-3, leaving only one WC-2."
+   },
+   {
+    "by": "code",
+    "check": "grounding",
+    "pass": true,
+    "detail": "every evidence box covers PDF words"
+   },
+   {
+    "by": "code",
+    "check": "currency",
+    "pass": true,
+    "detail": "evidence sheet is current"
+   },
+   {
+    "by": "code",
+    "check": "addendum_diff",
+    "info": true,
+    "pass": true,
+    "only_superseded": {
+     "WC-2": 2
+    },
+    "only_current": {
+     "WC-3": 2,
+     "1": 2
+    },
+    "narrative": [],
+    "current_sheet": "add1-p018",
+    "superseded_sheet": "dwg-p034",
+    "superseded_crop": "crops/ex1_wc_105a_all_wc2_superseded.png",
+    "diff_boxes": {
+     "superseded": [
+      [
+       438,
+       913,
+       453,
+       946
+      ],
+      [
+       629,
+       429,
+       643,
+       462
+      ]
+     ],
+     "current": [
+      [
+       544,
+       429,
+       558,
+       462
+      ],
+      [
+       486,
+       429,
+       500,
+       462
+      ],
+      [
+       288,
+       514,
+       304,
+       521
+      ],
+      [
+       343,
+       373,
+       359,
+       380
+      ]
+     ]
+    },
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
+   }
+  ],
+  "changed_by_addendum": true,
+  "expected_label": "conflict",
+  "rfi_draft": null,
+  "cost_usd": 0.0,
+  "latency_s": 0.001
+ },
+ {
+  "id": "ex2_wc_105a_add1_change",
+  "claim": "Addendum 1 changed two water closet tags in Toilet 105A from WC-2 to WC-3.",
+  "speaker": null,
+  "timestamp": "2026-11-21T18:46:58+00:00",
+  "verdict": "consistent",
+  "confidence": 0.98,
+  "reason": "On the current sheet, revision cloud 1 in Toilet 105A encloses two water closets tagged WC-3 that were both tagged WC-2 on the superseded sheet.",
+  "evidence": [
+   {
+    "sheet": "add1-p018",
+    "revision": "add1",
+    "bbox": [
+     1329.6,
+     871.6,
+     1419.0,
+     934.0
+    ],
+    "box_2d_on_crop": [
+     465,
+     348,
+     585,
+     520
+    ],
+    "crop": "crops/ex2_wc_105a_add1_change_current.png",
+    "crop_rect_pt": [
+     1148.6,
+     629.8,
+     1668.6,
+     1149.8
+    ],
+    "label": "Revision cloud 1 enclosing two WC-3 water closets",
+    "sheet_number": "P101"
+   },
+   {
+    "sheet": "add1-p018",
+    "revision": "add1",
+    "bbox": [
+     1395.1,
+     873.2,
+     1425.2,
+     894.0
+    ],
+    "box_2d_on_crop": [
+     468,
+     474,
+     508,
+     532
+    ],
+    "crop": "crops/ex2_wc_105a_add1_change_current.png",
+    "crop_rect_pt": [
+     1148.6,
+     629.8,
+     1668.6,
+     1149.8
+    ],
+    "label": "TOILET 105A room label",
+    "sheet_number": "P101"
+   },
+   {
+    "sheet": "dwg-p034",
+    "revision": "dwg",
+    "bbox": [
+     1342.2,
+     875.2,
+     1391.0,
+     928.8
+    ],
+    "box_2d_on_crop": [
+     472,
+     378,
+     575,
+     472
+    ],
+    "crop": "crops/ex2_wc_105a_add1_change_superseded.png",
+    "crop_rect_pt": [
+     1145.6,
+     629.8,
+     1665.6,
+     1149.8
+    ],
+    "label": "Two WC-2 water closets prior to Addendum 1",
+    "sheet_number": "P101"
+   }
+  ],
+  "spec_refs": [],
+  "checks": [
+   {
+    "by": "gemini-4-hydrogen",
+    "verdict": "consistent",
+    "confidence": 0.98,
+    "note": "On the current sheet, revision cloud 1 in Toilet 105A encloses two water closets tagged WC-3 that were both tagged WC-2 on the superseded sheet."
+   },
+   {
+    "by": "code",
+    "check": "grounding",
+    "pass": true,
+    "detail": "every evidence box covers PDF words"
+   },
+   {
+    "by": "code",
+    "check": "currency",
+    "pass": true,
+    "detail": "evidence sheet is current"
+   },
+   {
+    "by": "code",
+    "check": "addendum_diff",
+    "info": true,
+    "pass": true,
+    "only_superseded": {
+     "WC-2": 2
+    },
+    "only_current": {
+     "WC-3": 2,
+     "1": 2
+    },
+    "narrative": [],
+    "current_sheet": "add1-p018",
+    "superseded_sheet": "dwg-p034",
+    "superseded_crop": "crops/ex2_wc_105a_add1_change_superseded.png",
+    "diff_boxes": {
+     "superseded": [
+      [
+       438,
+       913,
+       453,
+       946
+      ],
+      [
+       629,
+       429,
+       643,
+       462
+      ]
+     ],
+     "current": [
+      [
+       544,
+       429,
+       558,
+       462
+      ],
+      [
+       486,
+       429,
+       500,
+       462
+      ],
+      [
+       288,
+       514,
+       304,
+       521
+      ],
+      [
+       343,
+       373,
+       359,
+       380
+      ]
+     ]
+    },
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
+   }
+  ],
+  "changed_by_addendum": false,
+  "expected_label": "consistent",
+  "rfi_draft": null,
+  "cost_usd": 0.0,
+  "latency_s": 0.001
+ },
+ {
+  "id": "ex3_wc_109a",
+  "claim": "Toilet 109A has a WC-3 water closet.",
+  "speaker": null,
+  "timestamp": "2026-11-21T18:46:58+00:00",
+  "verdict": "conflict",
+  "confidence": 0.99,
+  "reason": "On the current sheet, Toilet 109A is labeled with a WC-1 water closet (changed from WC-2 by Addendum 1), not WC-3.",
+  "evidence": [
+   {
+    "sheet": "add1-p018",
+    "revision": "add1",
+    "bbox": [
+     1080.2,
+     917.4,
+     1107.7,
+     936.6
+    ],
+    "box_2d_on_crop": [
+     468,
+     468,
+     505,
+     521
+    ],
+    "crop": "crops/ex3_wc_109a_current.png",
+    "crop_rect_pt": [
+     836.8,
+     674.0,
+     1356.8,
+     1194.0
+    ],
+    "label": "TOILET 109A",
+    "sheet_number": "P101"
+   },
+   {
+    "sheet": "add1-p018",
+    "revision": "add1",
+    "bbox": [
+     1089.0,
+     951.7,
+     1135.3,
+     974.0
+    ],
+    "box_2d_on_crop": [
+     534,
+     485,
+     577,
+     574
+    ],
+    "crop": "crops/ex3_wc_109a_current.png",
+    "crop_rect_pt": [
+     836.8,
+     674.0,
+     1356.8,
+     1194.0
+    ],
+    "label": "WC-1 water closet in Toilet 109A",
+    "sheet_number": "P101"
+   }
+  ],
+  "spec_refs": [],
+  "checks": [
+   {
+    "by": "gemini-4-hydrogen",
+    "verdict": "conflict",
+    "confidence": 0.99,
+    "note": "On the current sheet, Toilet 109A is labeled with a WC-1 water closet (changed from WC-2 by Addendum 1), not WC-3."
+   },
+   {
+    "by": "code",
+    "check": "grounding",
+    "pass": true,
+    "detail": "every evidence box covers PDF words"
+   },
+   {
+    "by": "code",
+    "check": "currency",
+    "pass": true,
+    "detail": "evidence sheet is current"
+   },
+   {
+    "by": "code",
+    "check": "addendum_diff",
+    "info": true,
+    "pass": true,
+    "only_superseded": {
+     "WC-2": 2
+    },
+    "only_current": {
+     "WC-1": 2,
+     "1": 2
+    },
+    "narrative": [],
+    "current_sheet": "add1-p018",
+    "superseded_sheet": "dwg-p034",
+    "diff_boxes": {
+     "superseded": [
+      [
+       300,
+       481,
+       314,
+       515
+      ],
+      [
+       544,
+       480,
+       558,
+       513
+      ]
+     ],
+     "current": [
+      [
+       469,
+       787,
+       483,
+       820
+      ],
+      [
+       300,
+       487,
+       314,
+       520
+      ],
+      [
+       424,
+       246,
+       440,
+       253
+      ],
+      [
+       258,
+       972,
+       274,
+       980
+      ]
+     ]
+    },
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
+   }
+  ],
+  "changed_by_addendum": false,
+  "expected_label": null,
+  "rfi_draft": null,
+  "cost_usd": 0.0,
+  "latency_s": 0.001
+ }
+]

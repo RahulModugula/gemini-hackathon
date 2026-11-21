@@ -71,8 +71,4 @@ final class AppState: ObservableObject {
             return false
         }
     }
-
-    func loadMockIfNeeded() {
-        if mock && cards.isEmpty { cards = API.sample().withTimestamps() }
-    }
 }

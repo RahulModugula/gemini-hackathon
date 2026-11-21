@@ -7,7 +7,22 @@ struct ResultsView: View {
         NavigationStack {
             ZStack {
                 BlueprintGrid().ignoresSafeArea()
-                if state.cards.isEmpty {
+                if state.cards.isEmpty && state.mock {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Sample results (recorded)").font(.headline).foregroundStyle(Theme.ink)
+                                Text("Recorded from our real drawing set. Not a live result.")
+                                    .font(.footnote).foregroundStyle(Theme.ink2)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            ForEach(SampleData.cards) { card in
+                                NavigationLink(value: card) { CardRow(card: card) }.buttonStyle(.plain)
+                            }
+                        }
+                        .padding(16)
+                    }
+                } else if state.cards.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "doc.text.magnifyingglass").font(.system(size: 44)).foregroundStyle(Theme.blue)
                         Text("No results yet").font(.headline).foregroundStyle(Theme.ink)
@@ -37,7 +52,6 @@ struct ResultsView: View {
                 }
             }
         }
-        .onAppear { state.loadMockIfNeeded() }
     }
 }
 
@@ -117,6 +131,9 @@ struct CardSheet: View {
                 }
                 .padding(.top, 6)
 
+                if SampleData.isSample(card) {
+                    Text("SAMPLE RESULT (RECORDED) - not a live check").font(Theme.mono).foregroundStyle(Theme.ink2)
+                }
                 Text(card.claim).font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.ink)
                 if let r = card.reason {
                     Text(r).font(.body).foregroundStyle(Theme.ink2)
@@ -136,9 +153,12 @@ struct CardSheet: View {
                     VStack(alignment: .leading, spacing: 6) {
                         let first = g.items[0].ev
                         BlockLabel("Sheet " + (first.sheet_number ?? first.sheet ?? "?") + (first.revision.map { "  rev " + $0 } ?? ""))
-                        if state.mock {
-                            MockCrop().overlay(BoxLayer(boxes: g.items.compactMap { i in i.ev.box_2d_on_crop.map { (label: "\(i.n)", box: $0) } }, tint: Theme.red))
-                                .aspectRatio(1.4, contentMode: .fit)
+                        if SampleData.isSample(card) {
+                            if let c = g.crop, let img = SampleData.crop(c) {
+                                Image(uiImage: img).resizable().scaledToFit()
+                                    .overlay(BoxLayer(boxes: g.items.compactMap { i in i.ev.box_2d_on_crop.map { (label: "\(i.n)", box: $0) } }, tint: Theme.red))
+                                    .overlay(Rectangle().stroke(Theme.line, lineWidth: 1))
+                            }
                         } else if let crop = g.crop {
                             EvidenceImage(path: crop, boxes: g.items.compactMap { i in i.ev.box_2d_on_crop.map { (label: "\(i.n)", box: $0) } }, tint: Theme.red)
                         }
@@ -177,7 +197,7 @@ struct CardSheet: View {
                 HStack {
                     Text(card.id).font(Theme.mono).foregroundStyle(Theme.ink2).lineLimit(1)
                     Spacer()
-                    if !state.mock, let u = state.api.webURL(cardID: card.id) {
+                    if !SampleData.isSample(card), let u = state.api.webURL(cardID: card.id) {
                         Button { openURL(u) } label: {
                             Label("Open in web", systemImage: "arrow.up.right.square").font(.footnote.weight(.bold))
                         }
@@ -236,25 +256,6 @@ struct BoxLayer: View {
                         .position(x: (xmin + xmax) / 2, y: (ymin + ymax) / 2)
                 }
             }
-        }
-    }
-}
-
-/// Stand-in drawing for mock mode (the sample crops do not exist on any server).
-struct MockCrop: View {
-    var body: some View {
-        ZStack {
-            Theme.board2
-            Canvas { ctx, size in
-                var p = Path()
-                for i in 1..<10 {
-                    let x = size.width * CGFloat(i) / 10, y = size.height * CGFloat(i) / 10
-                    p.move(to: CGPoint(x: x, y: 0)); p.addLine(to: CGPoint(x: x, y: size.height))
-                    p.move(to: CGPoint(x: 0, y: y)); p.addLine(to: CGPoint(x: size.width, y: y))
-                }
-                ctx.stroke(p, with: .color(Theme.blue.opacity(0.25)), lineWidth: 0.5)
-            }
-            Text("sample crop").font(.caption).foregroundStyle(Theme.ink2)
         }
     }
 }

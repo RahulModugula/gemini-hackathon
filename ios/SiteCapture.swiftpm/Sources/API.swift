@@ -4,8 +4,10 @@ enum APIError: LocalizedError {
     case badURL
     case http(Int, String)
     case tooLarge(Int)
+    case sampleOnly
     var errorDescription: String? {
         switch self {
+        case .sampleOnly: return "Sample mode only shows recorded results. Turn it off in Settings to run a live check."
         case .badURL: return "Backend URL is not valid. Check Settings."
         case .http(let code, let body): return "Backend returned \(code). \(body.prefix(200))"
         case .tooLarge(let mb): return "Clip is \(mb) MB; the backend limit is 50 MB."
@@ -41,7 +43,7 @@ final class API: NSObject, URLSessionTaskDelegate {
     }
 
     func ask(_ text: String) async throws -> Card {
-        if mock { return Self.sample().cards[0] }
+        if mock { throw APIError.sampleOnly }
         var req = URLRequest(url: try url("/api/ask"))
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -68,7 +70,7 @@ final class API: NSObject, URLSessionTaskDelegate {
     }
 
     func checkClaim(_ claim: String) async throws -> Card {
-        if mock { return Self.sample().cards[0] }
+        if mock { throw APIError.sampleOnly }
         var req = URLRequest(url: try url("/api/check"))
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -80,10 +82,7 @@ final class API: NSObject, URLSessionTaskDelegate {
     }
 
     func uploadVideo(_ file: URL, sheet: String, onProgress: @escaping (Double) -> Void) async throws -> VideoResponse {
-        if mock {
-            for i in 1...5 { try await Task.sleep(nanoseconds: 120_000_000); onProgress(Double(i) / 5) }
-            return Self.sample()
-        }
+        if mock { throw APIError.sampleOnly }
         let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         if size > 50 * 1_000_000 { throw APIError.tooLarge(size / 1_000_000) }
         let q = sheet.isEmpty ? [] : [URLQueryItem(name: "sheet", value: sheet)]
@@ -105,11 +104,6 @@ final class API: NSObject, URLSessionTaskDelegate {
         progress?(Double(sent) / Double(total))
     }
 
-    static func sample() -> VideoResponse {
-        guard let v = try? JSONDecoder().decode(VideoResponse.self, from: Data(SampleData.json.utf8))
-        else { return VideoResponse(claims: nil, cards: [], video_s: nil) }
-        return v
-    }
 }
 
 extension Health {
