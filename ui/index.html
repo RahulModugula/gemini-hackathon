@@ -64,6 +64,24 @@ button:disabled{opacity:.55;cursor:wait}
 .status{margin:10px 0 0;max-width:1200px;padding:8px 12px;background:var(--chrome);border-left:3px solid var(--blue);font-size:14px}
 .status.bad{border-left-color:var(--red-on-dark);color:#ffd9d5}
 
+/* first-screen explainer + samples */
+.lede{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;max-width:1200px;margin:0 0 12px}
+.lede p{margin:0;font-size:17px;line-height:1.35;font-stretch:92%;color:var(--text);max-width:68ch}
+.lede .how{font-size:13px;color:var(--mute)}
+.samples{display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:1200px;margin:10px 0 0}
+.samples .sl{font-size:13px;color:var(--mute);margin-right:2px}
+.smp{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 11px 7px;background:transparent;border:1.5px solid var(--line);border-left:4px solid var(--blue);border-radius:3px;text-align:left;line-height:1.2}
+.smp b{font-size:14px;font-weight:650;font-stretch:90%}
+.smp span{font-size:12px;color:var(--mute)}
+.smp.q{border-left-color:var(--amber)}
+.smp:hover{border-color:var(--text);border-left-color:inherit}
+.smp:disabled{opacity:.5}
+.missbox{margin:0 0 14px;padding:12px 14px;border:2px dashed var(--ink-2);background:var(--paper-2);font-size:15px}
+.missbox b{display:block;font-size:17px;margin-bottom:4px}
+.replayed{display:inline-block;margin-left:8px;padding:0 6px;border:1px solid var(--amber);color:var(--amber);font-size:11px;font-weight:600}
+.blocked .stamp2{grid-column:1/-1;justify-self:start;padding:6px 16px 5px;border:4px double var(--red);color:var(--red);font-weight:800;font-stretch:112%;font-size:30px;letter-spacing:.05em;text-transform:uppercase;transform:rotate(-2.5deg);line-height:1.05}
+.blocked .stamp2 small{display:block;font-size:13px;letter-spacing:.02em;text-transform:none;font-weight:700;color:#7a1710}
+
 /* agent trace */
 .trace{max-width:1200px;margin:12px 0 0;padding:12px 14px;background:var(--chrome);border:1px solid var(--line);border-radius:6px;animation:rise .25s ease-out}
 .trace .tt{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--mute);margin-bottom:10px}
@@ -244,6 +262,8 @@ main{padding:16px 24px 40px}
   .rail{flex-direction:column;gap:8px}.stp{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:8px;padding:0}.stp .mk{height:auto}.stp .ln{display:none}.stp .nm{margin:0}.pair{padding:0;border:0;margin:0}.pair::before{display:none}.pair .stp{display:grid}.pair .row2{display:contents}
   .bar{flex-wrap:wrap}#claimIn{flex-basis:100%}.btn{flex:1}
   .ledger .row{flex-basis:240px}
+  .samples{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.samples .sl{display:none}.smp{flex:0 0 auto;scroll-snap-align:start}
+  .lede .how{display:none}
 }
 </style>
 </head>
@@ -259,6 +279,8 @@ main{padding:16px 24px 40px}
 </header>
 <div id="strip" class="strip" aria-label="Scoreboard"></div>
 <section class="ask">
+  <div class="lede"><p>Check what someone said on site against the current drawing set, after every addendum. Each answer is boxed on the sheet, judged by two Gemini models and verified by code.</p>
+  <span class="how">Type, speak or upload a site video. Disagreement or unverified boxes always come back as unclear.</span></div>
   <div class="bar">
     <input id="claimIn" type="text" maxlength="500" placeholder="Say or type a claim, e.g. All the water closets in Toilet 105A are type WC-2." aria-label="Say or type a claim">
     <button id="goBtn" class="btn" type="button">Check claim</button>
@@ -266,6 +288,7 @@ main{padding:16px 24px 40px}
     <button id="vidBtn" class="btn ghost" type="button" title="Check a site video">Video</button>
     <input id="vidIn" type="file" accept="video/mp4,video/quicktime" hidden aria-label="Site video file">
   </div>
+  <div id="samples" class="samples" aria-label="Sample claims"></div>
   <div id="status" class="status" role="status" hidden></div>
   <div id="trace" class="trace" hidden aria-live="polite"></div>
 </section>
@@ -425,7 +448,7 @@ function buildTrace(claim){
 }
 function applyStep(tr,ev){
   const n=tr.nodes[ev.step];
-  tr.total.textContent=(ev.t||0).toFixed(1)+' s';
+  tr.total.textContent=ev.replay?'replayed from a recorded run, no model calls':(ev.t||0).toFixed(1)+' s';
   if(!n)return;
   if(ev.status==='start'){n.li.className=n.li.className.replace(/ (run|done|bad)/g,'')+' run';n.start=ev.t;}
   else{
@@ -466,7 +489,8 @@ function heroOf(list){
   return (list.find(isSup)||list.find(c=>c.verdict==='conflict')||list[0]||{}).id||null;
 }
 function addCards(list){
-  cards=list.concat(cards);
+  const ids=new Set(list.map(c=>c.id));
+  cards=list.concat(cards.filter(c=>!ids.has(c.id)));
   if(list.length)selId=list[0].id;
   if(location.hash&&location.hash!=='#cards'&&location.hash!=='#3d')location.hash='#cards';
   rebuild3D();applyRoute();renderStrip();
@@ -475,6 +499,7 @@ async function submitClaim(){
   const claim=$('claimIn').value.trim();
   if(!claim)return;
   $('goBtn').disabled=$('claimIn').disabled=true;
+  document.querySelectorAll('.smp').forEach(b=>b.disabled=true);
   setStatus('');
   try{
     const card=await streamCheck(claim);
@@ -482,9 +507,25 @@ async function submitClaim(){
     setTimeout(()=>{$('trace').hidden=true;},1600);
     addCards([card]);
   }catch(e){$('trace').hidden=true;setStatus('Check failed: '+e.message,true);}
-  finally{$('goBtn').disabled=$('claimIn').disabled=false;}
+  finally{$('goBtn').disabled=$('claimIn').disabled=false;document.querySelectorAll('.smp').forEach(b=>b.disabled=false);}
 }
 $('goBtn').onclick=submitClaim;
+function renderSamples(list){
+  const box=$('samples');box.textContent='';
+  if(!Array.isArray(list)||!list.length)return;
+  box.append(el('span','sl','Try one:'));
+  for(const s of list){
+    const b=el('button','smp'+(s.kind==='question'?' q':''));b.type='button';
+    b.append(el('b',null,s.label),el('span',null,s.why||s.claim));
+    b.title=s.claim;
+    b.onclick=()=>{if($('goBtn').disabled)return;$('claimIn').value=s.claim;submitClaim();};
+    box.append(b);
+  }
+}
+fetch('/api/samples').then(r=>r.ok?r.json():[]).then(renderSamples).catch(()=>{});
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&document.activeElement!==$('claimIn')&&!document.querySelector('.modalBg')){e.preventDefault();$('claimIn').focus();}
+});
 $('claimIn').addEventListener('keydown',e=>{if(e.key==='Enter')submitClaim();});
 
 let rec=null;
@@ -711,6 +752,12 @@ function renderDetail(animate){
   ht.append(meta);
   head.append(st,ht);paper.append(head);
 
+  if(c.replay_miss){
+    const mb=el('div','missbox');mb.setAttribute('role','note');
+    mb.append(el('b',null,'Not in the recording'),'This claim was never run live, so replay mode has no judge answers for it. The "unclear" below is not a verdict. Run it with a live key, or pick one of the sample claims.');
+    paper.append(mb);
+  }
+  if(c.replayed)meta.append(el('span','replayed','replayed'));
   const cols=el('div','cols');
   const left=el('div');
   const x=diffOf(c);
@@ -799,7 +846,9 @@ function renderDetail(animate){
     const act=el('div','hact');
     if(r&&r.status==='blocked'){
       const bl=el('div','blocked');bl.setAttribute('role','note');
-      const bh=el('div','bh');bh.append(el('span',null,'Already answered'),prettyAnswer(r.answered_by));
+      const stp=el('div','stamp2','RFI blocked');stp.append(el('small',null,'Already answered in '+prettyAnswer(r.answered_by)));
+      bl.append(stp);
+      const bh=el('div','bh');bh.append(el('span',null,'Addendum answer'),prettyAnswer(r.answered_by));
       const bq=el('blockquote',null,'\u201c'+(r.quote||'')+'\u201d');
       bl.append(bh,bq,el('div','bn','The bid documents already settle this question, so the RFI is blocked. Nothing was sent.'));
       paper.insertBefore(bl,cols);
@@ -808,7 +857,7 @@ function renderDetail(animate){
       const rb=el('button','rfiBtn',r&&r.status==='pending'?'Checking addenda\u2026':'Draft RFI');rb.type='button';
       rb.disabled=!!(r&&r.status==='pending');
       rb.onclick=async()=>{rb.disabled=true;rb.textContent='Drafting\u2026';const rr=await fetchRfi(c);
-        if(rr.status==='error')setStatus('RFI failed: '+rr.error,true);else if(rr.status==='draft')openRfi(c);};
+        if(rr.status==='error')setStatus(/CacheMiss/.test(rr.error)?'The addenda check for this RFI is not in the recording. It needs a live run.':'RFI failed: '+rr.error,true);else if(rr.status==='draft')openRfi(c);};
       act.append(rb);
     }
     head.append(act);
