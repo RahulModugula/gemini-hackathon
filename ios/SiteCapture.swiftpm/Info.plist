@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>SiteCapture records short site videos to check against the drawings.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SiteCapture records audio so spoken claims can be checked against the drawings.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>SiteCapture connects to the claim-checker backend on your local network.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>
