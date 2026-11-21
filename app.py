@@ -22,6 +22,7 @@ import audio_claims
 import check as checker
 import digest
 import llm
+import plan3d
 import rfi
 import video_claims
 import video_frames
@@ -540,6 +541,26 @@ async def api_digest_refresh(request: Request):
         _digest_lock.release()
 
 
+@app.get("/api/plan3d/{sheet}")
+async def api_plan3d(sheet: str):
+    """3D plan data from the sheet's vector drawing (walls, rooms, scale, texture urls); cached in build/plan3d/."""
+    try:
+        return await run_in_threadpool(plan3d.get, sheet, Path(BUILD))
+    except (plan3d.UnknownSheet, FileNotFoundError):
+        return _bad("unknown sheet", 404)
+
+
+@app.get("/api/plan3d/{sheet}/{kind}.png")
+async def api_plan3d_texture(sheet: str, kind: str):
+    if kind not in ("texture", "detail"):
+        return _bad("not found", 404)
+    try:
+        p = await run_in_threadpool(plan3d.texture_path, sheet, kind, Path(BUILD))
+    except (plan3d.UnknownSheet, FileNotFoundError):
+        return _bad("not found", 404)
+    return FileResponse(p, media_type="image/png", headers=SHORT)
+
+
 @app.get("/api/health")
 async def api_health():
     return {"ok": True, "cache_mode": os.environ.get("LLM_CACHE", "readwrite"), "run_spend": llm.run_spend()}
@@ -587,6 +608,17 @@ async def videos(name: str):
 @app.get("/")
 async def index():
     return FileResponse(UI / "index.html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/cards.json")
+async def fixture_cards():
+    """The UI fixture cards (ui/cards.json): the demo page and index.html's offline fallback read them."""
+    return JSONResponse(_fixtures(), headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/plan3d.html")
+async def plan3d_page():
+    return FileResponse(UI / "plan3d.html", headers={"Cache-Control": "no-cache"})
 
 
 app.mount("/assets", StaticFiles(directory=UI / "assets"), name="assets")
