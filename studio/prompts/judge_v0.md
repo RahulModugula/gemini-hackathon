@@ -13,6 +13,8 @@ Rules:
    Silence is not a contradiction: if the claim names a value, maker, supplier, rating or item that the crops simply
    do not mention (e.g. "the note says the concrete comes from Wells" and no supplier is printed), the verdict is
    "unclear", not "conflict". "conflict" needs printed words that state something different for the same thing.
+   A value the drawings leave open is silence too: "TBD" or "to be selected" where the claim names a colour,
+   pattern or product does not contradict the claim ("unclear"). A named different value still does.
 3. Quote the exact printed words you relied on in `quoted_words` (copied from WORDS, no paraphrase). If you can't
    quote any, the verdict must be "unclear".
 4. For each piece of evidence give a box on the image you used: box_2d = [ymin, xmin, ymax, xmax] normalised 0–1000.

@@ -668,9 +668,10 @@ def test_plan_labels_on_one_line_do_not_widen_the_crop():
 
 
 _CTX_CROP = {"sheet": "e1", "sheet_number": "E200", "rect": [0, 0, 1000, 1000],
-             "words": [{"text": "NOTES:", "bbox": [100, 100, 140, 110]}, {"text": "FACP", "bbox": [100, 300, 140, 310]},
+             "words": [{"text": "NOTES:", "bbox": [100, 100, 140, 110]}, {"text": "HEADING:", "bbox": [100, 282, 160, 292]},
+                       {"text": "FACP", "bbox": [100, 300, 140, 310]},
                        {"text": "SERVES", "bbox": [150, 300, 190, 310]}, {"text": "OWLS", "bbox": [200, 300, 240, 310]},
-                       {"text": "A-36", "bbox": [600, 600, 640, 610]}, {"text": "A-13", "bbox": [700, 700, 740, 710]},
+                       {"text": "A-36", "bbox": [600, 600, 640, 610]}, {"text": "A-13", "bbox": [650, 620, 690, 630]},
                        {"text": "109", "bbox": [600, 500, 630, 510]}]}
 _NOTE_BOX, _A36_BOX = [295, 95, 315, 245], [495, 595, 615, 645]       # FACP SERVES OWLS / 109 + A-36
 
@@ -678,9 +679,9 @@ _NOTE_BOX, _A36_BOX = [295, 95, 315, 245], [495, 595, 615, 645]       # FACP SER
 def test_unboxed_context_quote_is_accepted_once_boxed_evidence_exists():
     """Dev v3 live misses (n79, 05s): both judges right, but one also quoted a heading / a neighbouring tag that is
     printed in the crop outside its box, and grounding vetoed the card."""
-    ok = _rv("consistent", ["NOTES:", "FACP SERVES OWLS"], _NOTE_BOX)
+    ok = _rv("consistent", ["HEADING:", "FACP SERVES OWLS"], _NOTE_BOX)          # heading one line above the box
     probs, acc = verify.grounding_report(ok, {"current": _CTX_CROP}, "The FACP serves the OWLS space")
-    assert probs == [] and acc["NOTES:"] == "crop_word" and acc["OWLS"] == "current_box"
+    assert probs == [] and acc["HEADING:"] == "crop_word" and acc["OWLS"] == "current_box"
     conflict = _rv("conflict", ["109", "A-36", "A-13"], _A36_BOX)
     probs, acc = verify.grounding_report(conflict, {"current": _CTX_CROP}, "On E200, the tag at room 109 reads A-39.")
     assert probs == [] and acc["A-13"] == "crop_word" and acc["A-36"] == "current_box"
@@ -700,9 +701,28 @@ def test_unboxed_context_never_replaces_evidence():
     assert any("a13" in p for p in probs), probs
 
 
+def test_unboxed_context_must_sit_next_to_a_box():
+    """Review finding: boxing one unrelated word must not let the deciding value come from anywhere in a (wide)
+    crop. A word far from every current box is not context, so it still fails."""
+    crops = {"current": _CTX_CROP}
+    far_conflict = _rv("conflict", ["SERVES", "A-13"], [295, 145, 315, 195])      # box: SERVES; A-13 is 400+ pt away
+    probs, _ = verify.grounding_report(far_conflict, crops, "The tag at room 109 reads A-39")
+    assert any("A-13" in p for p in probs), probs
+    far_consistent = _rv("consistent", ["FACP", "NOTES:"], [295, 95, 315, 145])   # NOTES: is 190 pt above FACP
+    assert verify.grounding_report(far_consistent, crops, "The FACP has notes")[0]
+
+
+def test_answer_value_never_uses_an_unboxed_context_word():
+    card = {"verdict": "consistent", "reason": "r", "evidence": [{"bbox": [0, 0, 1, 1]}],
+            "checks": [{"by": "a", "quoted_words": ["NOTES:", "OWLS"]},
+                       {"by": "code", "check": "grounding", "pass": True,
+                        "accepted": {"a": {"NOTES:": "crop_word", "OWLS": "current_box"}}}]}
+    assert check._answer(card)["value"] == "OWLS"
+
+
 def test_unboxed_context_dimension_does_not_back_a_dimension_claim(monkeypatch):
-    crop = {**_CTX_CROP, "words": _CTX_CROP["words"] + [{"text": '36"', "bbox": [800, 800, 830, 810]}]}
-    o = _rv("conflict", ["A-13", '36"'], [695, 695, 715, 745])
+    crop = {**_CTX_CROP, "words": _CTX_CROP["words"] + [{"text": '42"', "bbox": [650, 640, 680, 650]}]}
+    o = _rv("conflict", ["A-13", '42"'], [615, 645, 635, 695])           # box: A-13; 42" printed just below it
     monkeypatch.setattr(verify, "_run_judge", lambda m, p, c: (o, 0.1))
     r = verify.verify('Door 101 is 36" wide', {"judge": "a", "second": "b", "crops": {"current": crop},
                                                "rows": {"e1": {"current": True}}, "narrative": ()})
@@ -718,6 +738,16 @@ def test_keynote_claim_gets_the_legend_not_the_bare_tag(world, claim):
     c = next(c for c in cands if c["sheet"] == "add2-p006")
     texts = {w["text"] for w in c["words"]}
     assert {"D07", "REMOVE", "CEILING", "SOFFIT", "THROUGHOUT"} <= texts, c["rect"]
+
+
+def test_judge_prompt_treats_placeholders_like_silence(world):
+    """Dev v3 fix run: with the whole A1100 row in the crop, both judges called 'Bright White grout' / 'herringbone
+    pattern' a conflict against "to be selected from awarded MFR standard color" / "Installation: TBD". A value left
+    open is not a contradicting value; the rule must reach the judges in every claim prompt."""
+    parts = check.build_parts("A1100 names Bright White as the grout color for PTW-1.", {})
+    text = " ".join(p.text for p in parts if getattr(p, "text", None))
+    assert "Silence is not a contradiction" in text
+    assert "TBD" in text and "to be selected" in text
 
 
 def test_a_dominant_search_hit_stays_a_candidate(world):
