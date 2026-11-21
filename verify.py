@@ -43,6 +43,14 @@ _FOLD = str.maketrans({**{c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2212"
 MAX_BOX_AREA = 0.5       # a box covering more than this share of the crop points at nothing in particular
 
 
+CONTEXT_PT = 60.0        # an unboxed quote this close (pt) to a current evidence box counts as context (crop_word)
+
+
+def _gap(a, b):
+    """Shortest distance (pt) between two boxes; 0 when they touch or overlap."""
+    return math.hypot(max(0.0, b[0] - a[2], a[0] - b[2]), max(0.0, b[1] - a[3], a[1] - b[3]))
+
+
 def _norm(s):
     """Whitespace-free lowercase with unicode dashes and curly quotes folded to ASCII."""
     return "".join(s.translate(_FOLD).split()).lower()
@@ -139,6 +147,8 @@ def grounding_report(out, crops, claim=""):
       superseded_box  inside a box on the superseded image (conflict verdicts only; it explains what changed)
       claim_value     (conflict or consistent) the word is in the claim text: for a conflict it is the contradicted
                       value, not evidence; consistent verdicts may repeat the claim's words too
+      crop_word       a PDF word of the current crop within CONTEXT_PT of a current box, accepted only once the verdict has real
+                      evidence (below): context, never evidence
     and a conflict/consistent verdict must also have real evidence: at least one current box containing at least
     one quoted word that was NOT merely copied from the claim. An unclear verdict needs only that quotes sit in
     some box."""
@@ -168,18 +178,34 @@ def grounding_report(out, crops, claim=""):
         return any(_norm(w["text"]) == _norm(token) and _share_inside(w["bbox"], pt) >= OVERLAP_MIN
                    for img, pt in boxes if img in images for w in crops[img]["words"])
 
-    real_evidence = False
-    for tok in dict.fromkeys(t for q in quoted for t in q.split()):
+    toks = list(dict.fromkeys(t for q in quoted for t in q.split()))
+    in_cur = {t: inside(t, ("current",)) for t in toks}
+    # A consistent verdict is proven by the claim's own words sitting in a current box ("WC-2" on P101).
+    # A conflict must point at the contradicting word (WC-3), so a quote copied from the claim does not count.
+    real_evidence = any(in_cur[t] and (verdict == "consistent" or _alnum(t) not in claim_tokens) for t in toks)
+    cur_boxes = [pt for img, pt in boxes if img == "current"]
+
+    def near_box(token):
+        """the token is printed on the current crop within CONTEXT_PT of a current evidence box"""
+        return any(_norm(w["text"]) == _norm(token) and _gap(w["bbox"], pt) <= CONTEXT_PT
+                   for w in (crops.get("current") or {}).get("words", []) for pt in cur_boxes)
+    for tok in toks:
         in_claim = _alnum(tok) in claim_tokens
-        in_cur = inside(tok, ("current",))
         if verdict == "unclear":
             ok = "any_box" if inside(tok, ("current", "superseded")) else None
-        elif in_cur:
+        elif in_cur[tok]:
             ok = "current_box"
         elif verdict == "conflict" and inside(tok, ("superseded",)):
             ok = "superseded_box"
         elif in_claim and verdict == "conflict":
             ok = "claim_value"          # the contradicted value; a consistent verdict must box every quote
+        elif real_evidence and near_box(tok) and not inside(tok, ("superseded",)):
+            # context printed on the current crop just outside a box (a note's heading, the neighbouring tag), once
+            # the verdict already has real boxed evidence; a word far from every box is not context. Dev v3 live misses: both judges right, one also quoted
+            # "FIRE ALARM SCOPE GENERAL NOTES:" above its boxed note. Never evidence: the dimension, answer and
+            # claim-identifier checks use current_box only. A word boxed on the superseded image is old-sheet
+            # evidence, not context.
+            ok = "crop_word"
         else:
             ok = None
         if ok is None:
@@ -189,9 +215,6 @@ def grounding_report(out, crops, claim=""):
             problems.append(f"quoted word {tok!r} is not {where}")
         else:
             accepted[tok] = ok
-        # A consistent verdict is proven by the claim's own words sitting in a current box ("WC-2" on P101).
-        # A conflict must point at the contradicting word (WC-3), so a quote copied from the claim does not count.
-        real_evidence |= in_cur and (verdict == "consistent" or not in_claim)
     if verdict != "unclear":
         if not quoted or not any(img == "current" for img, _ in boxes):
             problems.append("a conflict/consistent verdict needs at least one quoted word and one evidence box "

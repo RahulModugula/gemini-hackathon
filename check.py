@@ -27,6 +27,7 @@ PROMPT = HERE / "studio/prompts/judge_v0.md"
 ANSWER_PROMPT = HERE / "studio/prompts/answer_v0.md"
 SCHEMA = HERE / "studio/prompts/judge.schema.json"
 HALF_PT, DPI, K = 260, 200, 3
+DOMINANT_HIT = 2.0      # search score ratio (top hit vs runner-up) that keeps the top hit among the candidates
 
 
 def _pdf_path(rel):
@@ -56,6 +57,53 @@ def _inside(words, rect):
 def crop_rect(bbox, width, height, half=HALF_PT):
     cx, cy = (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
     return [max(0.0, cx - half), max(0.0, cy - half), min(float(width), cx + half), min(float(height), cy + half)]
+
+
+ROW_GAP, ROW_MAX_W, ROW_PAD, ROW_MIN_WORDS = 400.0, 1700.0, 20.0, 5
+
+
+def row_span(bbox, words, gap=ROW_GAP):
+    """(x0, x1) of the text row the hit sits on: words in the hit's y-band that belong to the same PDF text block as
+    the hit's own words, chained outward from the hit while the horizontal gap between neighbours is at most `gap`
+    pt. A schedule (door, fixture, finish) or a note is one text block whose rows run far wider than one crop; plan
+    labels are separate small blocks, so a tag on a plan is not widened. None when nothing qualifies."""
+    y0, y1 = bbox[1] - 1.0, bbox[3] + 1.0
+    band = [w for w in words if y0 <= (w["bbox"][1] + w["bbox"][3]) / 2 <= y1]
+    own = {w.get("block") for w in band if w["bbox"][0] < bbox[2] and w["bbox"][2] > bbox[0]}
+    per = Counter(w.get("block") for w in band if w.get("block") in own)
+    own = {b for b, n in per.items() if n >= ROW_MIN_WORDS}   # a plan label (FLEX 109, WC-3) is not a text row
+    mine = [w for w in band if w.get("block") in own]
+    # schedule columns can be separate blocks: a word on exactly the same baseline and height as one of ours joins
+    lines = {(round(w["bbox"][1] * 2), round(w["bbox"][3] * 2)) for w in mine}
+    row = sorted((w["bbox"][0], w["bbox"][2]) for w in band
+                 if w.get("block") in own or (round(w["bbox"][1] * 2), round(w["bbox"][3] * 2)) in lines)
+    if not row:
+        return None
+    lo, hi = bbox[0], bbox[2]
+    for a, b in row:                       # sorted by left edge: extend right
+        if a <= hi + gap and b > hi:
+            hi = b
+    for a, b in sorted(row, key=lambda r: -r[1]):     # by right edge, descending: extend left
+        if b >= lo - gap and a < lo:
+            lo = a
+    return lo, hi
+
+
+def hit_rect(bbox, width, height, words, half=HALF_PT):
+    """crop_rect around a hit, widened horizontally (never narrowed) to cover the hit's text row, at most ROW_MAX_W
+    pt wide. Live misses (dev v3): door / fixture / plumbing schedule rows and note lines were cut off at the crop
+    edge, so both judges answered "unclear: the size / manufacturer column is cut off"."""
+    rect = crop_rect(bbox, width, height, half)
+    span = row_span(bbox, words)
+    if span is None:
+        return rect
+    x0, x1 = min(rect[0], span[0] - ROW_PAD), max(rect[2], span[1] + ROW_PAD)
+    if x1 - x0 > ROW_MAX_W:
+        # keep the hit and the row's start (a schedule keys each row in its left column: door / fixture tag),
+        # trim the right end
+        x0 = max(x0, bbox[2] + ROW_PAD - ROW_MAX_W)
+        x1 = x0 + ROW_MAX_W
+    return [max(0.0, x0), rect[1], min(float(width), x1), rect[3]]
 
 
 def _norm_tokens(text):
@@ -141,18 +189,26 @@ def _centre_x(rect):
     return (rect[0] + rect[2]) / 2
 
 
-def best_crop_on(claim, query, sheet, sheets, src, rows, allow_title):
-    """Best crop on one sheet: hits are ranked by the claim's identifiers (105A, WC-2) found in their crop, then by
-    search order. A crop centred in the title-block strip is skipped unless the claim is about the title block."""
+def best_crop_on(claim, query, sheet, sheets, src, rows, allow_title, content=False):
+    """Best crop on one sheet: hits are ranked by the claim's identifiers (105A, WC-2) found in their crop, then (with
+    `content`) by how many of the claim's content words the crop holds, then by search order. A crop centred in the
+    title-block strip is skipped unless the claim is about the title block."""
     s, best = sheets[sheet], None
     for i, h in enumerate(hits_on(query, sheet)):
-        c = _crop(sheet, crop_rect(h["bbox"], s["width"], s["height"]), sheets, src, rows)
+        c = _crop(sheet, hit_rect(h["bbox"], s["width"], s["height"], _words(sheet)), sheets, src, rows)
         if not allow_title and in_title_strip(_centre_x(c["rect"]), s["width"]):
             continue
         sc = _score(claim, c, i, allow_title, superseded_twin(c, sheets, src, rows))
+        if content:
+            sc = sc[:2] + (_content_hits(claim, c),) + sc[2:]
         if best is None or sc > best[0]:
             best = (sc, c)
     return best[1] if best else None
+
+
+def _content_hits(claim, crop):
+    """How many of the claim's content words (3+ characters, not stop words) the crop holds."""
+    return len({t for t in _norm_tokens(claim) if len(t) > 2 and t not in search.STOP} & _tokens(crop))
 
 
 def _tokens(crop):
@@ -211,17 +267,31 @@ def candidates(claim, sheets, src, rows, n=2, k=4, hints=None):
         if rows.get(sid, {}).get("current") is False and h.get("superseded_by") in sheets:
             sid = h["superseded_by"]           # judge the current version, at the hit's rect
         s = sheets[sid]
-        c = _crop(sid, crop_rect(h["bbox"], s["width"], s["height"]), sheets, src, rows)
+        c = _crop(sid, hit_rect(h["bbox"], s["width"], s["height"], _words(sid)), sheets, src, rows)
         if not title and in_title_strip(_centre_x(c["rect"]), s["width"]):
             c = best_crop_on(idclaim, query, sid, sheets, src, rows, False)
             if c is None:
                 continue
+        if not title:
+            # the sheet's best hit can be a bare tag (D07 on the plan) while the keynote legend that defines it, on
+            # the same sheet, holds the same identifiers AND the claim's words: prefer that crop
+            alt = best_crop_on(idclaim, query, sid, sheets, src, rows, False, content=True)
+            if alt is not None and _score(idclaim, alt, i)[:2] >= _score(idclaim, c, i)[:2] \
+                    and _content_hits(idclaim, alt) > _content_hits(idclaim, c):
+                c = alt
         scored.append((_score(idclaim, c, i, title, superseded_twin(c, sheets, src, rows)), c))
     seen, out = set(), []
     for _, c in sorted(scored, key=lambda t: t[0], reverse=True):
         if c["sheet"] not in seen:
             seen.add(c["sheet"])
             out.append(c)
+    # A search hit that beats the runner-up by DOMINANT_HIT x keeps a slot: identifier re-ranking counts the claim's
+    # numbers, and a stale claim's number is the wrong one ("250 feet" where G002 prints 200), so sheets that merely
+    # print 250 elsewhere outranked the code summary itself.
+    top = next((c for sc, c in scored if sc[2] == 0), None)
+    if (n >= 2 and top is not None and len(hits) > 1 and hits[0]["score"] >= DOMINANT_HIT * hits[1]["score"]
+            and top["sheet"] not in {c["sheet"] for c in out[:n]}):
+        out = out[:n - 1] + [top]
     return out[:n], notes
 
 
