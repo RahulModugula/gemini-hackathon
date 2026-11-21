@@ -111,11 +111,21 @@ def dimension_check(claim, quoted_words):
 
 
 # ---- code checks ---------------------------------------------------------------------------------
-def grounding(out, crops):
-    """Every evidence box covers PDF words; every quoted word sits inside some evidence box. A conflict/consistent
-    verdict must be grounded on the CURRENT image: at least one current box, and every quote inside a current box
-    (the superseded image only explains what changed)."""
-    problems, boxes = [], []
+def _alnum(s):
+    return "".join(c for c in s.lower() if c.isalnum())
+
+
+def grounding_report(out, crops, claim=""):
+    """-> (problems, accepted). `accepted` maps each quoted token to the rule that accepted it.
+    Every evidence box must cover PDF words. Quoted words (tokens) are accepted by rule:
+      current_box     inside a box on the current image
+      superseded_box  inside a box on the superseded image (conflict verdicts only; it explains what changed)
+      claim_value     (conflict or consistent) the word is in the claim text: for a conflict it is the contradicted
+                      value, not evidence; consistent verdicts may repeat the claim's words too
+    and a conflict/consistent verdict must also have real evidence: at least one current box containing at least
+    one quoted word that was NOT merely copied from the claim. An unclear verdict needs only that quotes sit in
+    some box."""
+    problems, boxes, accepted = [], [], {}
     for i, ev in enumerate(out.get("evidence") or []):
         if not isinstance(ev, dict):
             problems.append(f"evidence[{i}] is not an object")
@@ -128,22 +138,47 @@ def grounding(out, crops):
         boxes.append((ev["image"], pt))
         if not any(_share_inside(w["bbox"], pt) >= OVERLAP_MIN for w in crop["words"]):
             problems.append(f"evidence[{i}] box on the {ev['image']} crop covers no PDF words")
+    verdict = out.get("verdict")
     quoted = [q for q in (out.get("quoted_words") or []) if isinstance(q, str) and q.strip()]
-    strict = out.get("verdict") != "unclear"
-    if strict:
-        boxes_for_quotes = [(img, pt) for img, pt in boxes if img == "current"]
-        if not quoted or not boxes_for_quotes:
+    claim_tokens = {_alnum(t) for t in claim.split()} - {""}
+
+    def inside(token, images):
+        return any(_norm(w["text"]) == _norm(token) and _share_inside(w["bbox"], pt) >= OVERLAP_MIN
+                   for img, pt in boxes if img in images for w in crops[img]["words"])
+
+    real_evidence = False
+    for tok in dict.fromkeys(t for q in quoted for t in q.split()):
+        in_claim = _alnum(tok) in claim_tokens
+        in_cur = inside(tok, ("current",))
+        if verdict == "unclear":
+            ok = "any_box" if inside(tok, ("current", "superseded")) else None
+        elif in_cur:
+            ok = "current_box"
+        elif verdict == "conflict" and inside(tok, ("superseded",)):
+            ok = "superseded_box"
+        elif in_claim:
+            ok = "claim_value"
+        else:
+            ok = None
+        if ok is None:
+            where = "inside any evidence box" if verdict == "unclear" else (
+                "inside a current evidence box" + (" or a superseded one, or in the claim" if verdict == "conflict"
+                                                   else " or in the claim"))
+            problems.append(f"quoted word {tok!r} is not {where}")
+        else:
+            accepted[tok] = ok
+        real_evidence |= in_cur and not in_claim
+    if verdict != "unclear":
+        if not quoted or not any(img == "current" for img, _ in boxes):
             problems.append("a conflict/consistent verdict needs at least one quoted word and one evidence box "
                             "on the current sheet")
-    else:
-        boxes_for_quotes = boxes
-    for q in quoted:
-        for tok in q.split():
-            hit = any(_norm(w["text"]) == _norm(tok) and _share_inside(w["bbox"], pt) >= OVERLAP_MIN
-                      for img, pt in boxes_for_quotes for w in crops[img]["words"])
-            if not hit:
-                problems.append(f"quoted word {tok!r} is not inside any {'current ' if strict else ''}evidence box")
-    return problems
+        elif not real_evidence:
+            problems.append("no current evidence box contains a quoted word that is not just copied from the claim")
+    return problems, accepted
+
+
+def grounding(out, crops, claim=""):
+    return grounding_report(out, crops, claim)[0]
 
 
 def currency(sheets, rows):
@@ -221,9 +256,14 @@ def verify(claim, ctx):
         notes.append(f"judges disagree ({a['verdict']} vs {b['verdict']})")
         conf = min(conf, MODEL_CAP)
 
-    probs = [f"{n}: {p}" for n, o in ((ctx["judge"], a), (ctx["second"], b)) for p in grounding(o, crops)]
-    checks.append({"by": "code", "check": "grounding", "pass": not probs,
-                   "detail": "; ".join(probs) or "all boxes cover words and all quotes are inside boxes"})
+    probs, acc = [], {}
+    for n, o in ((ctx["judge"], a), (ctx["second"], b)):
+        pr, ac = grounding_report(o, crops, claim)
+        probs += [f"{n}: {p}" for p in pr]
+        acc[n] = ac
+    rules = "; ".join(f"{n} accepted {dict(ac)}" for n, ac in acc.items() if ac)
+    checks.append({"by": "code", "check": "grounding", "pass": not probs, "accepted": acc,
+                   "detail": "; ".join(probs) or ("all boxes cover words and all quotes are grounded" + (f" ({rules})" if rules else ""))})
     hard_fail |= bool(probs)
 
     probs2 = currency([crops["current"]["sheet"]], ctx["rows"])
