@@ -547,3 +547,38 @@ def test_progress_callback_order_and_judge_threads(monkeypatch, world):
         assert ev.index(("judge_a", "done")) < g and ev.index(("judge_b", "done")) < g
         assert ev[-4:] == [("grounding", "start"), ("grounding", "done"), ("revision", "start"), ("revision", "done")]
     assert card["verdict"] == "conflict"
+
+
+# ---- coverage fixes: stale claims on A900 list entries; E200 room tag ----------------------------------
+@pytest.mark.parametrize("room,old,new", [("103", '19"', '18"'), ("102", '15"', '18"')])
+def test_stale_list_entry_claim_picks_the_list_not_the_room_label(world, room, old, new):
+    """A900: 'TWOS 103 - 01' (a lower-right drawing label) ties the sink-height list on the room number; the list
+    entry holds the OLD value only on the superseded sheet, so the twin must count when ranking hits."""
+    sheets, src, rows = world["sheets"], world["src"], world["rows"]
+    claim = f'On A900, the list entry for room {room} is {old}.'
+    cands, _ = check.candidates(claim, sheets, src, rows)
+    c = cands[0]
+    assert c["sheet"] == "add1-p013"
+    texts = {w["text"] for w in c["words"]}
+    assert "RIM" in texts and new in texts and "HEIGHTS:" in texts, (c["rect"], sorted(texts)[:20])
+    twin = check.superseded_twin(c, sheets, src, rows)
+    assert old in {w["text"] for w in twin["words"]}
+
+
+def test_score_counts_twin_tokens_but_prefers_current():
+    crop = {"words": [{"text": "103"}]}
+    twin = {"words": [{"text": '19"'}]}
+    claim = 'room 103 is 19"'
+    assert check._score(claim, crop, 5, twin=twin) > check._score(claim, crop, 0)
+    assert check._score(claim, crop, 0, twin=twin)[:2] == (2, 1)
+
+
+def test_dev_05c_recorded_judge_output_is_grounded(world):
+    """E200 'tag at room 109 reads A-36': both judges said consistent; their recorded boxes must ground."""
+    sheets, src, rows = world["sheets"], world["src"], world["rows"]
+    claim = "On E200, the tag at room 109 reads A-36."
+    c = check.candidates(claim, sheets, src, rows)[0][0]
+    out = {"verdict": "consistent", "confidence": 0.92, "quoted_words": ["FLEX", "109", "A-36", "TP,", '60"AFF'],
+           "evidence": [{"image": "current", "box_2d": [814, 0, 860, 64]}, {"image": "current", "box_2d": [678, 198, 735, 284]}]}
+    probs, acc = verify.grounding_report(out, {"current": c}, claim)
+    assert probs == [] and acc["A-36"] == "current_box"
