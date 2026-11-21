@@ -15,6 +15,7 @@ from pathlib import Path
 import pymupdf
 
 import llm
+import rooms
 import search
 import verify
 from roles import ROLES, THINKING
@@ -278,6 +279,17 @@ def build_parts(claim, crops, extra_images=None):
     return parts
 
 
+def _room_geometry(claim, crop):
+    """Room geometry of the crop's sheet when the claim names a room number (105A); None otherwise or when the
+    extraction fails, so the spatial check is simply skipped. Runs in the main thread (pymupdf is not thread-safe)."""
+    if not rooms.claim_room_tokens(claim):
+        return None
+    try:
+        return rooms.sheet_rooms(crop["sheet"], build=BUILD)
+    except Exception:
+        return None
+
+
 def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema, progress=None, extra_images=None):
     crops = {"current": cur}
     if cur.get("twin"):
@@ -320,6 +332,7 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
         render(c, src)
         twin = superseded_twin(c, sheets, src, rows)
         c["twin"] = render(twin, src) if twin else None
+        c["rooms"] = _room_geometry(claim, c)
     emit("crop", "done", superseded=any(c["twin"] for c in cands))
 
     def per_cand(i, c):
@@ -341,6 +354,10 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
     # Only boxes on the current sheet are evidence; the superseded image only explains what changed.
     card["evidence"] = [{"sheet": cur["sheet"], "revision": cur["revision"], "bbox": [round(v, 2) for v in e["bbox"]],
                          "sheet_number": cur["sheet_number"], "crop": cur["path"], "crop_rect_pt": [round(v, 1) for v in cur["rect"]], "label": e["label"]} for e in res["evidence"] if e["image"] == "current"]
+    room = next((c.get("room") for c in card["checks"] if c.get("check") == "spatial"), None)
+    if room:        # the room region in crop 0-1000 coordinates, so the UI can highlight it
+        for e in card["evidence"]:
+            e["room"] = {"number": room["number"], "name": room["name"], "room_box_2d": room["room_box_2d"]}
     return card
 
 
