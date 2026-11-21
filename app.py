@@ -310,10 +310,19 @@ REPLAY_STEPS = ("search", "crop", "judge_a", "judge_b", "grounding", "revision")
 
 
 def _replay_events(card):
-    """The same event shapes as a live run, each step flagged replay=True with t=0: nothing was re-run."""
-    for st in REPLAY_STEPS:
-        for status in ("start", "done"):
-            yield _sse("step", {"step": st, "status": status, "t": 0.0, "replay": True})
+    """The same event shapes and order as a live run (both judges start before either finishes), each step flagged
+    replay=True with t=0: nothing was re-run. Judge events carry the recorded card's model and verdict when known."""
+    js = [k for k in card.get("checks") or [] if k.get("by") and k.get("by") != "code" and k.get("verdict")]
+    judge = {st: ({"model": js[i]["by"], "verdict": js[i]["verdict"]} if i < len(js) else {})
+             for i, st in enumerate(("judge_a", "judge_b"))}
+    order = [("search", "start"), ("search", "done"), ("crop", "start"), ("crop", "done"),
+             ("judge_a", "start"), ("judge_b", "start"), ("judge_a", "done"), ("judge_b", "done"),
+             ("grounding", "start"), ("grounding", "done"), ("revision", "start"), ("revision", "done")]
+    for st, status in order:
+        extra = {"model": judge[st]["model"]} if st in judge and judge[st] else {}
+        if status == "done" and st in judge and judge[st]:
+            extra["verdict"] = judge[st]["verdict"]
+        yield _sse("step", {"step": st, "status": status, "t": 0.0, "replay": True, **extra})
     yield _sse("step", {"step": "sealed", "status": "done", "t": 0.0, "replay": True, "seal": card.get("seal")})
     yield _sse("card", card)
 
