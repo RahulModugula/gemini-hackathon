@@ -1,0 +1,1220 @@
+[
+ {
+  "id": "ho3-01",
+  "claim": "Who hires the reinforcing bar inspection agency? The structural general notes say the owner does.",
+  "expected": "consistent",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": "OWNER",
+  "bbox_pt": [
+   854,
+   80,
+   1130,
+   114
+  ],
+  "evidence_tokens": [
+   "OWNER",
+   "SHALL",
+   "ENGAGE",
+   "INSPECTION"
+  ],
+  "provenance": "label consistent: read on dwg-p029 (S900): Reinforced concrete inspection note: OWNER SHALL ENGAGE AN INSPECTION SERVICE for all reinforcing bar inspections.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-02",
+  "claim": "The structural notes only require notifying the architect, structural engineer and rebar inspector 3 days before a concrete pour.",
+  "expected": "conflict",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": "7",
+  "bbox_pt": [
+   878,
+   186,
+   1125,
+   208
+  ],
+  "evidence_tokens": [
+   "7",
+   "DAYS",
+   "PRIOR",
+   "POUR."
+  ],
+  "provenance": "label conflict: read on dwg-p029 (S900): Notice period is AT LEAST 7 DAYS PRIOR TO CONCRETE POUR, not 3.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-03",
+  "claim": "Only 2-cell block is allowed for the reinforced masonry.",
+  "expected": "consistent",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": "ONLY",
+  "bbox_pt": [
+   860,
+   1800,
+   1140,
+   1836
+  ],
+  "evidence_tokens": [
+   "ONLY",
+   "2-CELL",
+   "BLOCK",
+   "ALLOWED"
+  ],
+  "provenance": "label consistent: read on dwg-p029 (S900): Masonry note: ONLY 2-CELL BLOCK IS ALLOWED FOR REINFORCED MASONRY CONSTRUCTION.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-04",
+  "claim": "Masonry cleanouts in the bottom course are only needed when the grout pour height exceeds 8 feet.",
+  "expected": "conflict",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": "CLEANOUTS",
+  "bbox_pt": [
+   860,
+   1726,
+   1135,
+   1760
+  ],
+  "evidence_tokens": [
+   "CLEANOUTS",
+   "EXCEEDS",
+   "5",
+   "FEET"
+  ],
+  "provenance": "label conflict: read on dwg-p029 (S900): Cleanout trigger is a pour height exceeding 5 FEET, not 8.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-05",
+  "claim": "No backfill can go against the walls until cylinder tests show the concrete has reached 2000 psi.",
+  "expected": "conflict",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": "BACKFILL",
+  "bbox_pt": [
+   860,
+   1078,
+   1148,
+   1100
+  ],
+  "evidence_tokens": [
+   "BACKFILL",
+   "MINIMUM",
+   "COMPRESSIVE",
+   "3000",
+   "PSI."
+  ],
+  "provenance": "label conflict: read on dwg-p029 (S900): Test-cylinder note requires a minimum 3000 PSI before backfill, not 2000.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-06",
+  "claim": "Concrete slabs are finished to a specified overall flatness of FF 35 and levelness of FL 25.",
+  "expected": "consistent",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": "FLATNESS,",
+  "bbox_pt": [
+   860,
+   934,
+   1130,
+   976
+  ],
+  "evidence_tokens": [
+   "FLATNESS,",
+   "LEVELNESS,",
+   "35;",
+   "25;"
+  ],
+  "provenance": "label consistent: read on dwg-p029 (S900): Slab tolerance note: overall FF 35 and FL 25 (min local 20 and 15).",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-07",
+  "claim": "The notes say bond beam lintels bear a minimum of 12 inches at each end.",
+  "expected": "conflict",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": "BEAR",
+  "bbox_pt": [
+   860,
+   1490,
+   1125,
+   1516
+  ],
+  "evidence_tokens": [
+   "BEAR",
+   "MINIMUM",
+   "EACH",
+   "END."
+  ],
+  "provenance": "label conflict: read on dwg-p029 (S900): Bond beam lintels BEAR A MINIMUM OF 8\" AT EACH END.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-08",
+  "claim": "The structural masonry notes name Hohmann & Barnard as the joint reinforcement supplier.",
+  "expected": "unclear",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   854,
+   1380,
+   1150,
+   1990
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Joint reinforcement note says only 'such as DUR-O-WALL'; no Hohmann & Barnard on any sheet. Token ['Hohmann'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Hohmann"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-09",
+  "claim": "Per the structural general notes the reinforcing bars are supplied by Nucor.",
+  "expected": "unclear",
+  "sheet_number": "S900",
+  "current_sheet": "dwg-p029",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   854,
+   40,
+   1150,
+   700
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Concrete notes cover rebar inspection and shop drawings but name no steel supplier; Nucor on no sheet. Token ['Nucor'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Nucor"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-10",
+  "claim": "The new shelter ceiling slab is an 8 inch cast-in-place slab bearing on CMU walls.",
+  "expected": "consistent",
+  "sheet_number": "S200",
+  "current_sheet": "dwg-p027",
+  "superseded_sheet": null,
+  "anchor": "CAST-IN-PLACE",
+  "bbox_pt": [
+   937,
+   560,
+   1292,
+   634
+  ],
+  "evidence_tokens": [
+   "CAST-IN-PLACE",
+   "CEILING",
+   "SLAB",
+   "CMU",
+   "AFF,"
+  ],
+  "provenance": "label consistent: read on dwg-p027 (S200): S200 keyed note: 8\" CAST-IN-PLACE CEILING SLAB BEARING ON CMU WALLS.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-11",
+  "claim": "The shelter's new CMU walls are reinforced with (2) #5 bars at 16 inches on center.",
+  "expected": "conflict",
+  "sheet_number": "S200",
+  "current_sheet": "dwg-p027",
+  "superseded_sheet": null,
+  "anchor": "SOLID",
+  "bbox_pt": [
+   937,
+   642,
+   1290,
+   670
+  ],
+  "evidence_tokens": [
+   "SOLID",
+   "GROUTED",
+   "24\"",
+   "FULL"
+  ],
+  "provenance": "label conflict: read on dwg-p027 (S200): New CMU wall note: (2) #5 @ 24\" o/c for the full height.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-12",
+  "claim": "On the shelter plan no masonry opening may be wider than 4'-0\".",
+  "expected": "consistent",
+  "sheet_number": "S200",
+  "current_sheet": "dwg-p027",
+  "superseded_sheet": null,
+  "anchor": "MASONRY",
+  "bbox_pt": [
+   942,
+   730,
+   1290,
+   758
+  ],
+  "evidence_tokens": [
+   "MASONRY",
+   "OPENINGS",
+   "EXCEED",
+   "WIDTH."
+  ],
+  "provenance": "label consistent: read on dwg-p027 (S200): Keyed note 4: ALL MASONRY OPENINGS SHALL NOT EXCEED 4'-0\" WIDTH.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-13",
+  "claim": "The existing slab on grade is replaced with a new 5 inch slab inside the shelter and a 4 inch slab outside it.",
+  "expected": "consistent",
+  "sheet_number": "S200",
+  "current_sheet": "dwg-p027",
+  "superseded_sheet": null,
+  "anchor": "REPLACE",
+  "bbox_pt": [
+   309,
+   584,
+   665,
+   622
+  ],
+  "evidence_tokens": [
+   "REPLACE",
+   "NEW",
+   "5\"",
+   "SLAB",
+   "4\""
+  ],
+  "provenance": "label consistent: read on dwg-p027 (S200): Plan note: new 5\" slab inside shelter, new 4\" slab outside to match existing.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-14",
+  "claim": "What brand are the storm shelter door frames? The structural plan calls them Ceco.",
+  "expected": "unclear",
+  "sheet_number": "S200",
+  "current_sheet": "dwg-p027",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   930,
+   560,
+   1292,
+   830
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: S200 keyed notes give door openings 'for concept only' and name no door or frame maker; Ceco on no sheet. Token ['Ceco'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Ceco"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-15",
+  "claim": "General note 6 on the mechanical sheet says roof curbs must be at least 8 inches above the roofing insulation.",
+  "expected": "consistent",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": "ROOF",
+  "bbox_pt": [
+   2124,
+   388,
+   2570,
+   432
+  ],
+  "evidence_tokens": [
+   "ROOF",
+   "CURB",
+   "8\"",
+   "INSULATION"
+  ],
+  "provenance": "label consistent: read on dwg-p036 (M000): M000 general note 6: curb a MINIMUM OF 8\" ABOVE THE INSULATION.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-16",
+  "claim": "Test and balance must set HVAC systems within plus or minus 10 percent of the design flow.",
+  "expected": "conflict",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": "PLUS",
+  "bbox_pt": [
+   2142,
+   776,
+   2440,
+   790
+  ],
+  "evidence_tokens": [
+   "PLUS",
+   "OR",
+   "MINUS",
+   "5",
+   "PERCENT"
+  ],
+  "provenance": "label conflict: read on dwg-p036 (M000): M000 note 13.B: PLUS OR MINUS 5 PERCENT.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-17",
+  "claim": "Wall mounted thermostats are mounted no higher than 48 inches and no lower than 40 inches AFF.",
+  "expected": "consistent",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": "THERMOSTATS,",
+  "bbox_pt": [
+   2124,
+   1006,
+   2560,
+   1038
+  ],
+  "evidence_tokens": [
+   "THERMOSTATS,",
+   "48",
+   "40",
+   "AFF"
+  ],
+  "provenance": "label consistent: read on dwg-p036 (M000): M000 note 16: NOT MORE THAN 48 INCHES AFF OR LESS THAN 40 INCHES AFF.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-18",
+  "claim": "HVAC condensate piping needs an air gap above the flood rim of at least one times the effective opening of the pipe.",
+  "expected": "conflict",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": "AIR",
+  "bbox_pt": [
+   2124,
+   1044,
+   2568,
+   1068
+  ],
+  "evidence_tokens": [
+   "AIR",
+   "GAP",
+   "TWO",
+   "TIMES"
+  ],
+  "provenance": "label conflict: read on dwg-p036 (M000): M000 note 17: air gap NOT LESS THAN TWO TIMES the effective opening.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-19",
+  "claim": "General ductwork is built from G60 galvanized sheet steel per the mechanical general notes.",
+  "expected": "conflict",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": "G90",
+  "bbox_pt": [
+   2124,
+   1145,
+   2570,
+   1166
+  ],
+  "evidence_tokens": [
+   "G90",
+   "HOT-DIPPED",
+   "GALVANIZED"
+  ],
+  "provenance": "label conflict: read on dwg-p036 (M000): M000 note 20: NEW G90 HOT-DIPPED GALVANIZED SHEET.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-20",
+  "claim": "Per the mechanical narrative the kitchen gets a new heating and cooling make-up air unit.",
+  "expected": "conflict",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": "NEW",
+  "bbox_pt": [
+   1807,
+   1718,
+   2115,
+   1750
+  ],
+  "evidence_tokens": [
+   "NEW",
+   "HEATING",
+   "ONLY",
+   "MAKE-UP"
+  ],
+  "provenance": "label conflict: read on dwg-p036 (M000): Narrative: A NEW HEATING ONLY MAKE-UP AIR UNIT.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-21",
+  "claim": "The mechanical description has two existing units removed and relocated, with the clothes dryer vent terminating through the roof.",
+  "expected": "consistent",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": "TWO",
+  "bbox_pt": [
+   1807,
+   1688,
+   2125,
+   1730
+  ],
+  "evidence_tokens": [
+   "TWO",
+   "UNITS",
+   "REMOVED",
+   "RELOCATED.",
+   "DRYER"
+  ],
+  "provenance": "label consistent: read on dwg-p036 (M000): Narrative: TWO UNITS WILL BE REMOVED AND RELOCATED; CLOTHES DRYER VENT TO TERMINATE THROUGH ROOF.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-22",
+  "claim": "The mechanical notes require Ductmate duct connectors on all rectangular ductwork.",
+  "expected": "unclear",
+  "sheet_number": "M000",
+  "current_sheet": "dwg-p036",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   2124,
+   1145,
+   2570,
+   1170
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Note 20 says only SMACNA gauge and reinforcement; no connector maker, Ductmate on no sheet. Token ['Ductmate'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Ductmate"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-23",
+  "claim": "Relief hood H-6 on the hood schedule is a Greenheck FGR-24X24 at 1850 CFM.",
+  "expected": "consistent",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": "H-6",
+  "bbox_pt": [
+   246,
+   76,
+   1350,
+   88
+  ],
+  "evidence_tokens": [
+   "H-6",
+   "RELIEF",
+   "GREENHECK",
+   "FGR-24X24",
+   "1850"
+  ],
+  "provenance": "label consistent: read on dwg-p043 (ME100): Hood schedule row H-6: RELIEF, F-6, GREENHECK, FGR-24X24, 1850 CFM.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-24",
+  "claim": "Hood H-10, the intake hood, is a Greenheck FGI-24X24 rated for 1200 CFM.",
+  "expected": "conflict",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": "H-10",
+  "bbox_pt": [
+   246,
+   98,
+   1350,
+   110
+  ],
+  "evidence_tokens": [
+   "H-10",
+   "INTAKE",
+   "GREENHECK",
+   "FGI-24X24",
+   "1850"
+  ],
+  "provenance": "label conflict: read on dwg-p043 (ME100): Hood schedule row H-10 is 1850 CFM.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-25",
+  "claim": "The existing DX coil schedule has CC-3 serving existing F-3 as a Trane 4TTR7024A at 800 CFM.",
+  "expected": "consistent",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": "CC-3",
+  "bbox_pt": [
+   1843,
+   97,
+   2700,
+   109
+  ],
+  "evidence_tokens": [
+   "CC-3",
+   "TRANE",
+   "4TTR7024A",
+   "800"
+  ],
+  "provenance": "label consistent: read on dwg-p043 (ME100): DX coil schedule row CC-3: (E) F-3, TRANE, 4TTR7024A, 800 CFM.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-26",
+  "claim": "Existing DX coil CC-6 is a 2 row coil.",
+  "expected": "conflict",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": "CC-6",
+  "bbox_pt": [
+   1843,
+   108,
+   2700,
+   120
+  ],
+  "evidence_tokens": [
+   "CC-6",
+   "4TTR7060A",
+   "4"
+  ],
+  "provenance": "label conflict: read on dwg-p043 (ME100): DX coil schedule row CC-6 has ROWS = 4.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-27",
+  "claim": "On the existing DX coil schedule CC-7 is a Carrier 4TTR7060A serving F-7.",
+  "expected": "conflict",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": "CC-7",
+  "bbox_pt": [
+   1843,
+   120,
+   2700,
+   132
+  ],
+  "evidence_tokens": [
+   "CC-7",
+   "TRANE",
+   "4TTR7060A"
+  ],
+  "provenance": "label conflict: read on dwg-p043 (ME100): Row CC-7 manufacturer is TRANE.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-28",
+  "claim": "The comment on hood H-10 gives it a 12 inch curb and a backdraft damper.",
+  "expected": "conflict",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": "H-10",
+  "bbox_pt": [
+   246,
+   98,
+   1350,
+   156
+  ],
+  "evidence_tokens": [
+   "H-10",
+   "2",
+   "24\"",
+   "MOTORIZED"
+  ],
+  "provenance": "label conflict: read on dwg-p043 (ME100): H-10 comments column is note 2: 24\" CURB, MOTORIZED DAMPER, INSECT SCREEN.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-29",
+  "claim": "The relief hoods on the hood schedule are Loren Cook units.",
+  "expected": "unclear",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   246,
+   28,
+   1400,
+   160
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: All hood rows are Greenheck; Loren Cook on no sheet. Token ['Loren Cook'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Loren Cook"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-30",
+  "claim": "The DX coils on the existing coil schedule are matched to Lennox condensers.",
+  "expected": "unclear",
+  "sheet_number": "ME100",
+  "current_sheet": "dwg-p043",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   1843,
+   28,
+   2710,
+   230
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Coil schedule lists only Trane; condenser matches not given; Lennox on no sheet. Token ['Lennox'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Lennox"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-31",
+  "claim": "In the kitchen hood grease exhaust fan detail the welded duct runs a minimum of 18 inches above the roof deck.",
+  "expected": "consistent",
+  "sheet_number": "M501",
+  "current_sheet": "dwg-p042",
+  "superseded_sheet": null,
+  "anchor": "WELDED",
+  "bbox_pt": [
+   1239,
+   290,
+   1360,
+   316
+  ],
+  "evidence_tokens": [
+   "WELDED",
+   "DUCT",
+   "MIN.",
+   "ABOVE",
+   "ROOF",
+   "DECK"
+  ],
+  "provenance": "label consistent: read on dwg-p042 (M501): M501 grease exhaust fan detail: WELDED DUCT MIN. OF 18'' ABOVE ROOF DECK.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-32",
+  "claim": "The furnace intake and exhaust through roof detail sets the vent 24 inches plus or minus 1 inch above the air inlet.",
+  "expected": "conflict",
+  "sheet_number": "M501",
+  "current_sheet": "dwg-p042",
+  "superseded_sheet": null,
+  "anchor": "HEIGHT",
+  "bbox_pt": [
+   2279,
+   940,
+   2430,
+   964
+  ],
+  "evidence_tokens": [
+   "HEIGHT",
+   "OF",
+   "VENT",
+   "TO",
+   "BE",
+   "ABOVE",
+   "AIR"
+  ],
+  "provenance": "label conflict: read on dwg-p042 (M501): Furnace detail: 12\"+-1\" above air inlet.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-33",
+  "claim": "The grease exhaust fan in the M501 hood detail is a Captiveaire unit.",
+  "expected": "unclear",
+  "sheet_number": "M501",
+  "current_sheet": "dwg-p042",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   846,
+   150,
+   1400,
+   540
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Detail says UL LISTED FAN & CURB ASSEMBLY, SEE SCHEDULE FOR FAN TYPE; Captiveaire on no sheet. Token ['Captiveaire'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Captiveaire"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-34",
+  "claim": "Per Addendum 1 an untagged wall drawn as gyp board and metal stud is assumed to be wall type A1.",
+  "expected": "consistent",
+  "sheet_number": "A1000",
+  "current_sheet": "add1-p014",
+  "superseded_sheet": "dwg-p022",
+  "anchor": "WALL",
+  "bbox_pt": [
+   2383,
+   96,
+   2740,
+   155
+  ],
+  "evidence_tokens": [
+   "WALL",
+   "\"A1\"",
+   "GYP",
+   "BOARD",
+   "METAL",
+   "STUD,"
+  ],
+  "provenance": "label consistent: read on add1-p014 (A1000): A1000 note: untagged gyp board & metal stud wall assumed TYPE \"A1\".",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-35",
+  "claim": "Wall note C1 puts sound attenuation batt insulation at all classroom walls.",
+  "expected": "conflict",
+  "sheet_number": "A1000",
+  "current_sheet": "add1-p014",
+  "superseded_sheet": "dwg-p022",
+  "anchor": "C1.",
+  "bbox_pt": [
+   2374,
+   522,
+   2710,
+   536
+  ],
+  "evidence_tokens": [
+   "C1.",
+   "SOUND",
+   "ATTENUATION",
+   "BATT",
+   "BATHROOM"
+  ],
+  "provenance": "label conflict: read on add1-p014 (A1000): Note C1: batts at all BATHROOM walls.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-36",
+  "claim": "In the wall legend the non-rated smoke tight corridor partition is priority 13.",
+  "expected": "conflict",
+  "sheet_number": "A1000",
+  "current_sheet": "add1-p014",
+  "superseded_sheet": "dwg-p022",
+  "anchor": "SMOKE",
+  "bbox_pt": [
+   2371,
+   1620,
+   2710,
+   1648
+  ],
+  "evidence_tokens": [
+   "SMOKE",
+   "CORRIDOR",
+   "PARTITION",
+   "14"
+  ],
+  "provenance": "label conflict: read on add1-p014 (A1000): Legend: CORRIDOR PARTITION (SP) PRIORITY 14; PRIORITY 13 is hazardous spaces.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-37",
+  "claim": "The A1000 wall notes specify Hilti firestop sealant at rated wall penetrations.",
+  "expected": "unclear",
+  "sheet_number": "A1000",
+  "current_sheet": "add1-p014",
+  "superseded_sheet": "dwg-p022",
+  "anchor": null,
+  "bbox_pt": [
+   2371,
+   60,
+   2740,
+   570
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: B5 requires UL-listed firestop systems but names no maker; Hilti on no sheet. Token ['Hilti'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Hilti"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-38",
+  "claim": "The demolition notes make the general contractor responsible for removing any asbestos containing materials.",
+  "expected": "conflict",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": "ASBESTOS",
+  "bbox_pt": [
+   2235,
+   628,
+   2716,
+   653
+  ],
+  "evidence_tokens": [
+   "ASBESTOS",
+   "OWNER.",
+   "RESPONSIBILITY"
+  ],
+  "provenance": "label conflict: read on add2-p006 (AD201): Demo note 11: removal of ACM is the OWNER's responsibility.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-39",
+  "claim": "Per Addendum 2, existing fixtures and equipment that are removed remain the property of the owner.",
+  "expected": "consistent",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": "FIXTURES",
+  "bbox_pt": [
+   2253,
+   407,
+   2732,
+   432
+  ],
+  "evidence_tokens": [
+   "FIXTURES",
+   "REMOVED",
+   "PROPERTY",
+   "OWNER,"
+  ],
+  "provenance": "label consistent: read on add2-p006 (AD201): Demo note: removed fixtures remain the property of the owner.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-40",
+  "claim": "Unless noted otherwise the demolition scope leaves only the exterior wall, floor slab, structural frame and roof deck.",
+  "expected": "consistent",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": "EXTERIOR",
+  "bbox_pt": [
+   2235,
+   118,
+   2735,
+   155
+  ],
+  "evidence_tokens": [
+   "EXTERIOR",
+   "WALL,",
+   "FLOOR",
+   "SLAB,",
+   "STRUCTURAL",
+   "FRAME,",
+   "ROOF",
+   "DECK."
+  ],
+  "provenance": "label consistent: read on add2-p006 (AD201): Demo scope note.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-41",
+  "claim": "Removed materials are hauled off the owner's site at the owner's expense.",
+  "expected": "conflict",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": "AT",
+  "bbox_pt": [
+   2253,
+   429,
+   2713,
+   465
+  ],
+  "evidence_tokens": [
+   "AT",
+   "THE",
+   "CONTRACTOR'S",
+   "EXPENSE."
+  ],
+  "provenance": "label conflict: read on add2-p006 (AD201): REMOVE definition: removal from owner's site AT THE CONTRACTOR'S EXPENSE.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-42",
+  "claim": "The general contractor handles interim storage of toilet room accessories, corner guards, bumper guards and fire extinguishers.",
+  "expected": "consistent",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": "INTERIM",
+  "bbox_pt": [
+   2253,
+   372,
+   2732,
+   410
+  ],
+  "evidence_tokens": [
+   "INTERIM",
+   "STORAGE",
+   "CORNER",
+   "GUARDS,",
+   "BUMPER"
+  ],
+  "provenance": "label consistent: read on add2-p006 (AD201): Demo note: GC responsible for interim storage of toilet room accessories, corner guards, bumper guards, fire extinguishers.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-43",
+  "claim": "The demolition notes say the asbestos survey was done by Terracon.",
+  "expected": "unclear",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": null,
+  "bbox_pt": [
+   2235,
+   628,
+   2730,
+   700
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Note 11 mentions ACM but no survey report or firm; Terracon on no sheet. Token ['Terracon'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Terracon"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-44",
+  "claim": "What stop do the hollow metal frames get? A full perimeter removable stop on the secured side of the room.",
+  "expected": "consistent",
+  "sheet_number": "A1001",
+  "current_sheet": "add1-p015",
+  "superseded_sheet": "dwg-p023",
+  "anchor": "HOLLOW",
+  "bbox_pt": [
+   588,
+   826,
+   1075,
+   840
+  ],
+  "evidence_tokens": [
+   "HOLLOW",
+   "METAL",
+   "FRAMES",
+   "REMOVABLE",
+   "STOP",
+   "SECURED"
+  ],
+  "provenance": "label consistent: read on add1-p015 (A1001): A1001 frame note 2.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-45",
+  "claim": "On the window and borrowed lite sheet, borrowed lites include the mirrors in toilet rooms.",
+  "expected": "conflict",
+  "sheet_number": "A1001",
+  "current_sheet": "add1-p015",
+  "superseded_sheet": "dwg-p023",
+  "anchor": "SHALL",
+  "bbox_pt": [
+   588,
+   771,
+   1060,
+   796
+  ],
+  "evidence_tokens": [
+   "SHALL",
+   "NOT",
+   "INCLUDE",
+   "MIRRORS",
+   "TOILET"
+  ],
+  "provenance": "label conflict: read on add1-p015 (A1001): Borrowed lite definition: SHALL NOT INCLUDE MIRRORS IN TOILET ROOMS.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-46",
+  "claim": "The glazing notes name Oldcastle as the curtain wall supplier.",
+  "expected": "unclear",
+  "sheet_number": "A1001",
+  "current_sheet": "add1-p015",
+  "superseded_sheet": "dwg-p023",
+  "anchor": null,
+  "bbox_pt": [
+   600,
+   140,
+   1200,
+   210
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Glazing notes list GL-1..GL-3 only, no supplier; Oldcastle on no sheet. Token ['Oldcastle'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Oldcastle"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-47",
+  "claim": "Per Addendum 2 the exterior and canopy lighting runs off timeclock TC with photocell on and timeclock off, plus daylight sensors.",
+  "expected": "consistent",
+  "sheet_number": "E100",
+  "current_sheet": "add2-p010",
+  "superseded_sheet": "dwg-p048",
+  "anchor": "TIMECLOCK",
+  "bbox_pt": [
+   2413,
+   94,
+   2704,
+   126
+  ],
+  "evidence_tokens": [
+   "TIMECLOCK",
+   "PHOTOCELL",
+   "DAYLIGHT",
+   "SENSORS"
+  ],
+  "provenance": "label consistent: read on add2-p010 (E100): E100 exterior lighting note.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-48",
+  "claim": "One lighting plan note mounts the fixture about 3'-0\" above the top of the door.",
+  "expected": "conflict",
+  "sheet_number": "E100",
+  "current_sheet": "add2-p010",
+  "superseded_sheet": "dwg-p048",
+  "anchor": "1'-6\"",
+  "bbox_pt": [
+   2413,
+   270,
+   2680,
+   283
+  ],
+  "evidence_tokens": [
+   "1'-6\"",
+   "ABOVE",
+   "TOP",
+   "OF",
+   "DOOR."
+  ],
+  "provenance": "label conflict: read on add2-p010 (E100): E100 note: APPROXIMATELY 1'-6\" ABOVE TOP OF DOOR.",
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-49",
+  "claim": "The under counter dishwasher in the kitchen equipment schedule is a Hobart.",
+  "expected": "unclear",
+  "sheet_number": "P102",
+  "current_sheet": "dwg-p035",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   1940,
+   690,
+   2110,
+   800
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Item 14 lists DISHWASHER, UNDER COUNTER, no maker; Hobart on no sheet. Token ['Hobart'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Hobart"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-50",
+  "claim": "Per the landscape plan the 6 foot perimeter fence is an Ameristar product.",
+  "expected": "unclear",
+  "sheet_number": "L1.00",
+  "current_sheet": "dwg-p010",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   1140,
+   310,
+   1330,
+   355
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: L1.00 calls out PERIMETER FENCE (6' HT.) and CHAIN LINK only; no fence maker; Ameristar on no sheet. Token ['Ameristar'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Ameristar"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ },
+ {
+  "id": "ho3-51",
+  "claim": "The grading plan specifies Fibar engineered wood fiber as the playground surfacing.",
+  "expected": "unclear",
+  "sheet_number": "C1.20",
+  "current_sheet": "dwg-p006",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   775,
+   570,
+   900,
+   665
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: Grading plan notes the playground bumper grade only; no surfacing product; Fibar on no sheet. Token ['Fibar'] occurs on no current sheet (checked all current sheets, case-insensitive substring).",
+  "absent_tokens": [
+   "Fibar"
+  ],
+  "kind": "manual",
+  "source": "hand-read v3 heldout (no model calls)"
+ }
+]

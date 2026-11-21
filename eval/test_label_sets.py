@@ -13,12 +13,15 @@ ROOT = Path(__file__).resolve().parent.parent
 EVAL = ROOT / "eval"
 BUILD = ROOT / "build"
 HELDOUT_V1_SHA = "a200c8b4db2702e22704f8d829c862d684c370e0a48fc196806adce9759eaa39"
+HELDOUT_V2_SHA = "3a5559d25516388d6b04dd24cd186ef9f8116c5e82acc5925a47f4e732ef7c6c"
+HELDOUT_V3_SHA = "368fc51cd1753845841500aeb2780d26ed6d6d123a5484a3d1cf341d371a8193"
 LABELS = {"conflict", "consistent", "unclear"}
 REQUIRED = {"id", "claim", "expected", "sheet_number", "current_sheet", "evidence_tokens", "bbox_pt", "provenance"}
 
 DEV = json.loads((EVAL / "dev_v3.json").read_text())
 HO2 = json.loads((EVAL / "heldout_v2.json").read_text())
 HO1 = json.loads((EVAL / "heldout_v1.json").read_text())
+HO3 = json.loads((EVAL / "heldout_v3.json").read_text())
 needs_build = pytest.mark.skipif(not (BUILD / "sheet_index.json").exists(), reason="build/ missing (symlink it)")
 
 
@@ -26,7 +29,7 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-@pytest.mark.parametrize("name,claims", [("dev_v3", DEV), ("heldout_v2", HO2)])
+@pytest.mark.parametrize("name,claims", [("dev_v3", DEV), ("heldout_v2", HO2), ("heldout_v3", HO3)])
 def test_schema_and_labels(name, claims):
     assert isinstance(claims, list) and claims
     for c in claims:
@@ -42,9 +45,9 @@ def test_schema_and_labels(name, claims):
 
 
 def test_ids_and_claims_unique_across_sets():
-    ids = [c["id"] for c in DEV] + [c["id"] for c in HO2] + [c["id"] for c in HO1]
+    ids = [c["id"] for c in DEV + HO2 + HO1 + HO3]
     assert len(ids) == len(set(ids)), [i for i, n in Counter(ids).items() if n > 1]
-    texts = [c["claim"].strip().lower() for c in DEV + HO2 + HO1]
+    texts = [c["claim"].strip().lower() for c in DEV + HO2 + HO1 + HO3]
     assert len(texts) == len(set(texts)), "duplicate claim text across or within sets"
 
 
@@ -56,13 +59,28 @@ def test_heldout_v1_frozen():
 def test_heldout_v2_frozen_and_documented():
     got = sha(EVAL / "heldout_v2.json")
     assert (EVAL / "heldout_v2.sha256").read_text().split()[0] == got, "heldout_v2.json changed after the freeze"
+    assert got == HELDOUT_V2_SHA
     doc = (EVAL / "HELDOUT.md").read_text()
     assert got in doc and HELDOUT_V1_SHA in doc
 
 
+def test_heldout_v3_frozen_and_documented():
+    got = sha(EVAL / "heldout_v3.json")
+    assert got == HELDOUT_V3_SHA, "heldout_v3.json changed after the freeze"
+    assert (EVAL / "heldout_v3.sha256").read_text().split()[0] == got
+    doc = (EVAL / "HELDOUT.md").read_text()
+    assert got in doc and "heldout_v3 (2026-11-21)" in doc
+
+
+def test_heldout_v3_composition():
+    n = Counter(c["expected"] for c in HO3)
+    assert len(HO3) >= 45 and set(n) == LABELS, n
+    assert 0.35 <= n["conflict"] / len(HO3) <= 0.45 and 0.30 <= n["consistent"] / len(HO3) <= 0.40 and 0.20 <= n["unclear"] / len(HO3) <= 0.30, n
+
+
 def test_run_eval_accepts_the_files():
     from eval import run_eval
-    for p in (EVAL / "dev_v3.json", EVAL / "heldout_v2.json"):
+    for p in (EVAL / "dev_v3.json", EVAL / "heldout_v2.json", EVAL / "heldout_v3.json"):
         ok, _ = run_eval.frozen_ok(p)
         assert ok
         for c in json.loads(p.read_text()):
@@ -70,7 +88,7 @@ def test_run_eval_accepts_the_files():
 
 
 def test_label_balance_and_coverage():
-    for claims in (DEV, HO2):
+    for claims in (DEV, HO2, HO3):
         n = Counter(c["expected"] for c in claims)
         assert set(n) == LABELS
         assert min(n.values()) / len(claims) >= 0.2, n
@@ -90,7 +108,7 @@ def test_every_changed_sheet_is_covered_in_dev():
 @needs_build
 def test_sheets_exist_bboxes_in_bounds_and_evidence_on_sheet():
     idx = {r["sheet"]: r for r in json.loads((BUILD / "sheet_index.json").read_text())["rows"]}
-    for c in DEV + HO2:
+    for c in DEV + HO2 + HO3:
         row = idx[c["current_sheet"]]
         assert row["current"], f"{c['id']}: {c['current_sheet']} is not a current sheet"
         assert row["sheet_number"] == c["sheet_number"], c["id"]
@@ -115,7 +133,7 @@ def test_unclear_tokens_absent_from_every_current_sheet():
     idx = json.loads((BUILD / "sheet_index.json").read_text())
     text = " ".join(w["text"].lower() for r in idx["rows"] if r["current"]
                     for w in json.loads((BUILD / f"words/{r['sheet']}.json").read_text())["words"])
-    for c in DEV + HO2:
+    for c in DEV + HO2 + HO3:
         if c["expected"] == "unclear" and not c["id"].startswith("dev_u"):   # dev_uNN are the generator's, checked per sheet there
             for t in c["absent_tokens"]:
                 assert t.lower() not in text, f"{c['id']}: unclear token {t!r} is on a current sheet"
