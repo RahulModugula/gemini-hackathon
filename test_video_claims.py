@@ -80,7 +80,7 @@ def test_call_args_and_shape(fake):
     fake["payload"] = {"claims": [C(), C("Fixture tag WC-2 is legible", "visual", 5, 6, "tag reads WC-2")]}
     out = vc.extract_claims_from_video(mp4(8), "video/mp4")
     assert [c["kind"] for c in out] == ["spoken", "visual"]
-    assert set(out[0]) == {"claim", "kind", "t_start_s", "t_end_s", "quote_or_observation"}
+    assert set(out[0]) == {"claim", "kind", "t_start_s", "t_end_s", "quote_or_observation", "frame_t_s", "frame_box_2d"}
     assert (fake["model"], fake["thinking"], fake["purpose"], fake["schema"]) == (
         "gemini-4-argon", "LOW", "video:claims", vc.SCHEMA)
     part = fake["parts"][0]
@@ -237,7 +237,7 @@ def test_video_happy_path(env, monkeypatch):
     assert r.status_code == 200
     body = r.json()
     assert seen["mime"] == "video/quicktime" and seen["hint"] == "P101" and seen["duration"] == pytest.approx(6)
-    assert set(body) == {"claims", "cards", "video_s"} and body["claims"] == claims and body["video_s"] == 6.0
+    assert set(body) == {"claims", "cards", "video_s", "video_url"} and body["claims"] == claims and body["video_s"] == 6.0
     assert sorted(calls) == ["On P101, Door swings out", "On P101, WC-2 in 105A"]   # hint prefixed
     by = {x["claim"]: x for x in body["cards"]}
     d = by["On P101, Door swings out"]
@@ -252,7 +252,8 @@ def test_video_no_hint_no_prefix_and_empty(env, monkeypatch):
                                               "quote_or_observation": "a"}])
     assert c.post("/api/video", content=mp4(3), headers=H).status_code == 200 and calls == ["A"]
     monkeypatch.setattr(appmod.video_claims, "extract_claims_from_video", lambda d, m, h, du: [])
-    assert c.post("/api/video", content=mp4(3), headers=H).json() == {"claims": [], "cards": [], "video_s": 3.0}
+    r = c.post("/api/video", content=mp4(3), headers=H).json()
+    assert r["claims"] == [] and r["cards"] == [] and r["video_s"] == 3.0 and r["video_url"].startswith("/videos/")
 
 
 def test_video_content_type_size_and_body_errors(env, monkeypatch):

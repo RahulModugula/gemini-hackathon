@@ -65,6 +65,13 @@ main{padding:14px 16px}
 .btag{position:absolute;top:-2px;left:-2px;padding:1px 5px;font-size:11px;font-weight:700;line-height:1.2;color:#fff;background:#8b8d98}
 .bbox.v-conflict .btag{background:#e5484d}
 .bbox.v-consistent .btag{background:#30a46c}
+.evRow{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-bottom:12px}
+.evRow .cropStage{margin-bottom:0;flex:1 1 320px;min-width:0}
+.vidPanel{flex:0 1 340px;min-width:240px;display:flex;flex-direction:column;gap:6px}
+.vidPanel h3{margin:0;font-size:13px;color:#7fb8ff;letter-spacing:.3px}
+.vidPanel .imgWrap{cursor:pointer}
+.vidPanel video{width:100%;max-height:220px;background:#000;border:1px solid #355b8c}
+.vidPanel .txt{font-size:12px;color:#b8d2f2}
 .legend,.checks{list-style:none;padding:0;margin:0 0 12px;display:flex;flex-direction:column;gap:6px}
 .legend li,.checks li{padding:6px 8px;background:#0b1f3a;border:1px solid #355b8c;border-radius:3px;font-size:13px;display:flex;gap:8px;align-items:baseline}
 .lnum{font-weight:700;min-width:18px;color:#7fb8ff}
@@ -94,6 +101,8 @@ main{padding:14px 16px}
     <input id="claimIn" type="text" maxlength="500" placeholder="Say or type a claim" aria-label="Say or type a claim">
     <button id="goBtn" type="button">Check</button>
     <button id="micBtn" type="button" title="Record a claim">Mic</button>
+    <button id="vidBtn" type="button" title="Check a site video">Video</button>
+    <input id="vidIn" type="file" accept="video/mp4,video/quicktime" hidden aria-label="Site video file">
   </div>
   <nav aria-label="Views">
     <button id="tabCards" class="tab act" type="button">Cards</button>
@@ -179,6 +188,21 @@ $('micBtn').onclick=async()=>{
   rec.start();$('micBtn').classList.add('rec');$('micBtn').textContent='Stop';setStatus('recording… click Stop when done');
 };
 
+$('vidBtn').onclick=()=>$('vidIn').click();
+$('vidIn').onchange=async()=>{
+  const f=$('vidIn').files[0];$('vidIn').value='';
+  if(!f)return;
+  const sheet=(prompt('Drawing sheet for this walk (optional, e.g. P101)','')||'').trim();
+  $('vidBtn').disabled=true;setStatus('reading the video and checking each claim…');
+  try{
+    const res=await api('/api/video'+(sheet?'?sheet='+encodeURIComponent(sheet):''),{method:'POST',headers:{'Content-Type':f.type||'video/mp4'},body:f});
+    const n=res.claims.length;
+    setStatus(n?`Found ${n} claim${n>1?'s':''} in ${res.video_s}s of video`:'No checkable claims in the video.');
+    addCards(res.cards);
+  }catch(e){setStatus('Video failed: '+e.message,true);}
+  finally{$('vidBtn').disabled=false;}
+};
+
 function showModal(title,body,note){
   const bg=el('div','modalBg');
   const m=el('div','modal');
@@ -262,6 +286,38 @@ function renderLedger(){
   }
 }
 
+function placeBox(wrap,b,verdict,label){
+  if(!Array.isArray(b)||b.length!==4)return;
+  const cl=v=>Math.max(0,Math.min(1000,Number(v)||0));
+  const y0=cl(Math.min(b[0],b[2])),y1=cl(Math.max(b[0],b[2])),x0=cl(Math.min(b[1],b[3])),x1=cl(Math.max(b[1],b[3]));
+  const bx=el('div','bbox '+vCls(verdict));
+  bx.style.top=(y0/10)+'%';
+  bx.style.left=(x0/10)+'%';
+  bx.style.height=((y1-y0)/10)+'%';
+  bx.style.width=((x1-x0)/10)+'%';
+  bx.append(el('span','btag mono',String(label)));
+  wrap.append(bx);
+}
+const fmtT=t=>{const s=Math.max(0,Math.floor(Number(t)||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+function videoPanel(c){
+  const ve=c.video_evidence;
+  const p=el('div','vidPanel');
+  p.append(el('h3',null,'Site video · '+fmtT(ve.t_s)));
+  const wrap=el('div','imgWrap');
+  const img=el('img');img.src=ve.frame;img.alt='Video frame at '+fmtT(ve.t_s);
+  wrap.append(img);
+  placeBox(wrap,ve.box_2d,c.verdict,'V');
+  p.append(wrap);
+  if(ve.text_read)p.append(el('div','txt mono','read: '+ve.text_read));
+  if(c.video_url){
+    const v=el('video');v.src=c.video_url;v.controls=true;v.preload='metadata';v.muted=true;
+    wrap.title='Click to play the video from '+fmtT(ve.t_s);
+    wrap.onclick=()=>{v.currentTime=Number(ve.t_s)||0;v.play().catch(()=>{});};
+    p.append(v);
+  }
+  return p;
+}
+
 function renderDetail(){
   const d=$('detail');
   d.textContent='';
@@ -312,26 +368,18 @@ function renderDetail(){
     }
     for(const it of items){
       idx++;
-      const b=it.box_2d_on_crop;
-      if(Array.isArray(b)&&b.length===4){
-        const cl=v=>Math.max(0,Math.min(1000,Number(v)||0));
-        const y0=cl(Math.min(b[0],b[2])),y1=cl(Math.max(b[0],b[2])),x0=cl(Math.min(b[1],b[3])),x1=cl(Math.max(b[1],b[3]));
-        const [ymin,xmin,ymax,xmax]=[y0,x0,y1,x1];
-        const bx=el('div','bbox '+vCls(c.verdict));
-        bx.style.top=(ymin/10)+'%';
-        bx.style.left=(xmin/10)+'%';
-        bx.style.height=((ymax-ymin)/10)+'%';
-        bx.style.width=((xmax-xmin)/10)+'%';
-        bx.append(el('span','btag mono',String(idx)));
-        wrap.append(bx);
-      }
+      placeBox(wrap,it.box_2d_on_crop,c.verdict,idx);
       const li=el('li');
       li.append(el('span','lnum mono',String(idx)),el('span',null,it.label||''),el('span','lsheet mono',`(${it.sheet||''})`));
       leg.append(li);
     }
     stage.append(wrap);
   }
-  d.append(stage,leg);
+  if(c.video_evidence&&c.video_evidence.frame){
+    const row=el('div','evRow');
+    row.append(videoPanel(c),stage);
+    d.append(row,leg);
+  }else d.append(stage,leg);
 
   if(Array.isArray(c.checks)&&c.checks.length){
     const ul=el('ul','checks');

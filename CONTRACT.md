@@ -118,3 +118,17 @@ Rules:
 - `rfi_draft` is null when verdict is `consistent`. `status: "blocked"` requires `answered_by`
   pointing at the addendum Q&A that already answers it (ticket 11). Nothing is sent without a human click.
 - Every model call behind a card is logged (model, tokens in/out, latency, cost) — see PLAN review note 3.
+
+## Video cards (`POST /api/video`, feat/video-v2)
+Each card made from a site video also carries (beside the normal drawing `evidence`):
+```json
+{"source": "video", "t_start_s": 5.0, "t_end_s": 9.0, "kind": "spoken | visual",
+ "video_url": "/videos/<sha1>.mp4",
+ "video_evidence": {"frame": "/frames/<20 hex>.jpg", "t_s": 7.0, "box_2d": [ymin, xmin, ymax, xmax] | null,
+                    "kind": "spoken | visual", "text_read": "WC-3"}}      // text_read only for visual claims; null if no frame
+```
+`t_s` is the model's `frame_t_s` (validated into [0, duration], else the middle of the claim's span). `box_2d` is 0-1000
+on the frame, found by a second IMAGE call (boxes are documented for images, not video); null for spoken claims.
+Visual claims also send the boxed frame region to both judges as a field photo (`check(..., extra_images=[...])`);
+verdict semantics and drawing-only evidence boxes are unchanged. `/frames/*` and `/videos/*` serve only
+hash-named files. Follow-up (not adopted): the Gemini "agentic" video processing mode.
