@@ -1,0 +1,162 @@
+[
+ {
+  "id": "ho-arch-01",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "A1100 (add2-p007)",
+  "evidence_words": "WT-1 | Window Treatment | InPro | Manual Cordless Window Shade - CF200 SoloMount with Fascia",
+  "note": "Current manufacturer is InPro, not Mecho. Mecho Rollershade ThermoVeil appeared only on the superseded original dwg-p025. Cordless manual part matches, brand does not."
+ },
+ {
+  "id": "ho-arch-02",
+  "label": "consistent",
+  "confidence": "high",
+  "evidence_sheet": "A1100 (add2-p007)",
+  "evidence_words": "PL-2 | Plastic Laminate | NOT USED",
+  "note": "Schedule row says NOT USED; PL-2 appears nowhere in room finish columns (only PL-1)."
+ },
+ {
+  "id": "ho-arch-03",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "A800 (add1-p012)",
+  "evidence_words": "TODDLERS 102 - 18\" TO RIM",
+  "note": "Sink height list says 18 inches, claim says 15."
+ },
+ {
+  "id": "ho-arch-04",
+  "label": "consistent",
+  "confidence": "high",
+  "evidence_sheet": "A800 (add1-p012)",
+  "evidence_words": "FLEX 109 A/B - 30\" TO RIM",
+  "note": "Matches."
+ },
+ {
+  "id": "ho-arch-05",
+  "label": "consistent",
+  "confidence": "medium",
+  "evidence_sheet": "P100 (add2-p008)",
+  "evidence_words": "3\" SCH. 40 PVC PUMP-OUT DRAIN PIPING; ALTERNATE BID A5 (revision cloud 2)",
+  "note": "Cloud labelled ALTERNATE BID A5 has a leader dot on the pump-out line. Association is by leader/cloud, not an explicit sentence; reasonable reading is consistent."
+ },
+ {
+  "id": "ho-arch-06",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "P001 (add1-p017)",
+  "evidence_words": "FS-1 ... 8\" x 8\" ... ZURN Z-1910-KC-2",
+  "note": "FS-1 is 8x8. The '6\" x 6\" MIN.' belongs to FD-1."
+ },
+ {
+  "id": "ho-arch-07",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "P001 (add1-p017)",
+  "evidence_words": "S-2 ... 18 GA, TYPE 304 SS DOUBLE COMPARTMENT UNDERMOUNT SINK AND GOOSENECK FAUCET",
+  "note": "S-2 is double compartment (S-3 is the single)."
+ },
+ {
+  "id": "ho-arch-08",
+  "label": "consistent",
+  "confidence": "high",
+  "evidence_sheet": "P001 (add1-p017)",
+  "evidence_words": "FD-2 C.I. C.I. 8\" DIA. ZURN Z-556-Y",
+  "note": "8 in dia cast iron body and top, Zurn Z-556-Y. 'Round' is implied by DIA."
+ },
+ {
+  "id": "ho-arch-09",
+  "label": "unclear",
+  "confidence": "medium",
+  "evidence_sheet": "A1100 (add2-p007)",
+  "evidence_words": "SCONC | Sealed Concrete | (manufacturer/product/color blank)",
+  "note": "SCONC row has no manufacturer or product. Consolideck/Prosoco appear in no drawing words file or in the project manual (no sealed concrete product spec found)."
+ },
+ {
+  "id": "ho-arch-10",
+  "label": "ambiguous",
+  "confidence": "low",
+  "evidence_sheet": "A201 (add1-p007); manual 10 44 00 2.2.A",
+  "evidence_words": "A201 only has keynotes for FE cabinets; Spec 10 44 00: multipurpose dry chemical 10 lb, 4A 80BC, mfrs JL Industries, Larsen's, Potter-Roemer, Ansul",
+  "note": "A201 does not name a brand or size, so sheet-only reading is unclear. 10 lb ABC matches the manual but Kidde is not among the named manufacturers (manual reading: conflict on brand)."
+ },
+ {
+  "id": "ho-mep-01",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "E400 (add1-p022)",
+  "evidence_words": "Panel: MSB Total Conn. Load: 159873 VA (Total Demand 157579 VA)",
+  "note": "Connected load is 159,873 VA. 157,413 appears nowhere; nearest is demand 157,579."
+ },
+ {
+  "id": "ho-mep-02",
+  "label": "consistent",
+  "confidence": "high",
+  "evidence_sheet": "E400 (add1-p022)",
+  "evidence_words": "Panel A, STOR. 107A: Total Conn. Load: 40940 VA, Total Demand: 77 A (27870 VA)",
+  "note": "Both numbers match (77 A is the total demand in amps)."
+ },
+ {
+  "id": "ho-mep-03",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "E200 (add1-p021)",
+  "evidence_words": "6. NOT USED. 5. ROUTE ALL NETWORK CABLING AND LOW VOLTAGE SYSTEMS TO UTILITY ROOM 108 ... 8. COORDINATE ALL ELECTRIFIED DOOR HARDWARE...",
+  "note": "Note 6 is NOT USED. Routing to Utility Room 108 is note 5 and covers network/low voltage only, not door hardware/access control/security; note 8 is coordination only."
+ },
+ {
+  "id": "ho-mep-04",
+  "label": "consistent",
+  "confidence": "high",
+  "evidence_sheet": "ED200 (add2-p009)",
+  "evidence_words": "10. REMOVE EXISTING DISCONNECTS, CONDUIT, AND WIRING SERVING BUSWAYS LOCATED IN THE WAREHOUSE. EXISTING BUSWAYS TO REMAIN IN PLACE, DE-ENERGIZED.",
+  "note": "Matches."
+ },
+ {
+  "id": "ho-mep-05",
+  "label": "consistent",
+  "confidence": "high",
+  "evidence_sheet": "C1.30 (dwg-p007)",
+  "evidence_words": "INSPECTIONS AT LEAST ONCE EVERY 7 DAYS AND WITHIN 24 HOURS AFTER A RAINFALL EVENT OF 0.5 INCHES OR GREATER",
+  "note": "Matches."
+ },
+ {
+  "id": "ho-mep-06",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "S900 (dwg-p029)",
+  "evidence_words": "FLOORS LIVE LOADS: FLOORS AT GRADE (1ST FLOOR) 100 PSF INCLUDING PARTITIONS",
+  "note": "Design live load is 100 psf, not 60."
+ },
+ {
+  "id": "ho-mep-07",
+  "label": "conflict",
+  "confidence": "high",
+  "evidence_sheet": "ME100 (dwg-p043)",
+  "evidence_words": "F-9 THREES 105 TRANE S9X1 nominal ACFM total 1500 (O.A. 240)",
+  "note": "Model matches but airflow is 1,500 CFM, not 1,800 (1,800 is F-6/F-7/F-10)."
+ },
+ {
+  "id": "ho-mep-08",
+  "label": "consistent",
+  "confidence": "high",
+  "evidence_sheet": "E000 (add1-p019)",
+  "evidence_words": "MANUAL PULL STATION - MOUNTED AT 48\" AFF. VISUAL SIGNAL DEVICE (STROBE) - MOUNTED AT 80\" AFF",
+  "note": "Both match (horn/strobe also 80 in). Manual 26 00 01 agrees."
+ },
+ {
+  "id": "ho-mep-09",
+  "label": "ambiguous",
+  "confidence": "low",
+  "evidence_sheet": "L2.00 (dwg-p011); manual General Conditions 1.10 / 32 sect.",
+  "evidence_words": "L2.00 Landscape Maintenance and Warranty has only 4.01 Maintenance until Substantial Completion; no warranty term. Manual 1.10: warranty one (1) year from date of final completion; lawns maintained one month.",
+  "note": "Sheet silent on a one-year warranty period (reads as conflict with 'landscape notes give'); the manual gives one year but from final completion, not substantial completion, and not specific to the lawn contractor. Two readings differ."
+ },
+ {
+  "id": "ho-mep-10",
+  "label": "ambiguous",
+  "confidence": "low",
+  "evidence_sheet": "E000 (add1-p019); manual 26 00 01 mounting heights",
+  "evidence_words": "E000 legend: FIRE ALARM REMOTE ANNUNCIATOR. (no mounting height). Manual: fire alarm zone light annunciator (to top) 72 IN",
+  "note": "E000 gives no height (sheet-only: unclear). Manual gives 72 in to top for the zone annunciator, which contradicts 60 but is a different device name and a to-top dimension."
+ }
+]
