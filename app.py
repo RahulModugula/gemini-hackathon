@@ -383,6 +383,20 @@ def _check_with(text, extra):
     return checker.check(text, extra_images=extra) if extra else checker.check(text)
 
 
+def _crop_box(frame, box_2d):
+    """Crop `box_2d` of `frame` into a file named by (frame, box), so claims on one frame with different boxes never
+    share a file. Written via a unique temp file + os.replace: concurrent identical crops are atomic, never torn."""
+    key = hashlib.sha1(json.dumps([frame.name, [round(float(v), 2) for v in box_2d]]).encode()).hexdigest()[:20]
+    out = frame.with_name(f"{key}_crop.jpg")
+    tmp = out.with_name(f"{out.stem}.{threading.get_ident()}.{os.getpid()}.{time.monotonic_ns()}.part.jpg")
+    try:
+        video_frames.crop_region(frame, box_2d, tmp)
+        os.replace(tmp, out)
+    finally:
+        tmp.unlink(missing_ok=True)
+    return out
+
+
 def _frame_evidence(vpath, vsha, c):
     """Extract the claim's frame; for a VISUAL claim also locate the thing on that frame (an image call) and build the
     field photo for the judges (the boxed region, else the whole frame). -> (video_evidence or None, extra_images or
@@ -404,7 +418,10 @@ def _frame_evidence(vpath, vsha, c):
         ve["text_read"] = loc["text_read"]
     img = fr["path"]
     if loc["box_2d"]:
-        img = video_frames.crop_region(fr["path"], loc["box_2d"], fr["path"].with_name(fr["path"].stem + "_crop.jpg"))
+        try:
+            img = _crop_box(fr["path"], loc["box_2d"])
+        except Exception:    # crop failed: judge the whole frame and report no box
+            img, ve["box_2d"] = fr["path"], None
     label = f"FIELD PHOTO from the site video at {video_frames.fmt_t(c['frame_t_s'])}"
     return ve, [{"path": img, "mime": "image/jpeg", "label": label}]
 
@@ -504,7 +521,7 @@ async def frames(name: str):
     p = Path(BUILD) / "frames" / name
     if not p.is_file():
         return _bad("not found", 404)
-    # <sha1(video|t)>.jpg never changes; <..>_crop.jpg is re-cut per claim box under the same name
+    # <sha1(video|t)>.jpg never changes; <sha1(frame|box)>_crop.jpg is named by its box (kept SHORT-cached)
     return FileResponse(p, headers=SHORT if name.endswith("_crop.jpg") else IMMUTABLE)
 
 
