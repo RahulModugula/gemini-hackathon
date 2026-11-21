@@ -10,6 +10,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 
 import llm
+import rooms as roomgeo
 
 MODEL_CAP = 0.5          # confidence ceiling when judges disagree or a code check fails
 OVERLAP_MIN = 0.5        # a word counts as "inside" a box when at least this share of its area is in the box
@@ -225,6 +226,50 @@ def addendum_diff(crops, narrative=()):
             "detail": f"{cur['sheet']} vs {old['sheet']}: -{sum(only_old.values())} +{sum(only_cur.values())} words"}
 
 
+def current_boxes(out, crops):
+    """pt boxes of a judge's evidence on the current sheet (valid boxes only; grounding reports the bad ones)."""
+    crop = crops.get("current")
+    return [box_to_pt(e["box_2d"], crop["rect"]) for e in out.get("evidence") or []
+            if crop and isinstance(e, dict) and e.get("image") == "current" and _valid_box(e.get("box_2d"))]
+
+
+def _clamp_box(b):
+    return [max(0, min(1000, v)) for v in b]
+
+
+def spatial_check(claim, verdict, crops, boxes):
+    """Room geometry check (rooms.py). None when the claim names no room number or the crop carries no geometry
+    lookup. When the claim names a room with no geometry on the sheet: an info check, never a failure. When the room
+    is found: reports its region (room_box_2d on the crop's 0-1000 grid), the deterministic fixture-tag count inside
+    it ({"WC-3": 2, ...}) and, for a conflict/consistent verdict, FAILS if any current evidence box lies outside it
+    (`boxes`: pt boxes). A room that could not be resolved is never guessed, so uncertain geometry never fails."""
+    crop, geo = crops.get("current") or {}, (crops.get("current") or {}).get("rooms")
+    named = roomgeo.claim_room_tokens(claim)
+    if geo is None or not named:
+        return None
+    found = roomgeo.named_rooms(claim, geo)
+    if not found:
+        return {"by": "code", "check": "spatial", "info": True, "pass": True, "room": None,
+                "detail": f"no room geometry for {', '.join(n.upper() for n in named)} on {crop.get('sheet')}: not checked"}
+    info = [{"number": r.number, "name": r.name, "bbox": [round(v, 1) for v in r.bbox],
+             "room_box_2d": _clamp_box(pt_to_box(r.bbox, crop["rect"])), "tags": dict(r.tags)} for r in found]
+    outside = [i for i, b in enumerate(boxes) if not any(r.contains(b) for r in found)]
+    judged = verdict in ("conflict", "consistent")
+    ok = not (judged and outside)
+    inside_tags = Counter()
+    for w in crop.get("words", []):
+        cx, cy = (w["bbox"][0] + w["bbox"][2]) / 2, (w["bbox"][1] + w["bbox"][3]) / 2
+        if roomgeo.FIXTURE_TAG.match(w["text"]) and any(r.contains_pt(cx, cy) for r in found):
+            inside_tags[w["text"]] += 1
+    label = " + ".join(f"{r.number} {r.name}".strip() for r in found)
+    detail = (f"room {label}: tags inside {dict(found[0].tags) if len(found) == 1 else {r.number: r.tags for r in found}}; "
+              + (f"{len(outside)} of {len(boxes)} evidence boxes are outside the room" if outside
+                 else f"all {len(boxes)} evidence boxes are inside the room"))
+    return {"by": "code", "check": "spatial", "pass": ok, "room": info[0], "rooms": info,
+            "tag_count": dict(found[0].tags) if len(found) == 1 else dict(sum((Counter(r.tags) for r in found), Counter())),
+            "tags_in_crop": dict(inside_tags), "evidence_outside": outside, "detail": detail}
+
+
 # ---- model calls ---------------------------------------------------------------------------------
 def _model_entry(name, out, latency):
     return {"by": name, "verdict": out["verdict"], "confidence": out["confidence"], "note": out["reason"],
@@ -320,6 +365,11 @@ def verify(claim, ctx):
         dim["note"] = dim["detail"]
         checks.append(dim)
         hard_fail |= not dim["pass"]
+
+    sp = spatial_check(claim, verdict, crops, current_boxes(a, crops) + current_boxes(b, crops))
+    if sp:
+        checks.append(sp)
+        hard_fail |= not sp["pass"]
 
     if hard_fail:
         verdict, conf = "unclear", min(conf, MODEL_CAP)
