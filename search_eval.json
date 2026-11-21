@@ -1,0 +1,56 @@
+{
+  "_comment": "Expected sheet_numbers were found by grepping build/words/*.json (lines rebuilt from block/line keys) with a regex per query, NOT by running search.py. A query passes when ANY expected sheet_number appears in the top-3 distinct sheet numbers. Evidence strings are the grep hits (sheet id, sheet number, matching line text).",
+  "queries": [
+    {
+      "query": "water closet tags in toilet 105A",
+      "expected": ["A1100", "P101"],
+      "evidence": "grep 'WC-|water closet': A1100 (add1-p016/add2-p007/dwg-p025) lines 'WC-1', 'P-1/VWC-1'; P101 (add1-p018/dwg-p034) 10 lines 'WC-1','WC-2'. grep '105A': both A1100 and P101 contain '105A'. P001 has WC-1 but no 105A."
+    },
+    {
+      "query": "grab bar mounting height",
+      "expected": ["A800", "G001"],
+      "evidence": "grep 'grab bar': A800 'GRAB BAR - 36\"', 'GRAB BAR - 42\"', 'GRAB BAR - 18\" VERTICAL' (+ 'MOUNTING HEIGHT TO ...' soap dispenser line); G001 (dwg-p002) '18\" VERT. GRAB BAR', 'TYPICAL ADA TOILET ROOM MOUNTING HEIGHTS', 29 AFF/height lines."
+    },
+    {
+      "query": "door hardware",
+      "expected": ["A1002", "E200"],
+      "evidence": "grep 'hardware|door schedule': A1002 (dwg-p024) 11 lines e.g. 'PER DOOR HARDWARE SCHEDULE', '11. ALL DOOR HARDWARE SHALL BE ADA COMPLAINT, INCLUDING LEVER'; E200 'COORDINATE ALL ELECTRIFIED DOOR HARDWARE, POWER TRANSFER DEVICES' ; E500 'LINE VOLTAGE POWER FOR DOOR HARDWARE POWER SUPPLIES'.",
+      "also_acceptable": ["E500", "G000"]
+    },
+    {
+      "query": "roof plan keynotes",
+      "expected": ["A203"],
+      "evidence": "grep 'keynote': only add1-p008 (A203) has the line 'ROOF PLAN KEYNOTES'; A201 has 'PLAN KEYNOTES', A301 'RCP KEYNOTE'."
+    },
+    {
+      "query": "fire alarm devices in warehouse 151",
+      "expected": ["ED200", "E200", "AD201"],
+      "evidence": "grep 'warehouse|\\b151\\b': ED200 (add2-p009) has WAREHOUSE and 151 lines; grep 'fire alarm': ED200 'EXISTING FIRE ALARM DEVICES WITHIN THE ADJACENT WAREHOUSE SPACES AND'; E200 '...DEVICES AND (16) OF NOTIFICATION APPLIANCES WITHIN THE WAREHOUSE AND'; AD201 has WAREHOUSE + 151."
+    },
+    {
+      "query": "cubby alternates",
+      "expected": ["A900", "A1100", "A700"],
+      "evidence": "grep 'cubb|alternate': A900 13 lines '8 TOTAL CUBBIES','12 TOTAL CUBBIES'; A1100 7 lines 'CUBBIES: PL-1 - SSM-1 CAP ON PARTIAL HEIGHT WALL'; A700 'FIXED PLAM CUBBIES,' 'STORAGE CUBBIE MILLWORK'. (The word 'cubby' itself never appears; sheets use CUBBIES/CUBBIE.)"
+    },
+    {
+      "query": "toilet accessories keynotes",
+      "expected": ["A800", "A900"],
+      "evidence": "grep 'keynote': A800 (dwg-p020/add1-p012) and A900 (dwg-p021/add1-p013) both have the line 'TOILET ACCESSORIES KEYNOTES'."
+    },
+    {
+      "query": "knox box mounting height",
+      "expected": ["A201"],
+      "evidence": "grep 'knox': A201 (add1-p007, dwg-p013) 'KNOX BOX RECESS MOUNTED 6'-0\" AFF CENTERED ON WALL AS APPROVED BY FIRE MARSHALL.'; G001 only '(KNOX BOX)' legend entry."    },
+    {
+      "query": "mount receptacle at 36 inches AFF",
+      "expected": ["E400"],
+      "evidence": "grep 'mounting height|A.F.F': E400 (add1-p022/dwg-p052) line '2. MOUNT RECEPTACLE AT 36\" AFF.'; E200 only has '44\"AFF' device heights.",
+      "also_acceptable": ["E200", "M000"]
+    },
+    {
+      "query": "roof snow loads",
+      "expected": ["S900"],
+      "evidence": "grep 'snow': only dwg-p029 (S900) has the line 'ROOF SNOW LOADS:' (S900 is not superseded)."
+    }
+  ]
+}
