@@ -11,7 +11,7 @@ from roles import ROLES
 MAX_INLINE = 20 * 1024 * 1024
 MAX_CLAIMS, MAX_VISUAL = 10, 3
 KINDS = ("spoken", "visual")
-SHEET_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
+SHEET_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,31}\Z")
 
 SCHEMA = {
     "type": "object",
@@ -114,7 +114,7 @@ def video_duration_s(data):
 def _valid(c, dur, slack=0.5):
     if not isinstance(c, dict) or c.get("kind") not in KINDS:
         return False
-    if not str(c.get("claim") or "").strip() or not str(c.get("quote_or_observation") or "").strip():
+    if not all(isinstance(c.get(k), str) and c[k].strip() for k in ("claim", "quote_or_observation")):
         return False
     try:
         a, b = float(c["t_start_s"]), float(c["t_end_s"])
@@ -148,6 +148,8 @@ def extract_claims_from_video(data, mime, sheet_hint=None, duration=None):
     """Return [{claim, kind, t_start_s, t_end_s, quote_or_observation, frame_t_s, frame_box_2d}], validated, at most
     10 (3 visual). frame_box_2d is always None here: boxes are documented for images, not video, so any box the
     video call returns is ignored; locate_in_frame() finds it on the extracted frame."""
+    if sheet_hint is not None and not (isinstance(sheet_hint, str) and SHEET_RE.match(sheet_hint)):
+        sheet_hint = None        # never interpolate an unvalidated string into the prompt
     dur = duration if duration is not None else video_duration_s(data)
     if dur is None:
         raise ValueError("could not read video duration")
