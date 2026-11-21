@@ -613,3 +613,118 @@ def test_conflict_on_a_dimension_claim_needs_a_boxed_dimension(monkeypatch):
     r = verify.verify('Door 101 is 36" wide', {"judge": "a", "second": "b", "crops": {"current": _RV_CROP},
                                                "rows": {"p1": {"current": True}}, "narrative": ()})
     assert r["verdict"] == "unclear", r
+
+
+# ---- coverage v3: schedule rows / note lines cut off at the crop edge -----------------------------------------
+@pytest.mark.parametrize("claim,sheet,need", [
+    ('Door 100A.1 is a 3\'-0" by 7\'-0" door with a 20 minute rating and the FEMA impact rated door comment.',
+     "dwg-p024", {"100A.1", "3'", "7'", "20", "MIN.", "FEMA", "IMPACT"}),
+    ("Door 099.1, the vestibule door, is 7'-2\" high with a door operator.", "dwg-p024", {"099.1", "7'", '2"', "OPERATOR"}),
+    ('The plumbing fixture schedule lists WC-3 as the American Standard Cadet 2462.016, floor mount at a 15.0" rim height.',
+     "add1-p017", {"WC-3", "AMERICAN", '15.0"', "RIM"}),
+    ("E300 fixture type AA is the Lithonia 2x4 flat panel troffer at 3200 lumens and 24.6 watts.",
+     "dwg-p051", {"AA", "TROFFER", "3200", "24.6", "LITHONIA"}),
+    ("L2.00 has the playground equipment supplied by the contractor from Playworld.", "dwg-p011",
+     {"5.03", "playground", "provided", "Northland", "Recreation."}),
+    ("The Color and Material Schedule lists the toilet partition TP-1 as Scranton Hiny Hiders in Linen.", "add2-p007",
+     {"TP-1", "Scranton", "Hiders", "Linen"}),
+])
+def test_crop_covers_the_whole_schedule_row(world, claim, sheet, need):
+    """Dev v3 live misses: both judges said 'unclear, the size / manufacturer / remarks column is cut off'."""
+    cands, _ = check.candidates(claim, world["sheets"], world["src"], world["rows"])
+    c = next(c for c in cands if c["sheet"] == sheet)
+    texts = {w["text"] for w in c["words"]}
+    assert need <= texts, (c["rect"], sorted(need - texts))
+    assert c["rect"][2] - c["rect"][0] <= check.ROW_MAX_W + 1e-6
+
+
+def _w(t, x, block, y=100):
+    return {"text": t, "bbox": [x, y, x + 30, y + 10], "block": block}
+
+
+def test_hit_rect_only_widens_and_caps_width():
+    row = [_w(t, x, 7) for t, x in (("A", 100), ("B", 400), ("C", 700), ("C2", 900), ("C3", 1000), ("D", 3000))]
+    base = check.crop_rect([400, 100, 430, 110], 4000, 3000)
+    r = check.hit_rect([400, 100, 430, 110], 4000, 3000, row)
+    assert r[0] <= base[0] and r[2] >= base[2] and r[1] == base[1] and r[3] == base[3]
+    assert r[0] <= 100 - check.ROW_PAD and r[2] >= 1030 and r[2] < 3000   # D is 1970 pt past C3: not this row
+    off_row = [_w("Z", 1500, 7, y=300)] * 6
+    assert check.hit_rect([400, 100, 430, 110], 4000, 3000, off_row) == base
+    long_row = [_w(str(i), x, 7) for i, x in enumerate(range(0, 3900, 200))]
+    r = check.hit_rect([2000, 100, 2030, 110], 4000, 3000, long_row)
+    assert abs((r[2] - r[0]) - check.ROW_MAX_W) < 1e-6 and r[0] <= 2000 and r[2] >= 2030
+
+
+def test_plan_labels_on_one_line_do_not_widen_the_crop():
+    """A plan tag (one small text block) with other labels that happen to sit on its line keeps the default crop;
+    a schedule column in another block joins only when our block is a real text row on the exact same baseline."""
+    base = check.crop_rect([400, 100, 430, 110], 4000, 3000)
+    plan = [_w("WC-3", 400, 1), _w("105A", 430, 1)] + [_w(f"L{i}", 700 + 250 * i, 10 + i) for i in range(5)]
+    assert check.hit_rect([400, 100, 430, 110], 4000, 3000, plan) == base
+    sched = [_w(f"c{i}", 400 + 40 * i, 1) for i in range(5)] + [_w("REMARK", 900, 2), _w("OFFSET", 1000, 3, y=104)]
+    r = check.hit_rect([400, 100, 430, 110], 4000, 3000, sched)
+    assert r[2] >= 930 + check.ROW_PAD - 1e-6                   # same-baseline column in block 2 joins
+    assert check.row_span([400, 100, 430, 110], sched)[1] == 930   # the off-baseline word in block 3 does not
+
+
+_CTX_CROP = {"sheet": "e1", "sheet_number": "E200", "rect": [0, 0, 1000, 1000],
+             "words": [{"text": "NOTES:", "bbox": [100, 100, 140, 110]}, {"text": "FACP", "bbox": [100, 300, 140, 310]},
+                       {"text": "SERVES", "bbox": [150, 300, 190, 310]}, {"text": "OWLS", "bbox": [200, 300, 240, 310]},
+                       {"text": "A-36", "bbox": [600, 600, 640, 610]}, {"text": "A-13", "bbox": [700, 700, 740, 710]},
+                       {"text": "109", "bbox": [600, 500, 630, 510]}]}
+_NOTE_BOX, _A36_BOX = [295, 95, 315, 245], [495, 595, 615, 645]       # FACP SERVES OWLS / 109 + A-36
+
+
+def test_unboxed_context_quote_is_accepted_once_boxed_evidence_exists():
+    """Dev v3 live misses (n79, 05s): both judges right, but one also quoted a heading / a neighbouring tag that is
+    printed in the crop outside its box, and grounding vetoed the card."""
+    ok = _rv("consistent", ["NOTES:", "FACP SERVES OWLS"], _NOTE_BOX)
+    probs, acc = verify.grounding_report(ok, {"current": _CTX_CROP}, "The FACP serves the OWLS space")
+    assert probs == [] and acc["NOTES:"] == "crop_word" and acc["OWLS"] == "current_box"
+    conflict = _rv("conflict", ["109", "A-36", "A-13"], _A36_BOX)
+    probs, acc = verify.grounding_report(conflict, {"current": _CTX_CROP}, "On E200, the tag at room 109 reads A-39.")
+    assert probs == [] and acc["A-13"] == "crop_word" and acc["A-36"] == "current_box"
+
+
+def test_unboxed_context_never_replaces_evidence():
+    """The false-alarm guards stay: a word not printed in the crop, a conflict whose only non-claim word is unboxed,
+    and a consistent verdict whose claim identifier is unboxed all still fail."""
+    crops = {"current": _CTX_CROP}
+    invented = _rv("consistent", ["FACP SERVES OWLS", "CHILDCARE"], _NOTE_BOX)
+    assert verify.grounding_report(invented, crops, "The FACP serves the OWLS space")[0]
+    only_unboxed = _rv("conflict", ["109", "A-13"], [495, 595, 515, 635])         # box holds 109 only
+    probs, _ = verify.grounding_report(only_unboxed, crops, "On E200, the tag at room 109 reads A-39.")
+    assert any("A-13" in p for p in probs)
+    ident = _rv("consistent", ["109", "A-13"], [495, 595, 515, 635])
+    probs, _ = verify.grounding_report(ident, crops, "On E200, the tag at room 109 reads A-13.")
+    assert any("a13" in p for p in probs), probs
+
+
+def test_unboxed_context_dimension_does_not_back_a_dimension_claim(monkeypatch):
+    crop = {**_CTX_CROP, "words": _CTX_CROP["words"] + [{"text": '36"', "bbox": [800, 800, 830, 810]}]}
+    o = _rv("conflict", ["A-13", '36"'], [695, 695, 715, 745])
+    monkeypatch.setattr(verify, "_run_judge", lambda m, p, c: (o, 0.1))
+    r = verify.verify('Door 101 is 36" wide', {"judge": "a", "second": "b", "crops": {"current": crop},
+                                               "rows": {"e1": {"current": True}}, "narrative": ()})
+    assert r["verdict"] == "unclear", r
+
+
+@pytest.mark.parametrize("claim", ["Demolition keynote D07 removes the existing ceiling and soffit throughout the entire project area.",
+                                   "Demolition keynote D07 is removal of the existing carpet flooring."])
+def test_keynote_claim_gets_the_legend_not_the_bare_tag(world, claim):
+    """Dev v3 live misses: AD201's best hit is the D07 tag on the plan; both judges said 'the keynote legend is not
+    in the crop'. The legend on the same sheet holds D07 and the claim's words."""
+    cands, _ = check.candidates(claim, world["sheets"], world["src"], world["rows"])
+    c = next(c for c in cands if c["sheet"] == "add2-p006")
+    texts = {w["text"] for w in c["words"]}
+    assert {"D07", "REMOVE", "CEILING", "SOFFIT", "THROUGHOUT"} <= texts, c["rect"]
+
+
+def test_a_dominant_search_hit_stays_a_candidate(world):
+    """Dev v3 live miss: the claim's (wrong) number 250 re-ranked two sheets that merely print '250' above G002's
+    code summary, the search hit that scores over 3x anything else; both judges then saw the wrong sheets."""
+    claim = "The code summary allows 250 feet of exit access travel distance in non-sprinklered educational occupancies."
+    cands, _ = check.candidates(claim, world["sheets"], world["src"], world["rows"])
+    assert len(cands) == 2
+    assert any(c["sheet"] == "add1-p006" and {"200", "FEET", "TRAVEL"} <= {w["text"] for w in c["words"]}
+               for c in cands), [c["sheet"] for c in cands]
