@@ -1,5 +1,8 @@
 import datetime as dt
+import io
 import json
+import threading
+import time
 import subprocess
 import sys
 from pathlib import Path
@@ -48,8 +51,12 @@ def env(tmp_path, monkeypatch):
     return install
 
 
-def rows(tmp=None):
+def allrows():
     return [json.loads(x) for x in (llm.BUILD / "calls.jsonl").read_text().splitlines()]
+
+
+def rows():  # call rows only (no reservations)
+    return [r for r in allrows() if r.get("kind") != "reserve"]
 
 
 def test_import_needs_no_key_and_client_gets_stripped_explicit_key(env, monkeypatch):
@@ -81,7 +88,7 @@ def test_invalid_json_raises_and_is_not_cached(env):
     with pytest.raises(llm.LLMError, match="invalid JSON"):
         llm.call("gemini-4-hydrogen", ["hi"], schema={"type": "object"}, purpose="t")
     assert not (llm.BUILD / "cache").exists()
-    assert rows()[-1]["error"].startswith("model returned invalid JSON")
+    assert rows()[-1]["error"].startswith("InvalidJSON: len=8")
     assert rows()[-1]["cost_usd"] > 0  # the tokens were still billed
 
 
@@ -216,3 +223,132 @@ def test_cli_price_table_only():
     assert ok.returncode == 0 and "gemini-4-carbon" in ok.stdout and "2026-11-21" in ok.stdout
     bad = subprocess.run([sys.executable, "llm.py", "--nope"], cwd=d, capture_output=True, text=True)
     assert bad.returncode != 0
+
+
+# ---- review round: majors ------------------------------------------------------------------------
+def test_major1_cap_includes_thinking_budget(env, monkeypatch):
+    fc = env(resp(), resp(), resp())
+    monkeypatch.setenv("LLM_RUN_CAP_USD", "0.1")
+    # hydrogen default level HIGH: (8192+32768)*7.5/1e6 = 0.307 > 0.1 (output-only estimate 0.061 would pass)
+    with pytest.raises(llm.CapExceeded):
+        llm.call("gemini-4-hydrogen", ["hi"], purpose="t")
+    # carbon default MEDIUM: (8192+16384)*10/1e6 = 0.2458 > 0.2
+    monkeypatch.setenv("LLM_RUN_CAP_USD", "0.2")
+    with pytest.raises(llm.CapExceeded):
+        llm.call("gemini-4-carbon", ["hi"], purpose="t")
+    assert fc.calls == []
+    monkeypatch.setenv("LLM_RUN_CAP_USD", "0.1")  # LOW: (8192+4096)*7.5/1e6 = 0.092 fits
+    llm.call("gemini-4-hydrogen", ["hi"], thinking="LOW", purpose="t")
+    assert len(fc.calls) == 1
+
+
+def test_major1_image_and_text_estimates():
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (1536, 769)).save(buf, "PNG")  # 2x2 tiles
+    assert llm._est_input_tokens([llm.image_part(buf.getvalue(), "image/png")]) == 4 * 258
+    assert llm._est_input_tokens([llm.image_part(b"junk", "image/png")]) == 2000
+    assert llm._est_input_tokens(["x" * 300]) == 100  # utf-8 bytes / 3
+
+
+def test_major2_concurrent_calls_cannot_bypass_cap(env, monkeypatch):
+    fc = env(*[resp() for _ in range(8)])
+    orig = fc._gen
+    fc.models.generate_content = lambda **kw: (time.sleep(0.3), orig(**kw))[1]  # keep the first call in flight
+    monkeypatch.setenv("LLM_RUN_CAP_USD", "0.5")  # one worst case is 0.307; two would not fit
+    out = []
+
+    def go(i):
+        try:
+            llm.call("gemini-4-hydrogen", [f"q{i}"], purpose="t")
+            out.append("ok")
+        except llm.CapExceeded:
+            out.append("capped")
+    ts = [threading.Thread(target=go, args=(i,)) for i in range(6)]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    assert sorted(out) == ["capped"] * 5 + ["ok"] and len(fc.calls) == 1
+
+
+def test_major2_reservation_is_settled_by_real_cost(env, monkeypatch):
+    env(resp(p=1000, o=0, t=0))
+    llm.call("gemini-4-hydrogen", ["hi"], purpose="t")
+    assert llm.run_spend() == pytest.approx(0.0015)  # not 0.307 + 0.0015: reservation released
+
+
+def test_major3_default_run_id_is_per_day_and_accumulates(env, monkeypatch):
+    monkeypatch.delenv("LLM_RUN_ID")
+    assert llm.run_id() == "day-2026-11-21"
+    env(resp(p=1_000_000, o=0, t=0))
+    llm.call("gemini-4-hydrogen", ["a"], purpose="t")
+    monkeypatch.setattr(llm, "_client", None)  # a "new process" same day sees the spend
+    assert llm.run_spend() == pytest.approx(1.5)
+    monkeypatch.setattr(llm, "_today", lambda: dt.date(2026, 11, 22))
+    assert llm.run_spend() == 0.0
+
+
+# ---- review round: minors ------------------------------------------------------------------------
+@pytest.mark.parametrize("bad", ["nan", "inf", "-1", "abc"])
+def test_minor4_bad_cap_rejected(env, monkeypatch, bad):
+    fc = env(resp())
+    monkeypatch.setenv("LLM_RUN_CAP_USD", bad)
+    with pytest.raises(llm.LLMError, match="LLM_RUN_CAP_USD"):
+        llm.call("gemini-4-hydrogen", ["hi"], purpose="t")
+    assert fc.calls == []
+
+
+def test_minor5_key_scrubbed_before_truncation_and_json_not_logged(env):
+    env(errors.APIError(400, {}), resp("secret output not json"))
+    llm.BUILD.mkdir(parents=True)
+    assert llm._scrub("x" * 190 + "secret-key-123") == "x" * 190 + "***"
+    with pytest.raises(errors.APIError):
+        llm.call("gemini-4-hydrogen", ["a"], purpose="t")
+    with pytest.raises(llm.LLMError):
+        llm.call("gemini-4-hydrogen", ["b"], schema={"type": "object"}, purpose="t")
+    raw = (llm.BUILD / "calls.jsonl").read_text()
+    assert "secret output" not in raw and "secret-key-123" not in raw
+    assert "InvalidJSON: len=22 sha256=" in raw
+
+
+def test_minor6_corrupt_cache_is_miss_and_replay_raises(env, monkeypatch):
+    fc = env(resp("A"), resp("B"))
+    llm.call("gemini-4-hydrogen", ["q"], purpose="t")
+    f = next((llm.BUILD / "cache").glob("*.json"))
+    f.write_text("{trunc")
+    monkeypatch.setenv("LLM_CACHE", "replay")
+    with pytest.raises(llm.CacheMiss, match="corrupt"):
+        llm.call("gemini-4-hydrogen", ["q"], purpose="t")
+    monkeypatch.setenv("LLM_CACHE", "readwrite")
+    assert llm.call("gemini-4-hydrogen", ["q"], purpose="t").text == "B"  # miss -> live -> rewritten
+    assert json.loads(f.read_text())["text"] == "B" and not list((llm.BUILD / "cache").glob("*.tmp"))
+
+
+def test_minor7_no_cache_for_empty_or_truncated(env):
+    trunc = resp("partial")
+    trunc.candidates = [SimpleNamespace(finish_reason=types.FinishReason.MAX_TOKENS)]
+    env(resp(""), trunc)
+    llm.call("gemini-4-hydrogen", ["e"], purpose="t")
+    llm.call("gemini-4-hydrogen", ["t"], purpose="t")
+    assert not (llm.BUILD / "cache").exists()
+    assert rows()[1]["finish_reason"] == "MAX_TOKENS"
+
+
+def test_minor8_key_covers_nontext_fields_and_max_tokens(monkeypatch):
+    a = types.Part(text="x")
+    b = types.Part(text="x", thought=True)
+    assert llm.cache_key("m", [a], None, None) != llm.cache_key("m", [b], None, None)
+    k = llm.cache_key("m", [a], None, None)
+    monkeypatch.setattr(llm, "MAX_OUTPUT_TOKENS", 100)
+    assert llm.cache_key("m", [a], None, None) != k
+
+
+def test_minor9_key_failure_logged_and_hit_zeroes_billed_fields(env):
+    with pytest.raises(llm.LLMError, match="unsupported"):
+        llm.call("gemini-4-hydrogen", [object()], purpose="t")
+    assert rows()[0]["error"].startswith("LLMError")
+    env(resp("A", p=10, o=20, t=30))
+    llm.call("gemini-4-hydrogen", ["q"], purpose="t")
+    llm.call("gemini-4-hydrogen", ["q"], purpose="t")
+    h = rows()[-1]
+    assert h["cache_hit"] and (h["prompt_tokens"], h["output_tokens"], h["thinking_tokens"]) == (0, 0, 0)
+    assert (h["cached_prompt_tokens"], h["cached_output_tokens"], h["cached_thinking_tokens"]) == (10, 20, 30)

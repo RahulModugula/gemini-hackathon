@@ -2,11 +2,17 @@
 per-run spend cap and a JSONL call log. Usage: `llm.call(model, parts, purpose=..., schema=...)`.
 
 Env: GEMINI_API_KEY (read lazily), LLM_RUN_CAP_USD (default 5.0), LLM_RUN_ID, LLM_CACHE=readwrite|replay|off.
+Run id: LLM_RUN_ID, else "day-YYYY-MM-DD" (UTC), so the cap accumulates across processes/scripts that day.
+Cap: before a live call a reservation (worst-case cost) is appended to build/calls.jsonl under an flock on
+build/calls.lock; the call's own log row settles it. Spend = settled costs + unsettled reservations.
 Never logs the key or prompt contents (a sha256 of the request is logged instead).
 """
 import datetime as dt
+import fcntl
 import hashlib
+import io
 import json
+import math
 import os
 import random
 import sys
@@ -23,7 +29,7 @@ MAX_OUTPUT_TOKENS = 8192
 RETRIES = 4
 PRICES_AS_OF = "2026-11-21"
 # USD per 1M tokens. Entries: (last_day_inclusive or None, input, output). First match by call date wins.
-# ASSUMPTION: thinking tokens are billed at the output rate.
+# ASSUMPTION: thinking tokens are billed at the output rate (and are not limited by max_output_tokens).
 _PROMO_END = dt.date(2026, 11, 30)
 PRICES = {
     "gemini-4-hydrogen": [(None, 1.50, 7.50)],
@@ -31,10 +37,13 @@ PRICES = {
     "gemini-4-carbon": [(_PROMO_END, 2.00, 10.00), (None, 4.00, 20.00)],
     "gemini-4-argon": [(_PROMO_END, 2.00, 10.00), (None, 4.00, 20.00)],
 }
+# Worst-case thinking tokens per level, for the cap estimate. thinking=None -> the model's assumed default level.
+THINK_BUDGET = {"MINIMAL": 1024, "LOW": 4096, "MEDIUM": 16384, "HIGH": 32768, "XHIGH": 65536}
+THINK_DEFAULT = {"gemini-4-hydrogen": "HIGH", "gemini-4-neon": "HIGH", "gemini-4-carbon": "MEDIUM",
+                 "gemini-4-argon": "MEDIUM"}
 
 _sleep = time.sleep  # injectable for tests
 _today = lambda: dt.datetime.now(dt.timezone.utc).date()  # noqa: E731  injectable for tests
-_PROCESS_RUN_ID = uuid.uuid4().hex
 _client = None
 
 
@@ -82,28 +91,44 @@ def text_part(s):
 
 
 def _ser(p):
-    """Canonical, hashable form of one part; bytes are hashed by content."""
+    """Canonical, hashable form of one part: every non-inline field, plus inline bytes hashed by content."""
     if isinstance(p, str):
         return {"text": p}
     if isinstance(p, (bytes, bytearray)):
-        return {"bytes": hashlib.sha256(p).hexdigest()}
-    blob = getattr(p, "inline_data", None)
-    if blob is not None:
-        return {"mime": blob.mime_type, "bytes": hashlib.sha256(blob.data or b"").hexdigest(), "n": len(blob.data or b"")}
-    if getattr(p, "text", None) is not None:
-        return {"text": p.text}
-    raise LLMError(f"unsupported part: {type(p).__name__}")
+        return {"inline": {"mime": None, "sha256": hashlib.sha256(p).hexdigest(), "n": len(p)}}
+    if not isinstance(p, types.Part):
+        raise LLMError(f"unsupported part: {type(p).__name__}")
+    d = p.model_dump(mode="json", exclude={"inline_data"}, exclude_none=True)
+    if p.inline_data is not None:
+        data = p.inline_data.data or b""
+        d["inline"] = {"mime": p.inline_data.mime_type, "sha256": hashlib.sha256(data).hexdigest(), "n": len(data)}
+    return d
+
+
+def _image_tokens(data):
+    try:
+        from PIL import Image
+        w, h = Image.open(io.BytesIO(data)).size
+    except Exception:
+        return 2000  # dims unreadable: flat guess
+    return max(258, math.ceil(w / 768) * math.ceil(h / 768) * 258)  # ~258 tokens per 768x768 tile
 
 
 def _est_input_tokens(parts):
     n = 0.0
-    for s in map(_ser, parts):
+    for p in parts:
+        s = _ser(p)
         if "text" in s:
-            n += len(s["text"]) / 4
-        elif str(s.get("mime", "")).startswith("audio/"):
-            n += s["n"] / 500  # ~32 tokens/s at ~16 KB/s
-        else:
-            n += 2000  # flat guess per image/other binary
+            n += len(s["text"].encode()) / 3  # conservative
+        if "inline" in s:
+            mime = s["inline"]["mime"] or ""
+            raw = p.inline_data.data if isinstance(p, types.Part) else bytes(p)
+            if mime.startswith("audio/"):
+                n += s["inline"]["n"] / 500  # ~32 tokens/s at ~16 KB/s
+            elif mime.startswith("image/"):
+                n += _image_tokens(raw)
+            else:
+                n += 2000
     return n
 
 
@@ -123,19 +148,33 @@ def _cost(model, prompt, out_and_thinking):
     return (prompt * pin + out_and_thinking * pout) / 1e6
 
 
-# ---- log / spend -------------------------------------------------------------------------------
+def worst_case_usd(model, parts, thinking):
+    pin, pout = price(model)
+    level = (thinking or THINK_DEFAULT[model]).upper()
+    if level not in THINK_BUDGET:
+        raise LLMError(f"unknown thinking level {thinking!r}; use one of {sorted(THINK_BUDGET)}")
+    return (_est_input_tokens(parts) * pin + (MAX_OUTPUT_TOKENS + THINK_BUDGET[level]) * pout) / 1e6
+
+
+# ---- log / spend / reservations ----------------------------------------------------------------
 def run_id():
-    return os.environ.get("LLM_RUN_ID") or _PROCESS_RUN_ID
+    return os.environ.get("LLM_RUN_ID") or f"day-{_today().isoformat()}"
+
+
+def _append(row):
+    BUILD.mkdir(parents=True, exist_ok=True)
+    row = {"ts": dt.datetime.now(dt.timezone.utc).isoformat(), "run_id": run_id(), **row}
+    with open(BUILD / "calls.jsonl", "a") as f:
+        f.write(json.dumps(row) + "\n")
 
 
 def _log(**row):
-    BUILD.mkdir(parents=True, exist_ok=True)
-    with open(BUILD / "calls.jsonl", "a") as f:
-        f.write(json.dumps({"ts": dt.datetime.now(dt.timezone.utc).isoformat(), "run_id": run_id(), **row}) + "\n")
+    _append(row)
 
 
 def run_spend(rid=None):
-    rid, total = rid or run_id(), 0.0
+    """Settled costs + reservations that no call row has settled yet."""
+    rid, cost, held, settled = rid or run_id(), 0.0, {}, set()
     try:
         lines = (BUILD / "calls.jsonl").read_text().splitlines()
     except FileNotFoundError:
@@ -145,14 +184,45 @@ def run_spend(rid=None):
             r = json.loads(ln)
         except ValueError:
             continue
-        if r.get("run_id") == rid:
-            total += r.get("cost_usd") or 0.0
-    return total
+        if r.get("run_id") != rid:
+            continue
+        if r.get("kind") == "reserve":
+            held[r["reservation_id"]] = r.get("reserved_usd") or 0.0
+        else:
+            cost += r.get("cost_usd") or 0.0
+            if r.get("reservation_id"):
+                settled.add(r["reservation_id"])
+    return cost + sum(v for k, v in held.items() if k not in settled)
+
+
+def _cap():
+    raw = os.environ.get("LLM_RUN_CAP_USD", "5.0")
+    try:
+        cap = float(raw)
+    except ValueError:
+        cap = math.nan
+    if not (0 <= cap < math.inf):
+        raise LLMError(f"LLM_RUN_CAP_USD must be a finite number >= 0, got {raw!r}")
+    return cap
+
+
+def _reserve(worst, cap):
+    """Atomically check spend+worst <= cap and record the reservation. Returns the reservation id."""
+    BUILD.mkdir(parents=True, exist_ok=True)
+    with open(BUILD / "calls.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        spent = run_spend()
+        if spent + worst > cap:
+            raise CapExceeded(f"worst-case ${worst:.4f} + spent/reserved ${spent:.4f} would exceed run cap ${cap:.2f}")
+        rid = uuid.uuid4().hex
+        _append({"kind": "reserve", "reservation_id": rid, "reserved_usd": worst})
+        return rid
 
 
 # ---- cache -------------------------------------------------------------------------------------
 def cache_key(model, parts, schema, thinking):
-    blob = json.dumps([model, [_ser(p) for p in parts], schema, thinking], sort_keys=True, separators=(",", ":"))
+    blob = json.dumps(["v1", model, [_ser(p) for p in parts], schema, thinking, MAX_OUTPUT_TOKENS],
+                      sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(blob.encode()).hexdigest()
 
 
@@ -161,6 +231,29 @@ def _cache_mode():
     if m not in ("readwrite", "replay", "off"):
         raise LLMError(f"LLM_CACHE must be readwrite|replay|off, got {m!r}")
     return m
+
+
+def _cache_read(path):
+    """-> (entry, reason). A missing or corrupt file is a miss."""
+    if not path.exists():
+        return None, "no entry"
+    try:
+        e = json.loads(path.read_text())
+        if isinstance(e["text"], str) and isinstance(e["usage"], dict):
+            return e, None
+    except (ValueError, KeyError, TypeError, OSError):
+        pass
+    return None, "corrupt entry"
+
+
+def _cache_write(path, entry):
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(f"{path.name}.{uuid.uuid4().hex}.tmp")
+        tmp.write_text(json.dumps(entry))
+        os.replace(tmp, path)
+    except OSError:
+        pass  # the cache is best effort; the call already succeeded and is logged
 
 
 # ---- client / call -----------------------------------------------------------------------------
@@ -192,26 +285,39 @@ def _usage(resp):
             "thinking_tokens": g("thoughts_token_count"), "cached_tokens": g("cached_content_token_count")}
 
 
+def _finish_reason(resp):
+    c = (getattr(resp, "candidates", None) or [None])[0]
+    fr = getattr(c, "finish_reason", None)
+    return getattr(fr, "name", fr)
+
+
+def _scrub(msg):
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    return (msg.replace(key, "***") if key else msg)[:200]  # scrub first, then truncate
+
+
 def call(model, parts, *, schema=None, purpose, thinking=None):
     t0 = time.monotonic()
-    base = {"model": model, "purpose": purpose}
-    key = cache_key(model, parts, schema, thinking)
-    base["request_sha256"] = key
+    base, resv, logged = {"model": model, "purpose": purpose}, None, False
+    zero = {"prompt_tokens": 0, "output_tokens": 0, "thinking_tokens": 0, "cached_tokens": 0}
     try:
-        pin, pout = price(model)  # unknown model -> refuse, even on a cache hit
+        key = cache_key(model, parts, schema, thinking)
+        base["request_sha256"] = key
+        price(model)  # unknown model -> refuse, even on a cache hit
         mode = _cache_mode()
         path = BUILD / "cache" / f"{key}.json"
-        if mode != "off" and path.exists():
-            hit = json.loads(path.read_text())
-            res = _finish(hit["text"], hit["usage"], schema, 0.0, True, time.monotonic() - t0)
-            _log(**base, **hit["usage"], latency_s=res.latency_s, cost_usd=0.0, cache_hit=True, error=None)
+        hit, why = (None, "cache off") if mode == "off" else _cache_read(path)
+        if hit:
+            u = hit["usage"]
+            res = _finish(hit["text"], u, schema, 0.0, True, time.monotonic() - t0)
+            _log(**base, **zero, cached_prompt_tokens=u.get("prompt_tokens", 0),
+                 cached_output_tokens=u.get("output_tokens", 0), cached_thinking_tokens=u.get("thinking_tokens", 0),
+                 latency_s=res.latency_s, cost_usd=0.0, cache_hit=True, finish_reason="STOP", error=None)
             return res
         if mode == "replay":
-            raise CacheMiss(f"LLM_CACHE=replay and no cache entry {key[:12]} for purpose {purpose!r}")
-        cap = float(os.environ.get("LLM_RUN_CAP_USD", "5.0"))
-        worst = run_spend() + _est_input_tokens(parts) * pin / 1e6 + MAX_OUTPUT_TOKENS * pout / 1e6
-        if worst > cap:
-            raise CapExceeded(f"worst-case ${worst:.4f} would exceed run cap ${cap:.2f} (spent ${run_spend():.4f})")
+            raise CacheMiss(f"LLM_CACHE=replay: {why} for {key[:12]} (purpose {purpose!r})")
+        cap = _cap()
+        resv = _reserve(worst_case_usd(model, parts, thinking), cap)
         cfg = {"max_output_tokens": MAX_OUTPUT_TOKENS}
         if schema is not None:
             cfg.update(response_mime_type="application/json", response_json_schema=schema)
@@ -219,25 +325,28 @@ def call(model, parts, *, schema=None, purpose, thinking=None):
             cfg["thinking_config"] = types.ThinkingConfig(thinking_level=thinking)
         resp = _generate(model, [p if not isinstance(p, str) else text_part(p) for p in parts],
                          types.GenerateContentConfig(**cfg))
+        usage, text, fr = _usage(resp), resp.text or "", _finish_reason(resp)
+        cost = _cost(model, usage["prompt_tokens"], usage["output_tokens"] + usage["thinking_tokens"])
+        lat = round(time.monotonic() - t0, 3)
+        row = dict(**base, **usage, latency_s=lat, cost_usd=cost, cache_hit=False, finish_reason=fr,
+                   reservation_id=resv)
+        try:
+            res = _finish(text, usage, schema, cost, False, lat)
+        except LLMError as e:
+            _log(**row, error=f"InvalidJSON: len={len(text)} sha256={hashlib.sha256(text.encode()).hexdigest()}")
+            logged = True
+            raise
+        _log(**row, error=None)  # log first, then cache
+        resv = None
+        if mode == "readwrite" and text and fr in (None, "STOP"):
+            _cache_write(path, {"text": text, "usage": usage})
+        return res
     except Exception as e:
-        _log(**base, prompt_tokens=0, output_tokens=0, thinking_tokens=0, cached_tokens=0,
-             latency_s=round(time.monotonic() - t0, 3), cost_usd=0.0, cache_hit=False,
-             error=f"{type(e).__name__}: {getattr(e, 'code', '') or str(e)[:120]}".replace(
-                 os.environ.get("GEMINI_API_KEY", "\0").strip() or "\0", "***"))
+        if not logged:
+            _log(**base, **zero, latency_s=round(time.monotonic() - t0, 3), cost_usd=0.0, cache_hit=False,
+                 finish_reason=None, reservation_id=resv,
+                 error=_scrub(f"{type(e).__name__}: {getattr(e, 'code', '') or e}"))
         raise
-    usage, text = _usage(resp), resp.text or ""
-    cost = _cost(model, usage["prompt_tokens"], usage["output_tokens"] + usage["thinking_tokens"])
-    lat = time.monotonic() - t0
-    try:
-        res = _finish(text, usage, schema, cost, False, lat)
-    except LLMError as e:
-        _log(**base, **usage, latency_s=round(lat, 3), cost_usd=cost, cache_hit=False, error=str(e)[:200])
-        raise
-    if mode == "readwrite":
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"text": text, "usage": usage}))
-    _log(**base, **usage, latency_s=round(lat, 3), cost_usd=cost, cache_hit=False, error=None)
-    return res
 
 
 def _finish(text, usage, schema, cost, cached, latency):
