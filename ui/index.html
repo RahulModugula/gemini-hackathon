@@ -599,7 +599,8 @@ body.slideOn main,body.slideOn .ask,body.slideOn .strip{visibility:hidden}
 :root[data-theme="dark"]{--board:#111113;--board-2:#18181B;--chrome:#18181B;--line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.14);--mute:#8B8B93;--text:#EDEDEF;--on-text:#111113;
   --mat:#141416;--mat-2:#1c1c20;--mat-line:rgba(255,255,255,.035);--red-on-dark:#e0675c;--green-on-dark:#4fb487;--blue:#5B8DEF;--accent:#5B8DEF}
 :focus-visible{outline:none;box-shadow:0 0 0 2px var(--board),0 0 0 4px var(--accent)!important}
-body{font:14px/1.5 var(--sans);background:var(--board);background-image:none;font-feature-settings:"tnum" 1;letter-spacing:0}
+body{font:14px/1.5 var(--sans);background:var(--board);background-image:none;letter-spacing:0}
+.strip,.counter,.trust b,.pipe-clock,.mute.mono,.foot{font-variant-numeric:tabular-nums}
 .brand{font-size:15px;font-weight:600;font-stretch:normal;letter-spacing:-.005em}
 .brand i{width:10px;height:10px;border:2px solid var(--accent)}.brand i::after{background:var(--accent);height:16px;top:-5px;left:2px}
 .top{height:52px;padding:0 16px;gap:12px;border-bottom:1px solid var(--line)}
@@ -683,7 +684,7 @@ main{padding:12px 16px 32px}
 .hud.roomchip{border:1px solid var(--line);border-left:3px solid var(--hl);border-radius:var(--r);padding:8px 12px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
 .roomchip b{font-size:12px;font-weight:600;font-stretch:normal;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
 .roomchip .tags{font-size:15px;font-weight:600}.roomchip .by{font-size:12px}
-.hud.legend2{background:var(--chrome);color:var(--text);border:1px solid var(--line);border-radius:var(--r);font-size:12px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.hud.legend2,.legend2{position:static;opacity:1;max-width:none;flex-direction:row;flex-wrap:wrap;gap:4px 16px;padding:8px 2px 0;background:transparent;color:var(--mute);border:0;box-shadow:none;font-size:12px}
 .stage-load{color:var(--mute);font-size:13px}
 .wipe{background:var(--mat)}
 .wframe{box-shadow:0 0 0 1px var(--line-2),0 12px 32px rgba(16,24,40,.10);border-radius:4px}
@@ -701,7 +702,7 @@ main{padding:12px 16px 32px}
 .sealrows .tx{padding:8px 12px 8px 0}.sealrows .why{font-size:12px}
 .sealrows .arrow{background:rgba(47,91,211,.08);border-radius:3px}
 .unclear{border:1px solid rgba(180,54,43,.3);background:rgba(180,54,43,.05);border-radius:var(--r);font-weight:500;font-size:13px;color:var(--red)}
-.lbtn.wide{border-radius:var(--r);background:var(--chrome);color:var(--text);border:1px solid var(--line-2);font-weight:500;height:36px}
+.lbtn.wide{align-self:flex-start;border-radius:var(--r);background:var(--chrome);color:var(--text);border:1px solid var(--line-2);font-weight:500;font-size:13px;height:32px;padding:0 12px}
 .reason{border-left:2px solid var(--line-2);background:transparent;padding:4px 0 4px 12px;margin:0 0 12px;font-size:14px;color:var(--ink-2)}
 .legend{border-top:1px solid var(--line);margin:0}
 .legend li{border-bottom:1px solid var(--line);font-size:13px;padding:6px 2px}
@@ -771,17 +772,34 @@ body.slideOn .slideHost{background:#13161b;background-image:none;color:#f2f4f7;b
 .sl-k{color:#aab2bd;font-size:22px}
 .counter b{color:#8fb0ff;font-weight:600}
 .trust .st{border-top:2px solid #8fb0ff;border-radius:0 0 8px 8px;background:rgba(255,255,255,.04)}.trust b{font-weight:600}
+.trust small{font-size:16px;color:#aab2bd;font-variant-numeric:tabular-nums}
 .bigline p{font-weight:500;font-stretch:normal}.bigline .num{color:#8fb0ff;font-weight:600}
 .wt{border-radius:3px;overflow:hidden}
 .sdafter{font-weight:600}
 .mat{perspective:1600px;perspective-origin:50% 30%}
-.tiltwrap{position:absolute;inset:0;transform-origin:50% 62%;transition:transform .9s cubic-bezier(.2,0,0,1),opacity .45s ease-out .35s}
-.host3d{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity .5s cubic-bezier(.2,0,0,1)}
+.tiltwrap{position:absolute;inset:0;transform-origin:50% 62%;transition:transform .8s cubic-bezier(.2,0,0,1),opacity .4s cubic-bezier(.2,0,0,1)}
+.host3d{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity .4s cubic-bezier(.2,0,0,1)}
 .host3d canvas{display:block;width:100%;height:100%}
 .stage.in3d .host3d{opacity:1;pointer-events:auto}
 .stage.in3d .tiltwrap{opacity:0}
 .stage.in3d .legend2{display:none}
 .host3d .flat3d{display:none}
+/* round 2 design pass */
+body.noCards .samples,body.noCards .ledger{display:none}body.noCards #cardsView{grid-template-columns:minmax(0,880px)}
+.slide:has(.trust){justify-content:flex-start}.trust{margin-top:40px}
+.row .rseal{display:none}.row:hover .rseal,.row:focus-visible .rseal{display:inline}
+.row .chips:not(:has(.chip)){display:none}
+.replay.live{color:var(--mute)}
+.emptyState{display:block;padding:32px;border:1px solid var(--line);border-radius:8px;background:var(--chrome);color:var(--text)}
+.emptyState h2{margin:0 0 8px;font-size:20px;font-weight:600;letter-spacing:-.01em}
+.emptyState>p{margin:0 0 16px;font-size:14px;color:var(--mute);max-width:60ch}
+.starts{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:8px}
+.start{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:12px 16px;text-align:left;background:var(--board);border:1px solid var(--line);border-radius:6px;transition:border-color .15s cubic-bezier(.2,0,0,1),background .15s cubic-bezier(.2,0,0,1)}
+.start:hover{border-color:var(--accent);background:var(--chrome)}
+.start b{font-size:14px;font-weight:600}.start span{font-size:13px;color:var(--mute)}
+.askhint{margin:0;font-size:13px;color:var(--mute)}.askhint kbd{font:500 11px var(--mono);border:1px solid var(--line-2);border-radius:4px;padding:1px 5px;margin:0 2px}
+.seal .sealrows li{line-height:1.45}.seal .sealrows .tx{padding:10px 12px 10px 0}.seal .sealrows .why{margin-top:2px;color:var(--mute)}
+.aside{gap:16px}
 @media (max-width:1180px){.paper{grid-template-columns:minmax(0,1fr)}.paper>.cols>.aside{grid-column:1;grid-row:auto;position:static}}
 @media (max-width:900px){#cardsView{grid-template-columns:1fr}.kbdhint{display:none}}
 @media (max-width:700px){.shead{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.shead .htext{flex:none}.shead .hact{align-self:flex-start}
@@ -794,7 +812,7 @@ body.slideOn .slideHost{background:#13161b;background-image:none;color:#f2f4f7;b
 <body>
 <header class="top">
   <h1 class="brand"><i aria-hidden="true"></i>Drawing Claim Checker</h1>
-  <span id="replayBadge" class="replay" hidden>replay mode</span>
+  <span id="replayBadge" class="replay" hidden title="Model answers come from recorded runs: no live model calls">Recorded</span>
   <span class="spacer"></span>
   <button id="presentBtn" class="thm present-btn" type="button" aria-pressed="false" title="Step through the sample claims with → and space. Esc leaves.">Present <kbd>P</kbd></button>
   <button id="thmBtn" class="thm" type="button" aria-pressed="false">Dark</button>
@@ -997,7 +1015,7 @@ function heroOf(list){
 }
 function addCards(list){
   const ids=new Set(list.map(c=>c.id));
-  cards=list.concat(cards.filter(c=>!ids.has(c.id)));
+  cards=dedupeCards(list.concat(cards.filter(c=>!ids.has(c.id))));
   if(list.length)selId=list[0].id;
   if(location.hash&&location.hash!=='#cards'&&location.hash!=='#3d')location.hash='#cards';
   view3d.update();focus3d();applyRoute();renderStrip();
@@ -1049,6 +1067,7 @@ function renderSamples(list){
   const box=$('samples');box.textContent='';
   if(!Array.isArray(list)||!list.length)return;
   samples=list;
+  if(!cards.length&&parseHash().tab==='cards')renderDetail(false);
   box.append(el('span','sl','Try one:'));
   for(const s of list){
     const b=el('button','smp'+(s.kind==='question'?' q':''));b.type='button';
@@ -1155,7 +1174,7 @@ function openRfi(c){
     else showModal('RFI draft',r.text);
   }
 }
-const healthReady=fetch('/api/health').then(r=>r.json()).then(h=>{cacheMode=h&&h.cache_mode;if(cacheMode==='replay')$('replayBadge').hidden=false;}).catch(()=>{});
+const healthReady=fetch('/api/health').then(r=>r.json()).then(h=>{cacheMode=h&&h.cache_mode;const b=$('replayBadge');b.hidden=false;if(cacheMode==='replay'){b.textContent='Recorded';}else{b.textContent='Live';b.classList.add('live');b.title='Each check calls the models now';}}).catch(()=>{});
 
 function parseHash(){
   const h=location.hash.slice(1);
@@ -1287,22 +1306,22 @@ function renderLedger(){
     }
     box.append(hd);
   }
-  if(!cards.length){box.append(el('div','mute','No claims yet. Type one above.'));return;}
+  if(!cards.length){box.append(el('div','mute','No claims yet.'));return;}
   let selBtn=null;
   for(const c of cards){
     const btn=el('button','row '+vCls(c.verdict)+(c.id===selId?' sel':''));
     btn.type='button';btn.setAttribute('role','listitem');
     if(c.id===selId)btn.setAttribute('aria-current','true');
     const top=el('div','rtop');
-    top.append(el('span','vw',vWord(c.verdict)));
+    top.append(el('span','vw',c.replay_miss?'Not recorded':c.mode==='answer'?stampWord(c):vWord(c.verdict)));
     const pct=Math.round((Number(c.confidence)||0)*100);
     const bar=el('div','cbar');const fill=el('div','cfill');fill.style.width=pct+'%';bar.append(fill);
-    top.append(bar,el('span','mute mono',pct+'%'));
+    if(c.verdict!=='unclear')top.append(bar,el('span','mute mono',pct+'%'));
     btn.append(top,el('div','claimTxt',c.claim||''));
     const chips=el('div','chips');
     if(c.speaker)chips.append(el('span','chip spk',c.speaker));
     if(changedByAddendum(c))chips.append(el('span','chip amber','Changed by addendum'));
-    if(c.seal)chips.append(el('span','mute mono','seal '+c.seal+'…'));
+    if(c.seal)chips.append(el('span','mute mono rseal','seal '+c.seal+'…'));
     if(chips.childNodes.length)btn.append(chips);
     btn.onclick=()=>{
       selId=c.id;
@@ -1456,16 +1475,38 @@ async function mountStage3d(host,card){
   return {focus(){v.update();},destroy(){}};
 }
 
+/* newest card per claim text wins (the ledger is newest first), so a re-run never shows twice */
+function dedupeCards(list){
+  const seen=new Set();
+  return list.filter(c=>{const k=String(c.claim||'').trim().toLowerCase().replace(/\s+/g,' ');if(seen.has(k))return false;seen.add(k);return true;});
+}
+/* empty ledger: the recorded samples are the primary action */
+function emptyState(){
+  const em=el('section','emptyState');em.setAttribute('aria-label','Start here');
+  em.append(el('h2',null,'Check the drawings before you send an RFI'),
+    el('p',null,'Pick a recorded example to see a claim checked against the current sheet, or ask your own question.'));
+  const ol=el('ol','starts');
+  for(const s of samples){
+    const li=el('li');const b=el('button','start');b.type='button';
+    b.append(el('b',null,s.label),el('span',null,s.claim));
+    b.onclick=()=>{if(running)return;$('claimIn').value=s.claim;submitClaim();};
+    li.append(b);ol.append(li);
+  }
+  if(!samples.length)ol.append(el('li','mute','Loading the examples\u2026'));
+  const k=el('p','askhint');k.append('Or press ',el('kbd',null,'\u2318K'),' and ask anything about the drawings.');
+  em.append(ol,k);
+  return em;
+}
+
 function renderDetail(animate){
   const d=$('detail');
   const c=cards.find(x=>x.id===selId)||cards[0];
   if(!c){
     if(stage){stage.destroy();stage=null;stageCard=null;}
     d.textContent='';
-    const em=el('div','emptyState');
-    em.append(el('b',null,'No claims checked yet'),el('span',null,'Pick a sample above or type a claim. The answer opens here on the drawing sheet.'));
-    d.append(em);return;
+    document.body.classList.add('noCards');d.append(emptyState());return;
   }
+  document.body.classList.remove('noCards');
   if(stage&&stageCard===c.id&&d.querySelector('.paper')){paintRfi(c);return;}   // same card: keep the stage where it is
   if(stage){stage.destroy();stage=null;}
   d.textContent='';
@@ -1656,7 +1697,7 @@ fetch('/api/cards')
   .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
   .catch(()=>fetch('./cards.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}))
   .then(async data=>{
-    cards=Array.isArray(data)?data:[];
+    cards=Q.get('empty')?[]:dedupeCards(Array.isArray(data)?data:[]);   // ?empty=1: test hook for the first-run screen
     selId=heroOf(cards);
     const want=Q.get('card');
     if(want){const hit=cards.find(c=>c.id===want)||cards.find(c=>(c.claim||'').toLowerCase().includes(want.toLowerCase()));if(hit)selId=hit.id;}

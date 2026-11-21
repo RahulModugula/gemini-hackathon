@@ -131,10 +131,12 @@ export function mount3D(o) {
         for (const e of evs) {
           const k = Math.round(e.bbox[0] / 20) + ',' + Math.round(e.bbox[1] / 20), n = seen[k] = (seen[k] || 0) + 1;
           const g = new T.Group();
-          g.position.set(toX((e.bbox[0] + e.bbox[2]) / 2) + (n - 1) * 3, 0, toZ((e.bbox[1] + e.bbox[3]) / 2) + (n - 1) * 3);
+          /* the stem stands exactly on the evidence box centre; pins sharing a spot stack upward instead of sliding off */
+          g.position.set(toX((e.bbox[0] + e.bbox[2]) / 2), 0, toZ((e.bbox[1] + e.bbox[3]) / 2));
           if (c.id === getSelId()) g.scale.setScalar(1.5);
-          const stem = new T.Mesh(stemGeo, mat); stem.position.y = 7;
-          const head = new T.Mesh(headGeo, mat); head.position.y = 15;
+          const lift = (n - 1) * 6;
+          const stem = new T.Mesh(stemGeo, mat); stem.position.y = 7; stem.scale.y = (14 + lift) / 14; stem.position.y = (14 + lift) / 2;
+          const head = new T.Mesh(headGeo, mat); head.position.y = 15 + lift;
           stem.userData = head.userData = { card: c, ev: e };
           g.add(stem, head); scene.add(g); dyn.push(g); pins.push(stem, head);
         }

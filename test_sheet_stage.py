@@ -90,9 +90,12 @@ def test_heldout_totals_sum_the_frozen_runs(env):
     c, tmp = env
     assert c.get("/api/heldout").json() is None
     (tmp / "metrics_heldout_v1_final.json").write_text(json.dumps({"label": "a", "n": 17, "false_alarms": 0, "coverage": 0.471, "selective_accuracy": 1.0}))
-    (tmp / "metrics_heldout_v2.json").write_text(json.dumps({"label": "b", "n": 43, "false_alarms": 0, "coverage": 0.326, "selective_accuracy": 1.0}))
+    (tmp / "metrics_heldout_v2.json").write_text(json.dumps({"label": "b", "n": 43, "false_alarms": 0, "coverage": 0.326, "selective_accuracy": 1.0,
+                                                            "correct": 27, "accuracy": 0.628, "accuracy_ci95": [0.479, 0.756], "date": "2026-11-21"}))
     j = c.get("/api/heldout").json()
     assert (j["n"], j["false_alarms"], j["answered"], j["answered_right"]) == (60, 0, 22, 22)
+    v2 = j["runs"][1]
+    assert (v2["correct"], v2["n"], v2["accuracy_ci95"], v2["date"]) == (27, 43, [0.479, 0.756], "2026-11-21")
 
 
 def test_sheetset_lists_rows_and_supersession(env):

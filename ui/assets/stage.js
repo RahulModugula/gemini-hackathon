@@ -34,12 +34,14 @@ function union(bs) {
   return bs.reduce((a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]);
 }
 /* pad a pt rect and stretch it to the stage aspect, staying on the sheet */
-function frame(r, aspect, W, H, pad, minW) {
+/* bounds = [x0, y0, x1, y1] of the world (the sheet, or the crop when the sheet is unavailable) */
+export function frame(r, aspect, bounds, pad, minW) {
+  const [bx0, by0, bx1, by1] = bounds, W = bx1 - bx0, H = by1 - by0;
   let w = Math.max(minW, (r[2] - r[0]) + 2 * pad), h = Math.max(minW / aspect, (r[3] - r[1]) + 2 * pad);
   if (w / h < aspect) w = h * aspect; else h = w / aspect;
   w = Math.min(w, W); h = Math.min(h, H);
   const cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2;
-  const x = Math.max(0, Math.min(W - w, cx - w / 2)), y = Math.max(0, Math.min(H - h, cy - h / 2));
+  const x = Math.max(bx0, Math.min(bx1 - w, cx - w / 2)), y = Math.max(by0, Math.min(by1 - h, cy - h / 2));
   return [x, y, x + w, y + h];
 }
 
@@ -131,8 +133,8 @@ export function createStage(card, opts = {}) {
   const b3d = can3d ? mkBtn('3D', () => tilt()) : null;
   const roomChip = el('div', 'hud roomchip'); roomChip.hidden = true;
   const legend = el('div', 'hud legend2'); legend.hidden = true;
-  mat.append(cap, ctl, roomChip, legend);
-  root.append(mat);
+  mat.append(cap, ctl, roomChip);
+  root.append(mat, legend);
 
   let W = 0, H = 0, ox = 0, oy = 0, target = null, mode = 'sheet', timers = [], wipeApi = null, landed = false, played = false;
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
@@ -172,7 +174,7 @@ export function createStage(card, opts = {}) {
     let focus = union(ptBoxes) || (isBox(first.crop_rect_pt) ? first.crop_rect_pt : [ox, oy, ox + W, oy + H]);
     if (room && room.bbox) focus = union([focus, room.bbox]);
     const aspect = (mat.clientWidth || 16) / (mat.clientHeight || 9);
-    target = frame(focus, aspect, W + ox, H + oy, Math.max(40, (focus[2] - focus[0]) * 0.45), 340);
+    target = frame(focus, aspect, [ox, oy, ox + W, oy + H], Math.max(40, (focus[2] - focus[0]) * 0.45), Math.min(340, W));
     const unit = (target[2] - target[0]) / 100;      // overlay sizes scale with the framed region
     root.style.setProperty('--u', unit.toFixed(3));
 
@@ -213,12 +215,13 @@ export function createStage(card, opts = {}) {
 
     /* numbered evidence boxes */
     evs.forEach((e, i) => {
+      const num = String(cev.indexOf(e) + 1);       // same number as the evidence list, even when some boxes sit on another sheet
       const [a, b, c, d] = e.bbox.map(Number);
       const g = sv('g', { class: 'ebox', style: `--i:${i}` });
       g.append(sv('rect', { x: a, y: b, width: c - a, height: d - b, pathLength: '1', stroke: vColor(card.verdict) }));
       const ts = unit * 2.3;
-      g.append(sv('rect', { class: 'etag', x: a - ts * 0.15, y: b - ts * 1.05, width: ts * (String(i + 1).length * 0.6 + 0.5), height: ts, fill: vColor(card.verdict) }));
-      g.append(Object.assign(sv('text', { x: a + ts * 0.1, y: b - ts * 0.25, 'font-size': (ts * 0.8).toFixed(2) }), { textContent: String(i + 1) }));
+      g.append(sv('rect', { class: 'etag', x: a - ts * 0.15, y: b - ts * 1.05, width: ts * (num.length * 0.6 + 0.5), height: ts, fill: vColor(card.verdict) }));
+      g.append(Object.assign(sv('text', { x: a + ts * 0.1, y: b - ts * 0.25, 'font-size': (ts * 0.8).toFixed(2) }), { textContent: num }));
       gBox.append(g);
     });
 
@@ -261,7 +264,8 @@ export function createStage(card, opts = {}) {
         return;
       }
     } else if (api3d.focus) api3d.focus(card.id);
-    tiltT = setTimeout(() => root.classList.add('in3d'), reduced() ? 0 : 650);
+    /* crossfade starts once the tilt is ~60% through, so the walls appear to rise out of the leaning sheet */
+    tiltT = setTimeout(() => root.classList.add('in3d'), reduced() ? 0 : 480);
   }
   function sheet(anim) {
     flat();
