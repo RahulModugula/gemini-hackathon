@@ -43,7 +43,10 @@ Word boxes and tile `bbox_pt` are in that rendered space. PyMuPDF calls that tak
               "unmatched_revisions": [], "superseded": ["A201", ...], "revised_twice": ["A1100", "ED200"],
               "conflicts": [], "unmatched": [],
               "addenda_crosscheck": {"add1": {"cover_claim_revised_sheets": 16, "narrative_listed": 17, "bound": 17,
-                 "matched": [...], "bound_not_listed": [], "listed_not_bound": [], "cover_claim_matches_listed": false}},
+                 "matched": [...], "bound_not_listed": [], "listed_not_bound": [], "cover_claim_matches_listed": false,
+                 "title_mismatches": [{"sheet_number": "E400", "narrative": "ELECTRICL ...", "title_block": "ELECTRICAL ..."}],
+                 "unparsed": []},                      // drawings-section narrative lines the parser could not place
+                 "add3": {"error": "missing data/addendum-3.pdf"}},   // input PDF absent: listed, never dropped
               ...},
   "rows": [
     {"sheet": "add2-p007", "source": "add2", "issue_order": 2, "sheet_number": "A1100",
@@ -59,7 +62,9 @@ Word boxes and tile `bbox_pt` are in that rendered space. PyMuPDF calls that tak
 `current`/`superseded_by` are null when the number is unmatched or listed in `conflicts` (same number twice
 in one issue). `title` is the large text between the `Sheet:` and `Scale:` labels of the title block; `revision*`
 come from the rows between the `Description:` header and the issue-date `Date:` label. Dates are strings as
-printed, not normalised. Nothing is guessed: G000 (cover sheet, no `Sheet:`/`Scale:` labels in its text layer)
+printed, not normalised. `summary.superseded` is a sorted list of unique sheet numbers (a number revised in
+two addenda appears once). `title_mismatches` compares narrative and title-block titles ignoring case and
+punctuation; `unparsed` should be empty, anything in it needs a human look. Nothing is guessed: G000 (cover sheet, no `Sheet:`/`Scale:` labels in its text layer)
 has `title: null`.
 
 ## build/addenda_changes.json (`analyze_sheets.py`, ticket 5)

@@ -81,3 +81,60 @@ def test_revise_bullets_map_to_sheet(out):
         "Fixture height Interior Elevation Notes."]
     pl2 = next(c for c in changes if c["source"] == "add2" and c["sheet_number"] == "A1100")
     assert pl2["changes"] == [{"action": "REMOVE", "text": "PL-2 from project."}]
+
+
+def test_three_issue_sheets_supersede_to_the_latest(out):
+    idx, _ = out
+    rows = {r["sheet"]: r for r in idx["rows"]}
+    for latest, older in (("add2-p007", ("add1-p016", "dwg-p025")),   # A1100
+                          ("add2-p009", ("add1-p020", "dwg-p046"))):  # ED200
+        assert rows[latest]["current"] is True and rows[latest]["superseded_by"] is None
+        for s in older:
+            assert rows[s]["current"] is False and rows[s]["superseded_by"] == latest
+    assert idx["summary"]["revised_twice"] == ["A1100", "ED200"]
+
+
+def test_superseded_is_sorted_unique(out):
+    sup = out[0]["summary"]["superseded"]
+    assert sup == sorted(set(sup)) and len(sup) == 20
+
+
+def test_removed_variant_and_change_counts(out):
+    _, changes = out
+    by = {(c["source"], c["sheet_number"]): c["changes"] for c in changes}
+    # "REMOVED Conduit ..." (no colon, past tense) normalises to REMOVE
+    assert by[("add1", "E200")][-1] == {"action": "REMOVE", "text": "Conduit in Shipping and Receiving"}
+    assert [c["action"] for c in by[("add1", "E000")]] == ["REMOVE", "REVISE"]  # "REVISED: SYMBOLS"
+    # counted by hand from the narratives: 40 bullets in Addendum 1, 5 in Addendum 2
+    assert sum(len(cs) for (src, _), cs in by.items() if src == "add1") == 40
+    assert sum(len(cs) for (src, _), cs in by.items() if src == "add2") == 5
+    assert len(by[("add1", "E200")]) == 11 and len(by[("add1", "A201")]) == 3
+    assert len(by[("add1", "P101")]) == 3 and len(by[("add1", "G002")]) == 1
+
+
+def test_no_unparsed_narrative_lines(out):
+    cc = out[0]["summary"]["addenda_crosscheck"]
+    assert cc["add1"]["unparsed"] == [] and cc["add2"]["unparsed"] == []
+
+
+def test_title_mismatches_between_narrative_and_title_block(out):
+    cc = out[0]["summary"]["addenda_crosscheck"]
+    assert cc["add2"]["title_mismatches"] == []
+    assert cc["add1"]["title_mismatches"] == [{
+        "sheet_number": "E400", "narrative": "ELECTRICL SCHEDULES AND DETAILS",  # typo in the narrative
+        "title_block": "ELECTRICAL SCHEDULES AND DETAILS"}]
+
+
+@pytest.mark.parametrize("sheet,title", [
+    ("dwg-p002", "TYPICAL MOUNTING HEIGHTS & ADA GUIDELINES"),
+    ("dwg-p004", "PROJECT LOCATION & GENERAL NOTES"),   # rotated civil sheet
+    ("dwg-p007", "EROSION CONTROL PLAN"),
+    ("dwg-p020", "ENLARGED FLOOR PLANS & INTERIOR ELEVATIONS"),
+    ("dwg-p027", "STRUCTURAL PLANS AT REMODELING AND NEW SHELTER"),  # three lines
+    ("dwg-p042", "MECHANICAL DETAILS"),
+    ("dwg-p043", "MECHANICAL-ELECTRICAL SCHEDULES"),
+    ("add1-p015", "WINDOW TYPES, BORROWED LITE TYPES"),
+    ("add2-p010", "FIRST FLOOR - LIGHTING PLAN"),
+])
+def test_titles(out, sheet, title):
+    assert {r["sheet"]: r["title"] for r in out[0]["rows"]}[sheet] == title

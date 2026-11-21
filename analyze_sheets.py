@@ -95,46 +95,68 @@ def find_revisions(words, width, height):
 
 
 def parse_addendum_narrative(pdf_path):
-    """Parse an addendum's narrative pages into {cover_claim, sheets: [{sheet_number, title, changes}]}.
-
-    Sheets come from entries like `A201 - FIRST FLOOR PLAN` under the 'Drawings:' heading, until
-    'End of Addendum'. Changes are REVISE/ADD/REMOVE bullets ({action, text}); wrapped lines (including
-    across a page break) are joined to the previous bullet.
-    """
+    """Read an addendum PDF's narrative pages (2.. up to the first drawing sheet) and parse them."""
     import pymupdf
     doc = pymupdf.open(pdf_path)
-    m = re.search(r"(\d+)\s+revised\s+sheets", doc[0].get_text(), re.I)
-    lines = []
+    pages = []
     for i in range(1, len(doc)):
         if doc[i].rect.width > 1000:  # first drawing sheet: the narrative is over
             break
-        lines += [ln.strip() for ln in doc[i].get_text().splitlines()]
-    out, cur, change, in_drawings = [], None, None, False
-    for ln in lines:
-        if not ln or ln == "•" or re.fullmatch(r"\d{1,2}", ln):  # blanks, bullets, page numbers
-            continue
-        if re.match(r"End of Addendum", ln, re.I):
+        pages.append(doc[i].get_text())
+    return parse_narrative_text(doc[0].get_text(), pages)
+
+
+def parse_narrative_text(cover_text, pages):
+    """Parse narrative text into {cover_claim, sheets: [{sheet_number, title, changes}], unparsed}.
+
+    `pages` are the texts of pages 2, 3, ... Sheets come from entries like `A201 - FIRST FLOOR PLAN`
+    under the 'Drawings:' heading, until 'End of Addendum'. Changes are REVISE/ADD/REMOVE bullets
+    ({action, text}); wrapped lines (including across a page break) join the previous bullet. A page
+    number is a line equal to the current page's number. Any other non-empty line in the drawings section
+    that is not a heading, entry, bullet or continuation goes to `unparsed` (never silently dropped).
+    """
+    m = re.search(r"(\d+)\s+revised\s+sheets", cover_text, re.I)
+    out, unparsed = [], []
+    cur, change, in_drawings, done = None, None, False, False
+    for pno, text in enumerate(pages, start=2):
+        for raw in text.splitlines():
+            ln = re.sub(r"^•\s*", "", raw.strip())  # bullet glyph alone on a line or inline
+            if not ln or ln == str(pno):
+                continue
+            if re.match(r"End of Addendum", ln, re.I):
+                done = True
+                break
+            if ln.lower().startswith("drawings:"):
+                in_drawings = True
+                continue
+            if not in_drawings:
+                continue
+            e = ENTRY_RE.match(ln)
+            if e:
+                cur = next((s for s in out if s["sheet_number"] == e.group(1)), None)
+                if cur is None:
+                    cur = {"sheet_number": e.group(1), "title": e.group(2), "changes": []}
+                    out.append(cur)
+                change = None
+                continue
+            a = ACTION_RE.match(ln)
+            if a and cur is not None:
+                change = {"action": ACTION_NORM[a.group(1).upper()], "text": a.group(2).strip()}
+                cur["changes"].append(change)
+            elif ln.endswith(":"):  # category heading ("Plumbing:"); ends the current bullet
+                change = None
+            elif change is not None:  # wrapped bullet text
+                change["text"] = (change["text"] + " " + ln).strip()
+            else:
+                unparsed.append(ln)
+        if done:
             break
-        if ln.lower().startswith("drawings:"):
-            in_drawings = True
-            continue
-        if not in_drawings:
-            continue
-        e = ENTRY_RE.match(ln)
-        if e:
-            cur = next((s for s in out if s["sheet_number"] == e.group(1)), None)
-            if cur is None:
-                cur = {"sheet_number": e.group(1), "title": e.group(2), "changes": []}
-                out.append(cur)
-            change = None
-            continue
-        a = ACTION_RE.match(ln)
-        if a and cur is not None:
-            change = {"action": ACTION_NORM[a.group(1).upper()], "text": a.group(2).strip()}
-            cur["changes"].append(change)
-        elif change is not None and not ln.endswith(":"):  # wrapped bullet text
-            change["text"] = (change["text"] + " " + ln).strip()
-    return {"cover_claim": int(m.group(1)) if m else None, "sheets": out}
+    return {"cover_claim": int(m.group(1)) if m else None, "sheets": out, "unparsed": unparsed}
+
+
+def _norm(title):
+    """Case- and punctuation-insensitive form for comparing narrative and title-block titles."""
+    return re.sub(r"[^A-Z0-9&]+", " ", title.upper()).strip()
 
 
 def prefix(num):
@@ -193,7 +215,14 @@ def main(build="build", data="data"):
         listed = [x["sheet_number"] for x in nar["sheets"]]
         bound = [r["sheet_number"] for r in rows if r["source"] == src and r["sheet_number"]]
         changes += [{"source": src, **x} for x in nar["sheets"]]
+        block_title = {r["sheet_number"]: r["title"] for r in rows if r["source"] == src}
+        mismatches = [{"sheet_number": x["sheet_number"], "narrative": x["title"],
+                       "title_block": block_title[x["sheet_number"]]}
+                      for x in nar["sheets"]
+                      if block_title.get(x["sheet_number"])
+                      and _norm(x["title"]) != _norm(block_title[x["sheet_number"]])]
         crosscheck[src] = {
+            "title_mismatches": mismatches, "unparsed": nar["unparsed"],
             "cover_claim_revised_sheets": nar["cover_claim"], "narrative_listed": len(listed),
             "bound": len(bound), "matched": sorted(set(listed) & set(bound)),
             "bound_not_listed": sorted(set(bound) - set(listed)),
@@ -210,7 +239,7 @@ def main(build="build", data="data"):
         "addenda_crosscheck": crosscheck,
         "by_source": Counter(r["source"] for r in rows),
         "by_discipline_base": Counter(r["discipline"] for r in rows if r["source"] == "dwg"),
-        "superseded": sorted(r["sheet_number"] for r in rows if r.get("superseded_by")),
+        "superseded": sorted({r["sheet_number"] for r in rows if r.get("superseded_by")}),
         "revised_twice": sorted(n for n, rs in by_num.items()
                                 if len({r["issue_order"] for r in rs}) >= 3),
         "conflicts": conflicts,
