@@ -16,6 +16,7 @@ import math
 import os
 import random
 import sys
+import threading
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -45,6 +46,7 @@ THINK_DEFAULT = {"gemini-4-hydrogen": "HIGH", "gemini-4-neon": "HIGH", "gemini-4
 _sleep = time.sleep  # injectable for tests
 _today = lambda: dt.datetime.now(dt.timezone.utc).date()  # noqa: E731  injectable for tests
 _client = None
+_client_lock = threading.Lock()
 
 
 class LLMError(Exception):
@@ -86,6 +88,45 @@ def audio_part(path_or_bytes, mime):
     return types.Part.from_bytes(data=_bytes(path_or_bytes), mime_type=mime)
 
 
+VIDEO_TOKENS_PER_S = 300  # default media resolution
+FILE_POLL_S, FILE_WAIT_S = 2.0, 120.0
+
+
+def _video_meta(duration_s):
+    # end_offset = the whole clip: harmless to the model, and it lets the cap estimate see the duration.
+    return types.VideoMetadata(end_offset=f"{math.ceil(duration_s)}s") if duration_s else None
+
+
+def video_part(path_or_bytes, mime, duration_s=None):
+    """Inline video (keep under ~20 MB; use upload_video above that). duration_s feeds the cap estimate."""
+    return types.Part(inline_data=types.Blob(data=_bytes(path_or_bytes), mime_type=mime),
+                      video_metadata=_video_meta(duration_s))
+
+
+def upload_video(path_or_bytes, mime, duration_s=None):
+    """Files API upload for big videos; waits until ACTIVE and returns a file-uri Part. Raises LLMError."""
+    f = _get_client().files.upload(file=io.BytesIO(_bytes(path_or_bytes)), config={"mime_type": mime})
+    waited = 0.0
+    while getattr(f.state, "name", f.state) == "PROCESSING":
+        if waited >= FILE_WAIT_S:
+            raise LLMError("video upload still processing after %ds" % FILE_WAIT_S)
+        _sleep(FILE_POLL_S)
+        waited += FILE_POLL_S
+        f = _get_client().files.get(name=f.name)
+    if getattr(f.state, "name", f.state) != "ACTIVE":
+        raise LLMError(f"video upload ended in state {getattr(f.state, 'name', f.state)}")
+    return types.Part(file_data=types.FileData(file_uri=f.uri, mime_type=mime), video_metadata=_video_meta(duration_s))
+
+
+def delete_file(part):
+    """Best-effort removal of an uploaded file part (files also expire after 48 h)."""
+    try:
+        name = part.file_data.file_uri.split("/v1beta/")[-1]
+        _get_client().files.delete(name=name)
+    except Exception:
+        pass
+
+
 def text_part(s):
     return types.Part.from_text(text=s)
 
@@ -114,10 +155,25 @@ def _image_tokens(data):
     return max(258, math.ceil(w / 768) * math.ceil(h / 768) * 258)  # ~258 tokens per 768x768 tile
 
 
+def _video_tokens(p, nbytes):
+    """~300 tokens/s from the duration in video_metadata; without it, assume a low 20 KB/s bitrate (over-estimates)."""
+    vm = getattr(p, "video_metadata", None)
+    end = str(getattr(vm, "end_offset", "") or "")
+    if end.endswith("s"):
+        try:
+            return float(end[:-1]) * VIDEO_TOKENS_PER_S
+        except ValueError:
+            pass
+    return max(2000, (nbytes or 0) / 20000 * VIDEO_TOKENS_PER_S)
+
+
 def _est_input_tokens(parts):
     n = 0.0
     for p in parts:
         s = _ser(p)
+        if isinstance(p, types.Part) and p.file_data is not None:
+            n += _video_tokens(p, None)
+            continue
         if "text" in s:
             n += len(s["text"].encode()) / 3  # conservative
         if "inline" in s:
@@ -125,6 +181,8 @@ def _est_input_tokens(parts):
             raw = p.inline_data.data if isinstance(p, types.Part) else bytes(p)
             if mime.startswith("audio/"):
                 n += s["inline"]["n"] / 500  # ~32 tokens/s at ~16 KB/s
+            elif mime.startswith("video/"):
+                n += _video_tokens(p, s["inline"]["n"])
             elif mime.startswith("image/"):
                 n += _image_tokens(raw)
             else:
@@ -258,12 +316,16 @@ def _cache_write(path, entry):
 
 # ---- client / call -----------------------------------------------------------------------------
 def _get_client():
+    """One process-wide client, built under a lock and never closed. Racing lazy init used to build several; the
+    overwritten ones were garbage collected and genai.Client.__del__ closes its http client, killing in-flight calls."""
     global _client
     if _client is None:
-        key = os.environ.get("GEMINI_API_KEY", "").strip()
-        if not key:
-            raise LLMError("GEMINI_API_KEY not set")
-        _client = genai.Client(api_key=key)  # explicit: SDK would otherwise prefer GOOGLE_API_KEY
+        with _client_lock:
+            if _client is None:
+                key = os.environ.get("GEMINI_API_KEY", "").strip()
+                if not key:
+                    raise LLMError("GEMINI_API_KEY not set")
+                _client = genai.Client(api_key=key)  # explicit: SDK would otherwise prefer GOOGLE_API_KEY
     return _client
 
 

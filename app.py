@@ -16,6 +16,7 @@ import audio_claims
 import check as checker
 import llm
 import rfi
+import video_claims
 
 try:
     from google.genai import errors as genai_errors
@@ -32,6 +33,9 @@ AUDIO_MIMES = {"audio/wav", "audio/x-wav", "audio/wave", "audio/webm", "audio/og
                "audio/mp4", "audio/m4a", "audio/x-m4a", "audio/aac", "audio/mpeg", "audio/mp3"}
 AUDIO_MIME_ALIASES = {"audio/x-m4a": "audio/m4a", "audio/mp3": "audio/mpeg", "audio/wave": "audio/wav"}
 AUDIO_CONCURRENCY = 3
+MAX_VIDEO = 50 * 1024 * 1024
+VIDEO_MIMES = {"video/mp4", "video/quicktime"}
+VIDEO_CONCURRENCY = 3
 
 app = FastAPI(title="Drawing Claim Checker")
 _lock = threading.Lock()
@@ -173,6 +177,48 @@ async def api_audio(request: Request):
 
     cards = await asyncio.gather(*(one(c) for c in claims))
     return {"claims": claims, "cards": list(cards)}
+
+
+@app.post("/api/video")
+async def api_video(request: Request, sheet: str | None = None):
+    mime = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
+    if mime not in VIDEO_MIMES:
+        return _bad("Content-Type must be video/mp4 or video/quicktime", 415)
+    hint = (sheet or "").strip() or None
+    if hint and not video_claims.SHEET_RE.match(hint):
+        return _bad("bad sheet hint")
+    try:
+        if int(request.headers.get("content-length") or 0) > MAX_VIDEO:
+            return _bad("video larger than 50 MB", 413)
+    except ValueError:
+        return _bad("bad Content-Length")
+    chunks, n = [], 0
+    async for ch in request.stream():       # stop reading once over the limit
+        n += len(ch)
+        if n > MAX_VIDEO:
+            return _bad("video larger than 50 MB", 413)
+        chunks.append(ch)
+    data = b"".join(chunks)
+    if not data:
+        return _bad("empty body")
+    dur = await run_in_threadpool(video_claims.video_duration_s, data)
+    if dur is None:
+        return _bad("could not read the video (expected an MP4 or MOV)")
+    claims = await run_in_threadpool(video_claims.extract_claims_from_video, data, mime, hint, dur)
+    sem = asyncio.Semaphore(VIDEO_CONCURRENCY)
+
+    async def one(c):
+        async with sem:
+            t0 = time.time()
+            text = video_claims.checkable(c["claim"], hint)
+            card = await run_in_threadpool(checker.check, text)
+        card = _finish(card, text, t0=t0)
+        card["source"], card["t_start_s"], card["t_end_s"], card["kind"] = "video", c["t_start_s"], c["t_end_s"], c["kind"]
+        _append(card)
+        return card
+
+    cards = await asyncio.gather(*(one(c) for c in claims))
+    return {"claims": claims, "cards": list(cards), "video_s": round(dur, 2)}
 
 
 @app.post("/api/rfi")

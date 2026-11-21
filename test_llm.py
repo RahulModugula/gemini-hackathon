@@ -352,3 +352,33 @@ def test_minor9_key_failure_logged_and_hit_zeroes_billed_fields(env):
     h = rows()[-1]
     assert h["cache_hit"] and (h["prompt_tokens"], h["output_tokens"], h["thinking_tokens"]) == (0, 0, 0)
     assert (h["cached_prompt_tokens"], h["cached_output_tokens"], h["cached_thinking_tokens"]) == (10, 20, 30)
+
+
+def test_lazy_client_is_built_once_under_concurrency(monkeypatch):
+    """Regression: racing lazy init built several genai.Clients; the overwritten one was GC'd, and Client.__del__
+    closes its http client, so a thread still using it died with 'client has been closed'."""
+    import threading
+    import time as _t
+    from concurrent.futures import ThreadPoolExecutor
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    monkeypatch.setattr(llm, "_client", None)
+    built, closed = [], []
+
+    class Slow:
+        def __init__(self, **kw):
+            _t.sleep(0.05)               # widen the race window
+            built.append(self)
+
+        def __del__(self):
+            closed.append(1)
+
+    monkeypatch.setattr(llm.genai, "Client", Slow)
+    barrier = threading.Barrier(8)
+
+    def go(_):
+        barrier.wait()
+        return llm._get_client()
+
+    with ThreadPoolExecutor(8) as ex:
+        got = list(ex.map(go, range(8)))
+    assert len(built) == 1 and all(g is got[0] for g in got) and not closed

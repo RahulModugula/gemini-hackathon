@@ -1,0 +1,441 @@
+[
+ {
+  "bbox_pt": [
+   300,
+   1090,
+   1000,
+   1160
+  ],
+  "claim": "The window shade on this job, WT-1, is a Mecho cordless rollershade.",
+  "current_sheet": "add2-p007",
+  "evidence_words": [
+   "WT-1",
+   "Window",
+   "Treatment",
+   "InPro",
+   "Manual",
+   "Cordless",
+   "Window",
+   "Shade",
+   "CF200",
+   "SoloMount"
+  ],
+  "expected": "conflict",
+  "id": "ho-arch-01",
+  "rationale": "Bid sheet A1100 listed WT-1 as a Mecho Rollershade, CORDLESS Manual Shade; current A1100 (Addendum 2 sheet) lists InPro Manual Cordless Window Shade CF200 SoloMount, French Roast 243-57.",
+  "sheet_number": "A1100",
+  "superseded_sheet": "dwg-p025",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/wt1.png"
+ },
+ {
+  "bbox_pt": [
+   300,
+   715,
+   1000,
+   750
+  ],
+  "claim": "Per the finish schedule, plastic laminate PL-2 is not used on this project any more.",
+  "current_sheet": "add2-p007",
+  "evidence_words": [
+   "PL-2",
+   "Plastic",
+   "Laminate",
+   "NOT",
+   "USED"
+  ],
+  "expected": "consistent",
+  "id": "ho-arch-02",
+  "rationale": "Bid sheet listed PL-2 as Wilsonart Standard HPL Neowalnut 7991-38; Addendum 2 revised the row to NOT USED (revision cloud shown).",
+  "sheet_number": "A1100",
+  "superseded_sheet": "dwg-p025",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/pl2.png"
+ },
+ {
+  "bbox_pt": [
+   2150,
+   95,
+   2550,
+   190
+  ],
+  "claim": "The wall-mounted sink in Toddlers 102 gets set at 15 inches to the rim.",
+  "current_sheet": "add1-p012",
+  "evidence_words": [
+   "TODDLERS",
+   "102",
+   "-",
+   "18\"",
+   "TO",
+   "RIM"
+  ],
+  "expected": "conflict",
+  "id": "ho-arch-03",
+  "rationale": "Bid sheet A800 said TODDLERS 102 - 15\" TO RIM; Addendum 1 sheet says 18\" TO RIM.",
+  "sheet_number": "A800",
+  "superseded_sheet": "dwg-p020",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/sink.png"
+ },
+ {
+  "bbox_pt": [
+   2150,
+   95,
+   2550,
+   190
+  ],
+  "claim": "The wall-mounted sinks in Flex 109 A/B are set at 30 inches to the rim.",
+  "current_sheet": "add1-p012",
+  "evidence_words": [
+   "FLEX",
+   "109",
+   "A/B",
+   "-",
+   "30\"",
+   "TO",
+   "RIM"
+  ],
+  "expected": "consistent",
+  "id": "ho-arch-04",
+  "rationale": "The FLEX 109 A/B - 30\" TO RIM line is new in Addendum 1 (absent from the bid sheet) and appears on the current A800.",
+  "sheet_number": "A800",
+  "superseded_sheet": "dwg-p020",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/sink.png"
+ },
+ {
+  "bbox_pt": [
+   1250,
+   1380,
+   1750,
+   1500
+  ],
+  "claim": "On the foundation plumbing plan the 3\" PVC pump-out drain piping is called out under Alternate Bid A5.",
+  "current_sheet": "add2-p008",
+  "evidence_words": [
+   "ALTERNATE",
+   "BID",
+   "A5",
+   "3\"",
+   "SCH.",
+   "40",
+   "PVC",
+   "PUMP-OUT"
+  ],
+  "expected": "consistent",
+  "id": "ho-arch-05",
+  "rationale": "Bid sheet P100 labeled this callout ALTERNATE BID A4; Addendum 2 revised it to A5 (cloud, delta 2); leader runs to the pump-out drain piping.",
+  "sheet_number": "P100",
+  "superseded_sheet": "dwg-p033",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/pump.png"
+ },
+ {
+  "bbox_pt": [
+   560,
+   895,
+   1400,
+   945
+  ],
+  "claim": "Floor sink FS-1 on the plumbing drain schedule is a 6 by 6 inch unit.",
+  "current_sheet": "add1-p017",
+  "evidence_words": [
+   "FS-1",
+   "8\"",
+   "x",
+   "8\"",
+   "ZURN",
+   "Z-1910-KC-2"
+  ],
+  "expected": "conflict",
+  "id": "ho-arch-06",
+  "rationale": "Current P001 drain schedule gives FS-1 size as 8\" x 8\" (Zurn Z-1910-KC-2), not 6 x 6. (6\" x 6\" MIN. is FD-1.)",
+  "sheet_number": "P001",
+  "superseded_sheet": null,
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/fs1.png"
+ },
+ {
+  "bbox_pt": [
+   590,
+   600,
+   2200,
+   660
+  ],
+  "claim": "S-2 on the plumbing fixture schedule is a single-compartment undermount sink.",
+  "current_sheet": "add1-p017",
+  "evidence_words": [
+   "S-2",
+   "SINK",
+   "UNDERMOUNT",
+   "ELKAY",
+   "DOUBLE",
+   "COMPARTMENT",
+   "(2)",
+   "REQUIRED"
+  ],
+  "expected": "conflict",
+  "id": "ho-arch-07",
+  "rationale": "S-2 notes read 18 GA, TYPE 304 SS DOUBLE COMPARTMENT UNDERMOUNT SINK, Elkay ELUHAD-311855 30.75\" wide, two waste outlets; S-3 is the single.",
+  "sheet_number": "P001",
+  "superseded_sheet": null,
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/s2desc.png"
+ },
+ {
+  "bbox_pt": [
+   560,
+   825,
+   1400,
+   920
+  ],
+  "claim": "Floor drain FD-2 is an 8 inch round cast iron Zurn Z-556-Y.",
+  "current_sheet": "add1-p017",
+  "evidence_words": [
+   "FD-2",
+   "C.I.",
+   "8\"",
+   "DIA.",
+   "ZURN",
+   "Z-556-Y"
+  ],
+  "expected": "consistent",
+  "id": "ho-arch-08",
+  "rationale": "Current P001 drain schedule row FD-2: C.I. body, C.I. top, 8\" DIA., Zurn Z-556-Y.",
+  "sheet_number": "P001",
+  "superseded_sheet": null,
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/fd2.png"
+ },
+ {
+  "bbox_pt": [
+   300,
+   930,
+   1000,
+   960
+  ],
+  "claim": "The sealed concrete floor finish SCONC is a Prosoco Consolideck product.",
+  "current_sheet": "add2-p007",
+  "evidence_words": [
+   "SCONC",
+   "Sealed",
+   "Concrete"
+  ],
+  "expected": "unclear",
+  "id": "ho-arch-09",
+  "rationale": "A1100 lists SCONC Sealed Concrete with no manufacturer or product. 'prosoco' and 'consolideck' occur in no words file and not in the project manual text (grep over all words/*.json and manual PDF).",
+  "sheet_number": "A1100",
+  "superseded_sheet": null,
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ho/sconc.png"
+ },
+ {
+  "bbox_pt": [
+   1030,
+   540,
+   1700,
+   610
+  ],
+  "claim": "On the electrical schedules, the MSB panel schedule shows a total connected load of 157,413 VA.",
+  "current_sheet": "add1-p022",
+  "evidence_words": [
+   "Total",
+   "Conn.",
+   "Load:",
+   "159873",
+   "VA"
+  ],
+  "expected": "conflict",
+  "id": "ho-mep-01",
+  "rationale": "157,413 VA was the bid-set value; Addendum 1 revised the MSB total connected load to 159,873 VA (and demand to 157,579 VA).",
+  "sheet_number": "E400",
+  "superseded_sheet": "dwg-p052",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/e400msb_o.png"
+ },
+ {
+  "bbox_pt": [
+   560,
+   540,
+   940,
+   610
+  ],
+  "claim": "Panel A in storage 107A now carries a total connected load of 40,940 VA with 77 amps total demand.",
+  "current_sheet": "add1-p022",
+  "evidence_words": [
+   "Total",
+   "Conn.",
+   "Load:",
+   "40940",
+   "VA",
+   "Total",
+   "Demand:",
+   "77",
+   "A"
+  ],
+  "expected": "consistent",
+  "id": "ho-mep-02",
+  "rationale": "Addendum 1 values for Panel A (the bid set showed 38,480 VA and 72 A); the addendum sheet is current.",
+  "sheet_number": "E400",
+  "superseded_sheet": "dwg-p052",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/e400pa.png"
+ },
+ {
+  "bbox_pt": [
+   2380,
+   290,
+   2720,
+   460
+  ],
+  "claim": "General note 6 on the first-floor power plan has us routing all the electrified door hardware, access control and security cabling back to Utility Room 108.",
+  "current_sheet": "add1-p021",
+  "evidence_words": [
+   "6.",
+   "NOT",
+   "USED."
+  ],
+  "expected": "conflict",
+  "id": "ho-mep-03",
+  "rationale": "The bid-set E200 had that text as note 6, but Addendum 1 removed it; note 6 now reads NOT USED.",
+  "sheet_number": "E200",
+  "superseded_sheet": "dwg-p049",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/e200n.png"
+ },
+ {
+  "bbox_pt": [
+   2380,
+   780,
+   2720,
+   830
+  ],
+  "claim": "On the first-floor demo power plan, the existing busways in the warehouse stay in place, de-energized, and we only remove the disconnects, conduit and wiring serving them.",
+  "current_sheet": "add2-p009",
+  "evidence_words": [
+   "REMOVE",
+   "EXISTING",
+   "DISCONNECTS,",
+   "CONDUIT,",
+   "AND",
+   "WIRING",
+   "SERVING",
+   "BUSWAYS",
+   "EXISTING",
+   "BUSWAYS",
+   "TO",
+   "REMAIN",
+   "IN",
+   "PLACE,",
+   "DE-",
+   "ENERGIZED."
+  ],
+  "expected": "consistent",
+  "id": "ho-mep-04",
+  "rationale": "Current ED200 (Addendum 2) note 10 says busways remain de-energized; the bid-set note 10 instead had new feeders from the new MSB to the existing busways.",
+  "sheet_number": "ED200",
+  "superseded_sheet": "dwg-p046",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/ed200n.png"
+ },
+ {
+  "bbox_pt": [
+   2189,
+   145,
+   2700,
+   180
+  ],
+  "claim": "Per the erosion control notes, we have to inspect the erosion controls at least once every 7 days and again within 24 hours of a half-inch rain.",
+  "current_sheet": "dwg-p007",
+  "evidence_words": [
+   "INSPECTIONS",
+   "AT",
+   "LEAST",
+   "ONCE",
+   "EVERY",
+   "7",
+   "DAYS",
+   "WITHIN",
+   "24",
+   "HOURS",
+   "RAINFALL",
+   "0.5",
+   "INCHES"
+  ],
+  "expected": "consistent",
+  "id": "ho-mep-05",
+  "rationale": "Note 3 on the rotated (/Rotate 270) erosion control sheet states exactly this.",
+  "sheet_number": "C1.30",
+  "superseded_sheet": null,
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/c130.png"
+ },
+ {
+  "bbox_pt": [
+   1185,
+   925,
+   1440,
+   960
+  ],
+  "claim": "The structural general notes design the first-floor slab-on-grade for a 60 psf live load including partitions.",
+  "current_sheet": "dwg-p029",
+  "evidence_words": [
+   "FLOORS",
+   "AT",
+   "GRADE",
+   "100",
+   "PSF",
+   "INCLUDING",
+   "PARTITIONS"
+  ],
+  "expected": "conflict",
+  "id": "ho-mep-06",
+  "rationale": "S900 gives 100 psf including partitions for floors at grade, not 60.",
+  "sheet_number": "S900",
+  "superseded_sheet": null,
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/s900.png"
+ },
+ {
+  "bbox_pt": [
+   1060,
+   715,
+   2100,
+   860
+  ],
+  "claim": "The furnace schedule has F-9 in Threes 105 as a Trane S9X1 moving 1,800 CFM.",
+  "current_sheet": "dwg-p043",
+  "evidence_words": [
+   "F-9",
+   "THREES",
+   "105",
+   "TRANE",
+   "S9X1",
+   "1500",
+   "240",
+   "3/4",
+   "60/58.2"
+  ],
+  "expected": "conflict",
+  "id": "ho-mep-07",
+  "rationale": "F-9 is 1500 nominal CFM (3/4 HP, 60/58.2 MBH); 1800 CFM is F-6, F-7, F-10.",
+  "sheet_number": "ME100",
+  "superseded_sheet": null,
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/me100.png"
+ },
+ {
+  "bbox_pt": [
+   1430,
+   510,
+   1740,
+   640
+  ],
+  "claim": "The electrical legend mounts manual pull stations at 48 inches AFF and wall strobes at 80 inches AFF.",
+  "current_sheet": "add1-p019",
+  "evidence_words": [
+   "MANUAL",
+   "PULL",
+   "STATION",
+   "MOUNTED",
+   "AT",
+   "48\"",
+   "AFF.",
+   "STROBE",
+   "MOUNTED",
+   "AT",
+   "80\"",
+   "AFF"
+  ],
+  "expected": "consistent",
+  "id": "ho-mep-08",
+  "rationale": "Both heights are in the current E000 legend (unchanged from bid set; Addendum 1 edited other symbols).",
+  "sheet_number": "E000",
+  "superseded_sheet": "dwg-p044",
+  "verified_crop": "/private/tmp/claude-502/-Users-rmodugula-projects-gemini-hackathon/d695a21a-2d99-4570-b38e-87c7260d9a05/scratchpad/e000.png"
+ }
+]

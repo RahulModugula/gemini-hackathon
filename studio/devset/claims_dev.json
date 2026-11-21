@@ -1,0 +1,1125 @@
+[
+ {
+  "id": "dev_01s",
+  "claim": "On A201, the tag at room 107 reads A5.",
+  "expected": "conflict",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "107",
+  "bbox_pt": [
+   951.1,
+   458.0,
+   1391.1,
+   898.0
+  ],
+  "evidence_tokens": [
+   "A5"
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"A5\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p013 -> add1-p007 (global offset [0.0, 0.0] pt): removed ['A5'], added ['A6']; no addendum bullet matches by word overlap (bullets: ['Alternate designation for cubbies in care rooms.', 'Detail 1/A1001 and reference to sheet.', 'Plan keynote 11 in corridor.']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "A5"
+   ],
+   "new_tokens": [
+    "A6"
+   ],
+   "cluster_bbox_pt": [
+    1201.2,
+    630.8,
+    1211.2,
+    655.8
+   ]
+  }
+ },
+ {
+  "id": "dev_01c",
+  "claim": "On A201, the tag at room 107 reads A6.",
+  "expected": "consistent",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "107",
+  "bbox_pt": [
+   951.1,
+   458.0,
+   1391.1,
+   898.0
+  ],
+  "evidence_tokens": [
+   "A6"
+  ],
+  "provenance": "label consistent: \"A6\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p013 -> add1-p007 (global offset [0.0, 0.0] pt): removed ['A5'], added ['A6']; no addendum bullet matches by word overlap (bullets: ['Alternate designation for cubbies in care rooms.', 'Detail 1/A1001 and reference to sheet.', 'Plan keynote 11 in corridor.']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "A5"
+   ],
+   "new_tokens": [
+    "A6"
+   ],
+   "cluster_bbox_pt": [
+    1201.2,
+    630.8,
+    1211.2,
+    655.8
+   ]
+  }
+ },
+ {
+  "id": "dev_02s",
+  "claim": "On A900, the list entry for room 103 is 19\".",
+  "expected": "conflict",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "103",
+  "bbox_pt": [
+   1995.8,
+   0.0,
+   2435.8,
+   440.0
+  ],
+  "evidence_tokens": [
+   "19\""
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"19\"\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['19\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "19\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_02c",
+  "claim": "On A900, the list entry for room 103 is 18\".",
+  "expected": "consistent",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "103",
+  "bbox_pt": [
+   1995.8,
+   0.0,
+   2435.8,
+   440.0
+  ],
+  "evidence_tokens": [
+   "18\""
+  ],
+  "provenance": "label consistent: \"18\"\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['19\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "19\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_03s",
+  "claim": "On P100, the tag at room 110A reads A4.",
+  "expected": "conflict",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "110A",
+  "bbox_pt": [
+   1104.9,
+   1153.3,
+   1544.9,
+   1593.3
+  ],
+  "evidence_tokens": [
+   "A4"
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"A4\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p033 -> add2-p008 (global offset [0.0, 0.0] pt): removed ['A4'], added ['A5']; addendum bullet most similar (overlap score 8): REVISE: Alternate bid A4 note to read Alternate bid A5..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "A4"
+   ],
+   "new_tokens": [
+    "A5"
+   ],
+   "cluster_bbox_pt": [
+    1259.5,
+    1394.2,
+    1314.7,
+    1428.7
+   ]
+  }
+ },
+ {
+  "id": "dev_03c",
+  "claim": "On P100, the tag at room 110A reads A5.",
+  "expected": "consistent",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "110A",
+  "bbox_pt": [
+   1104.9,
+   1153.3,
+   1544.9,
+   1593.3
+  ],
+  "evidence_tokens": [
+   "A5"
+  ],
+  "provenance": "label consistent: \"A5\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p033 -> add2-p008 (global offset [0.0, 0.0] pt): removed ['A4'], added ['A5']; addendum bullet most similar (overlap score 8): REVISE: Alternate bid A4 note to read Alternate bid A5..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "A4"
+   ],
+   "new_tokens": [
+    "A5"
+   ],
+   "cluster_bbox_pt": [
+    1259.5,
+    1394.2,
+    1314.7,
+    1428.7
+   ]
+  }
+ },
+ {
+  "id": "dev_04s",
+  "claim": "On P101, the water closets in Toilet 109B are tagged WC-2.",
+  "expected": "conflict",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "109B",
+  "bbox_pt": [
+   876.3,
+   629.4,
+   1316.3,
+   1069.4
+  ],
+  "evidence_tokens": [
+   "WC-2"
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"WC-2\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-1']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-1"
+   ],
+   "cluster_bbox_pt": [
+    1062.7,
+    829.8,
+    1152.8,
+    964.3
+   ]
+  }
+ },
+ {
+  "id": "dev_04c",
+  "claim": "On P101, the water closets in Toilet 109B are tagged WC-1.",
+  "expected": "consistent",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "109B",
+  "bbox_pt": [
+   876.3,
+   629.4,
+   1316.3,
+   1069.4
+  ],
+  "evidence_tokens": [
+   "WC-1"
+  ],
+  "provenance": "label consistent: \"WC-1\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-1']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-1"
+   ],
+   "cluster_bbox_pt": [
+    1062.7,
+    829.8,
+    1152.8,
+    964.3
+   ]
+  }
+ },
+ {
+  "id": "dev_05s",
+  "claim": "On E200, the tag at room 109 reads A-39.",
+  "expected": "conflict",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "109",
+  "bbox_pt": [
+   668.8,
+   387.8,
+   1108.8,
+   827.8
+  ],
+  "evidence_tokens": [
+   "A-36"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"A-39\" (same shape as the real \"A-36\"), verified absent from the words of both crops; the real value is \"A-36\". word diff dwg-p049 -> add1-p021 (global offset [0.0, 0.0] pt): removed [], added ['A-36']; no addendum bullet matches by word overlap (bullets: ['General note 6', 'Note 4,5,6', 'Fire Alarm Scope Notes', 'Receptacles about the lockers in the child care ro', 'Receptacles in the crib room and the infants room', 'Fire Alarm Annunciator panel', 'GFI receptacle in utility 117', 'Data Device with wire amount:', 'Details 1/E400 and 2/E400', 'Plane Notes 3,4,5,6 to plan', 'Conduit in Shipping and Receiving']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "A-39"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "A-36"
+   ],
+   "cluster_bbox_pt": [
+    926.7,
+    404.5,
+    1006.1,
+    735.6
+   ]
+  }
+ },
+ {
+  "id": "dev_05c",
+  "claim": "On E200, the tag at room 109 reads A-36.",
+  "expected": "consistent",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "109",
+  "bbox_pt": [
+   668.8,
+   387.8,
+   1108.8,
+   827.8
+  ],
+  "evidence_tokens": [
+   "A-36"
+  ],
+  "provenance": "label consistent: \"A-36\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p049 -> add1-p021 (global offset [0.0, 0.0] pt): removed [], added ['A-36']; no addendum bullet matches by word overlap (bullets: ['General note 6', 'Note 4,5,6', 'Fire Alarm Scope Notes', 'Receptacles about the lockers in the child care ro', 'Receptacles in the crib room and the infants room', 'Fire Alarm Annunciator panel', 'GFI receptacle in utility 117', 'Data Device with wire amount:', 'Details 1/E400 and 2/E400', 'Plane Notes 3,4,5,6 to plan', 'Conduit in Shipping and Receiving']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "A-36"
+   ],
+   "cluster_bbox_pt": [
+    926.7,
+    404.5,
+    1006.1,
+    735.6
+   ]
+  }
+ },
+ {
+  "id": "dev_06s",
+  "claim": "On ED200, room 124 is JANITOR.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "124",
+  "bbox_pt": [
+   704.8,
+   339.5,
+   1144.8,
+   779.5
+  ],
+  "evidence_tokens": [
+   "PROGRAM",
+   "AIDS",
+   "124"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"JANITOR\" (same shape as the real \"PROGRAM\"), verified absent from the words of both crops; the real value is \"PROGRAM\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['124']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "JANITOR"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "124"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_06c",
+  "claim": "On ED200, room 124 is PROGRAM AIDS.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "124",
+  "bbox_pt": [
+   704.8,
+   339.5,
+   1144.8,
+   779.5
+  ],
+  "evidence_tokens": [
+   "PROGRAM",
+   "AIDS",
+   "124"
+  ],
+  "provenance": "label consistent: \"PROGRAM\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['124']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "124"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_07s",
+  "claim": "On A900, the list entry for room 102 is 15\".",
+  "expected": "conflict",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "102",
+  "bbox_pt": [
+   2014.9,
+   0.0,
+   2454.9,
+   440.0
+  ],
+  "evidence_tokens": [
+   "15\""
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"15\"\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['15\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "15\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_07c",
+  "claim": "On A900, the list entry for room 102 is 18\".",
+  "expected": "consistent",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "102",
+  "bbox_pt": [
+   2014.9,
+   0.0,
+   2454.9,
+   440.0
+  ],
+  "evidence_tokens": [
+   "18\""
+  ],
+  "provenance": "label consistent: \"18\"\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['15\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "15\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_08s",
+  "claim": "On P101, the water closets in Toilet 105A are tagged WC-2.",
+  "expected": "conflict",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "105A",
+  "bbox_pt": [
+   1174.1,
+   667.4,
+   1614.1,
+   1107.4
+  ],
+  "evidence_tokens": [
+   "WC-2"
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"WC-2\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-3']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-3"
+   ],
+   "cluster_bbox_pt": [
+    1371.5,
+    880.8,
+    1409.4,
+    931.6
+   ]
+  }
+ },
+ {
+  "id": "dev_08c",
+  "claim": "On P101, the water closets in Toilet 105A are tagged WC-3.",
+  "expected": "consistent",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "105A",
+  "bbox_pt": [
+   1174.1,
+   667.4,
+   1614.1,
+   1107.4
+  ],
+  "evidence_tokens": [
+   "WC-3"
+  ],
+  "provenance": "label consistent: \"WC-3\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-3']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-3"
+   ],
+   "cluster_bbox_pt": [
+    1371.5,
+    880.8,
+    1409.4,
+    931.6
+   ]
+  }
+ },
+ {
+  "id": "dev_09s",
+  "claim": "On ED200, room 125 is JANITOR.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125",
+  "bbox_pt": [
+   687.6,
+   571.5,
+   1127.6,
+   1011.5
+  ],
+  "evidence_tokens": [
+   "TOOLS",
+   "125"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"JANITOR\" (same shape as the real \"TOOLS\"), verified absent from the words of both crops; the real value is \"TOOLS\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "JANITOR"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_09c",
+  "claim": "On ED200, room 125 is TOOLS.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125",
+  "bbox_pt": [
+   687.6,
+   571.5,
+   1127.6,
+   1011.5
+  ],
+  "evidence_tokens": [
+   "TOOLS",
+   "125"
+  ],
+  "provenance": "label consistent: \"TOOLS\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_10s",
+  "claim": "On A900, the list entry for room 106 is 25\".",
+  "expected": "conflict",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "106",
+  "bbox_pt": [
+   1999.7,
+   0.0,
+   2439.7,
+   440.0
+  ],
+  "evidence_tokens": [
+   "25\""
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"25\"\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['25\"'], added ['24\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "25\""
+   ],
+   "new_tokens": [
+    "24\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_10c",
+  "claim": "On A900, the list entry for room 106 is 24\".",
+  "expected": "consistent",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "106",
+  "bbox_pt": [
+   1999.7,
+   0.0,
+   2439.7,
+   440.0
+  ],
+  "evidence_tokens": [
+   "24\""
+  ],
+  "provenance": "label consistent: \"24\"\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['25\"'], added ['24\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "25\""
+   ],
+   "new_tokens": [
+    "24\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_11s",
+  "claim": "On ED200, room 122 is STORAGE.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "122",
+  "bbox_pt": [
+   855.1,
+   570.1,
+   1295.1,
+   1010.1
+  ],
+  "evidence_tokens": [
+   "TRANSITION",
+   "122"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"STORAGE\" (same shape as the real \"TRANSITION\"), verified absent from the words of both crops; the real value is \"TRANSITION\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['122']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "STORAGE"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "122"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_11c",
+  "claim": "On ED200, room 122 is TRANSITION.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "122",
+  "bbox_pt": [
+   855.1,
+   570.1,
+   1295.1,
+   1010.1
+  ],
+  "evidence_tokens": [
+   "TRANSITION",
+   "122"
+  ],
+  "provenance": "label consistent: \"TRANSITION\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['122']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "122"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_12s",
+  "claim": "On ED200, room 127 is STORAGE.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "127",
+  "bbox_pt": [
+   1582.0,
+   766.7,
+   2022.0,
+   1206.7
+  ],
+  "evidence_tokens": [
+   "FURNACE",
+   "127"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"STORAGE\" (same shape as the real \"FURNACE\"), verified absent from the words of both crops; the real value is \"FURNACE\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['127']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "STORAGE"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "127"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_12c",
+  "claim": "On ED200, room 127 is FURNACE.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "127",
+  "bbox_pt": [
+   1582.0,
+   766.7,
+   2022.0,
+   1206.7
+  ],
+  "evidence_tokens": [
+   "FURNACE",
+   "127"
+  ],
+  "provenance": "label consistent: \"FURNACE\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['127']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "127"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_13s",
+  "claim": "On ED200, room 125A is STORAGE.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125A",
+  "bbox_pt": [
+   1582.2,
+   835.8,
+   2022.2,
+   1275.8
+  ],
+  "evidence_tokens": [
+   "COAT",
+   "ROOM",
+   "125A"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"STORAGE\" (same shape as the real \"COAT\"), verified absent from the words of both crops; the real value is \"COAT\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125A']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "STORAGE"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125A"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_13c",
+  "claim": "On ED200, room 125A is COAT ROOM.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125A",
+  "bbox_pt": [
+   1582.2,
+   835.8,
+   2022.2,
+   1275.8
+  ],
+  "evidence_tokens": [
+   "COAT",
+   "ROOM",
+   "125A"
+  ],
+  "provenance": "label consistent: \"COAT\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125A']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125A"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_u01",
+  "claim": "On A201, the product at room 107 is manufactured by Kohler.",
+  "expected": "unclear",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "107",
+  "bbox_pt": [
+   986.2,
+   423.3,
+   1426.2,
+   863.3
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['Kohler'] occur nowhere on add1-p007 or dwg-p013 (checked all 1903+1857 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "Kohler"
+  ]
+ },
+ {
+  "id": "dev_u02",
+  "claim": "On P100, the work at room 110A is scheduled for completion in March 2027.",
+  "expected": "unclear",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "110A",
+  "bbox_pt": [
+   1067.1,
+   1191.5,
+   1507.1,
+   1631.5
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['March', '2027'] occur nowhere on add2-p008 or dwg-p033 (checked all 467+462 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "March",
+   "2027"
+  ]
+ },
+ {
+  "id": "dev_u03",
+  "claim": "On E200, the finish at room 107 is Sherwin-Williams SW 7005.",
+  "expected": "unclear",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "107",
+  "bbox_pt": [
+   746.4,
+   350.0,
+   1186.4,
+   790.0
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['Sherwin', '7005'] occur nowhere on add1-p021 or dwg-p049 (checked all 1230+875 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "Sherwin",
+   "7005"
+  ]
+ },
+ {
+  "id": "dev_u04",
+  "claim": "On A900, the unit cost for the work at room 105 is $4,500.",
+  "expected": "unclear",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "105",
+  "bbox_pt": [
+   2015.3,
+   0.0,
+   2455.3,
+   440.0
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['$4,500'] occur nowhere on add1-p013 or dwg-p021 (checked all 1202+1184 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "$4,500"
+  ]
+ },
+ {
+  "id": "dev_u05",
+  "claim": "On P101, the contractor responsible for Toilet 109B is Kellerman Construction.",
+  "expected": "unclear",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "109B",
+  "bbox_pt": [
+   887.8,
+   677.0,
+   1327.8,
+   1117.0
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['Kellerman'] occur nowhere on add1-p018 or dwg-p034 (checked all 592+585 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "Kellerman"
+  ]
+ }
+]
