@@ -234,37 +234,24 @@ def test_check_form_encoded_body_is_400(env):
     assert r.status_code == 400 and not calls
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: /api/check ignores Content-Type and parses any body as JSON, so a "
-                   "cross-site text/plain form POST (a CORS 'simple request', no preflight) is processed: it spends "
-                   "LLM budget and writes the ledger. Expected 415 for non-JSON content types.")
 def test_check_text_plain_json_body_is_rejected(env):
     c, _, calls = env
     r = c.post("/api/check", content=b'{"claim": "cross-site"}', headers={"Content-Type": "text/plain"})
     assert r.status_code == 415 and not calls
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: /api/check returns 500 (not 400) for a claim with a lone UTF-16 "
-                   "surrogate: _finish() calls seed.encode() on it and raises UnicodeEncodeError. Repro: POST "
-                   "/api/check body b'{\"claim\": \"bad \\\\ud800 char\"}' with a mocked check.")
 def test_check_lone_surrogate_claim_is_not_a_500(env):
     c, _, _ = env
     r = c.post("/api/check", content=b'{"claim": "bad \\ud800 char"}', headers=JSON_H)
     assert r.status_code < 500
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: deeply nested JSON (100k '[') makes json.loads raise RecursionError, "
-                   "which request.json() does not map to 400, so /api/check returns 500. Repro: POST "
-                   "'[' * 100000 + ']' * 100000 with Content-Type application/json.")
 def test_check_deeply_nested_json_is_not_a_500(env):
     c, _, _ = env
     r = c.post("/api/check", content=("[" * 100_000 + "]" * 100_000).encode(), headers=JSON_H)
     assert r.status_code < 500
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a card whose text fields hold a lone surrogate is appended to the ledger "
-                   "(json.dumps escapes it) and then the response encode fails; every later GET /api/cards then "
-                   "returns 500 because _read_ledger() re-parses the poisoned line. Repro: mocked check returns "
-                   "reason='split \\ud83d emoji', then GET /api/cards -> 500.")
 def test_poisoned_ledger_line_does_not_break_cards(env):
     c, tmp, _ = env
     (tmp / "cards.jsonl").write_text(json.dumps(CARD | {"claim": "poison", "reason": "split \ud83d emoji"}) + "\n")
