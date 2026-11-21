@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.gzip import GZipMiddleware
 
+import ask
 import audio_claims
 import check as checker
 import llm
@@ -248,6 +249,26 @@ async def api_check(request: Request):
         return rec
     spend0, t0 = llm.run_spend(), time.time()
     card = _finish(await run_in_threadpool(checker.check, claim), claim, spend0, t0)
+    _append(card)
+    return card
+
+
+@app.post("/api/ask")
+async def api_ask(request: Request):
+    """Free text (a claim, a question, or a request for an RFI) -> card. Same guards as /api/check."""
+    if (xs := _cross_site(request)) is not None:
+        return xs
+    body, err = await _json_body(request)
+    if err:
+        return err
+    text, err = _valid_claim(body.get("text") if isinstance(body, dict) else None)
+    if err:
+        return _bad(err.replace("claim", "text"))
+    rec = _replay_card(text)
+    if rec is not None:
+        return rec
+    spend0, t0 = llm.run_spend(), time.time()
+    card = _finish(await run_in_threadpool(ask.run, text), text, spend0, t0)
     _append(card)
     return card
 
