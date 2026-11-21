@@ -10,15 +10,18 @@
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>
 :root{
-  --board:#1d2329;--board-2:#252c33;--chrome:#12161a;--line:#3a444e;--mute:#9aa7b2;--text:#eef2f5;
+  --board:#e4e8e7;--board-2:#f1f3f2;--chrome:#ffffff;--line:#aab3b8;--mute:#4f5a63;--text:#14191e;--on-text:#ffffff;
+  --grid:rgba(31,95,214,.07);--badge:#8a5a00;
   --paper:#f5f6f4;--paper-2:#e9ebe8;--ink:#14191e;--ink-2:#46515b;--rule:#14191e;
-  --red:#d92d20;--red-on-dark:#ff5a4d;--green:#12794a;--green-on-dark:#34c586;--amber:#ffb000;--amber-ink:#6b4700;--blue:#7db4ff;--grey:#6b7680;
+  --red:#c8261b;--red-on-dark:#c8261b;--green:#12794a;--green-on-dark:#12794a;--amber:#ffb000;--amber-ink:#6b4700;--blue:#1f5fd6;--grey:#6b7680;
   --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
 }
+:root[data-theme="dark"]{--board:#1d2329;--board-2:#252c33;--chrome:#12161a;--line:#3a444e;--mute:#9aa7b2;--text:#eef2f5;--on-text:#14191e;
+  --grid:rgba(125,180,255,.045);--badge:#ffb000;--red-on-dark:#ff5a4d;--green-on-dark:#34c586;--blue:#7db4ff}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--board);color:var(--text);font:15px/1.45 var(--sans);font-stretch:100%;overflow-x:hidden;
-  background-image:linear-gradient(rgba(125,180,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(125,180,255,.045) 1px,transparent 1px);background-size:24px 24px}
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
 .mono{font-family:var(--mono)}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -31,11 +34,12 @@ button{cursor:pointer}
 .brand{display:flex;align-items:baseline;gap:10px;margin:0;font-size:19px;font-weight:700;font-stretch:80%;letter-spacing:.2px;white-space:nowrap}
 .brand i{display:inline-block;width:12px;height:12px;border:2px solid var(--amber);transform:translateY(1px);position:relative}
 .brand i::after{content:"";position:absolute;left:3px;top:-6px;width:2px;height:20px;background:var(--amber)}
-.replay{padding:2px 8px;border:1px solid var(--amber);border-radius:2px;font-size:12px;font-weight:600;color:var(--amber)}
+.replay{padding:2px 8px;border:1px solid var(--badge);border-radius:2px;font-size:12px;font-weight:600;color:var(--badge)}
 .spacer{flex:1}
 nav{display:flex;gap:2px;background:var(--board-2);padding:3px;border-radius:6px}
 .tab{padding:6px 16px;background:transparent;border:0;border-radius:4px;font-weight:600;color:var(--mute)}
-.tab.act{background:var(--text);color:var(--ink)}
+.tab.act{background:var(--text);color:var(--on-text)}
+.thm{padding:5px 10px;background:transparent;border:1.5px solid var(--line);border-radius:4px;font-size:13px;font-weight:600;color:var(--mute)}
 
 /* score strip */
 .strip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 28px;padding:7px 24px;background:var(--board-2);border-bottom:1px solid var(--line);font-size:13px;color:var(--mute)}
@@ -45,7 +49,7 @@ nav{display:flex;gap:2px;background:var(--board-2);padding:3px;border-radius:6px
 .strip .gl{font-weight:600;color:var(--text)}
 .strip .cnt b{font-size:15px;margin-right:4px}
 .strip .cnt.hot b{color:var(--red-on-dark)}
-.strip .cnt.blk b{color:var(--amber)}
+.strip .cnt.blk b{color:var(--badge)}
 
 /* claim bar */
 .ask{padding:14px 24px 0}
@@ -53,7 +57,7 @@ nav{display:flex;gap:2px;background:var(--board-2);padding:3px;border-radius:6px
 #claimIn{flex:1;min-width:0;padding:11px 14px;background:var(--chrome);border:1.5px solid var(--line);border-radius:6px;color:var(--text);font-size:16px}
 #claimIn::placeholder{color:var(--mute)}
 #claimIn:focus-visible{border-color:var(--blue);outline-offset:0}
-.btn{padding:10px 18px;background:var(--text);color:var(--ink);border:0;border-radius:6px;font-weight:700}
+.btn{padding:10px 18px;background:var(--text);color:var(--on-text);border:0;border-radius:6px;font-weight:700}
 .btn.ghost{background:transparent;color:var(--text);border:1.5px solid var(--line)}
 .btn.ghost:hover{border-color:var(--text)}
 #micBtn,#vidBtn{display:flex;align-items:center;gap:8px}
@@ -62,7 +66,7 @@ nav{display:flex;gap:2px;background:var(--board-2);padding:3px;border-radius:6px
 #micBtn.rec .dot{background:#fff;animation:pulse 1s infinite}
 button:disabled{opacity:.55;cursor:wait}
 .status{margin:10px 0 0;max-width:1200px;padding:8px 12px;background:var(--chrome);border-left:3px solid var(--blue);font-size:14px}
-.status.bad{border-left-color:var(--red-on-dark);color:#ffd9d5}
+.status.bad{border-left-color:var(--red-on-dark);color:var(--red-on-dark);font-weight:600}
 
 /* first-screen explainer + samples */
 .lede{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;max-width:1200px;margin:0 0 12px}
@@ -78,7 +82,7 @@ button:disabled{opacity:.55;cursor:wait}
 .smp:disabled{opacity:.5}
 .missbox{margin:0 0 14px;padding:12px 14px;border:2px dashed var(--ink-2);background:var(--paper-2);font-size:15px}
 .missbox b{display:block;font-size:17px;margin-bottom:4px}
-.replayed{display:inline-block;margin-left:8px;padding:0 6px;border:1px solid var(--amber);color:var(--amber);font-size:11px;font-weight:600}
+.replayed{display:inline-block;margin-left:8px;padding:0 6px;border:1px solid var(--amber-ink);color:var(--amber-ink);font-size:11px;font-weight:600}
 .blocked .stamp2{grid-column:1/-1;justify-self:start;padding:6px 16px 5px;border:4px double var(--red);color:var(--red);font-weight:800;font-stretch:112%;font-size:30px;letter-spacing:.05em;text-transform:uppercase;transform:rotate(-2.5deg);line-height:1.05}
 .blocked .stamp2 small{display:block;font-size:13px;letter-spacing:.02em;text-transform:none;font-weight:700;color:#7a1710}
 
@@ -119,7 +123,7 @@ main{padding:16px 24px 40px}
 .row.v-conflict{border-left-color:var(--red-on-dark)}
 .row.v-consistent{border-left-color:var(--green-on-dark)}
 .row:hover{border-color:var(--mute)}
-.row.sel{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.row.sel{background:var(--paper);color:var(--ink);border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 .rtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .vw{font-weight:700;font-stretch:90%;font-size:14px}
 .row.sel .mute{color:var(--ink-2)}
@@ -127,7 +131,7 @@ main{padding:16px 24px 40px}
 .claimTxt{font-size:14px;line-height:1.35}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{display:inline-block;padding:1px 7px;border:1.5px solid currentColor;border-radius:2px;font-size:12px;font-weight:600;line-height:1.5}
-.chip.amber{color:var(--amber)}
+.chip.amber{color:var(--badge)}
 .row.sel .chip.amber{color:var(--amber-ink)}
 .chip.spk{color:var(--blue)}
 .row.sel .chip.spk{color:#1f5fd6}
@@ -140,7 +144,7 @@ main{padding:16px 24px 40px}
 .hq:hover{border-color:var(--mute)}
 
 /* the sheet */
-.paper{background:var(--paper);color:var(--ink);border:2px solid var(--paper);border-radius:3px;padding:22px 24px 18px;box-shadow:0 0 0 1px var(--line),0 18px 40px rgba(0,0,0,.4);min-width:0}
+.paper{background:#fbfcfb;color:var(--ink);border:2px solid var(--paper);border-radius:3px;padding:22px 24px 18px;box-shadow:0 0 0 1px var(--line),0 18px 40px rgba(0,0,0,.4);min-width:0}
 .paper.enter{animation:rise .35s cubic-bezier(.2,.7,.2,1)}
 .shead{display:flex;gap:20px;align-items:flex-start;margin-bottom:18px}
 .stamp{flex:none;padding:6px 14px 5px;border:3px double currentColor;border-radius:3px;font-weight:800;font-stretch:112%;font-size:24px;letter-spacing:.06em;text-transform:uppercase;transform:rotate(-2deg);margin-top:4px;line-height:1.1;text-align:center}
@@ -182,6 +186,29 @@ main{padding:16px 24px 40px}
 .legend li{display:flex;gap:10px;align-items:baseline;padding:5px 2px;border-bottom:1px solid #c9cdca;font-size:14px}
 .lnum{font-weight:500;min-width:16px;color:var(--ink-2);font-size:12px}
 .lsheet{margin-left:auto;white-space:nowrap;font-size:12px;color:var(--ink-2)}
+
+/* enlarged detail: the boxed words at readable size */
+.detail2{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin:0 0 10px}
+.detail2.one{grid-template-columns:minmax(0,1fr)}
+.zoom{position:relative;overflow:hidden;border:2px solid var(--ink);background:#fff;aspect-ratio:2/1}
+.zoom img{position:absolute;max-width:none;image-rendering:auto}
+.zcap{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 10px;background:var(--ink);color:#fff;font-size:15px;font-weight:700}
+.zcap.old{background:var(--ink-2)}
+.zcap .mono{font-weight:400;font-size:12px;opacity:.85}
+.zoom .bbox{border-width:3px;background:transparent}
+.zoom .dbox{border-width:3px}
+.ctx{margin-top:4px}
+.ctx summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2);padding:6px 0}
+.trace.incard{margin:0;background:#fff;color:var(--ink);border:2px solid var(--ink);border-radius:3px;padding:16px 18px}
+.trace.incard .tt,.trace.incard .tt b{color:var(--ink)}
+.trace.incard .stp .nm{color:var(--ink-2)}
+.trace.incard .stp.run .nm,.trace.incard .stp.done .nm{color:var(--ink)}
+.trace.incard .stp .tm{color:var(--ink-2)}
+.trace.incard .stp.done .dotm{background:var(--green);border-color:var(--green)}
+.trace.incard .stp.done .ln{background:var(--green)}
+.trace.incard .stp .dotm{background:#fff;border-color:#aab3b8}
+.trace.incard .pair::before{background:#fff;color:var(--ink-2)}
+.trace.incard .pair{border-left-color:#aab3b8}
 
 /* seal = title block */
 .aside{display:flex;flex-direction:column;gap:16px;min-width:0}
@@ -252,7 +279,8 @@ main{padding:16px 24px 40px}
 @media (max-width:1180px){.cols{grid-template-columns:1fr}.aside{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}}
 @media (max-width:900px){#cardsView{grid-template-columns:1fr}.ledger{position:relative;top:auto;max-height:none;flex-direction:row;overflow-x:auto;gap:8px;padding-bottom:6px;scroll-snap-type:x proximity}.ledger .row{flex:0 0 260px;scroll-snap-align:start}.lh{display:none}.heard{flex:0 0 240px}}
 @media (max-width:700px){
-  .top{padding:0 16px;gap:10px;height:48px}.brand{font-size:16px}.replay{display:none}
+  .detail2{grid-template-columns:1fr}
+  .top{padding:0 12px;gap:8px;height:48px}.tab{padding:6px 10px}.thm{padding:4px 8px}.brand{font-size:16px}.replay{display:none}
   .strip{padding:6px 16px;gap:4px 14px;font-size:12px}.strip .grp+.grp{margin-left:0}
   .ask{padding:12px 16px 0}main{padding:12px 16px 32px}
   .paper{padding:16px 14px 14px}
@@ -272,6 +300,7 @@ main{padding:16px 24px 40px}
   <h1 class="brand"><i aria-hidden="true"></i>Drawing Claim Checker</h1>
   <span id="replayBadge" class="replay" hidden>replay mode</span>
   <span class="spacer"></span>
+  <button id="thmBtn" class="thm" type="button" aria-pressed="false">Dark</button>
   <nav aria-label="Views">
     <button id="tabCards" class="tab act" type="button">Cards</button>
     <button id="tab3d" class="tab" type="button">3D</button>
@@ -279,8 +308,8 @@ main{padding:16px 24px 40px}
 </header>
 <div id="strip" class="strip" aria-label="Scoreboard"></div>
 <section class="ask">
-  <div class="lede"><p>Check what someone said on site against the current drawing set, after every addendum. Each answer is boxed on the sheet, judged by two Gemini models and verified by code.</p>
-  <span class="how">Type, speak or upload a site video. Disagreement or unverified boxes always come back as unclear.</span></div>
+  <div class="lede"><p>Check a question or statement against the current drawing set, after every addendum, before you send an RFI or price the work.</p>
+  <span class="how">Each answer is boxed on the sheet, judged by two Gemini models and verified by code. Disagreement means unclear.</span></div>
   <div class="bar">
     <input id="claimIn" type="text" maxlength="500" placeholder="Say or type a claim, e.g. All the water closets in Toilet 105A are type WC-2." aria-label="Say or type a claim">
     <button id="goBtn" class="btn" type="button">Check claim</button>
@@ -318,11 +347,15 @@ const FLOOR_SHEET='add1-p018';
 const SHEET_W=3024,SHEET_H=2160;
 
 let cards=[],selId=null,heard=null;
+const TRACE=document.getElementById('trace');
 const rfiState=new Map();   // card id -> {status:'pending'|'draft'|'blocked'|'na', ...}
 let threeInit=false,renderer,scene,camera,controls,raycaster,mouse,pins=[],pinGroups=[],metrics=null;
 
 $('tabCards').onclick=()=>{location.hash=selId?`#card=${encodeURIComponent(selId)}`:'#cards';};
 $('tab3d').onclick=()=>{location.hash='#3d';};
+function setTheme(t){document.documentElement.dataset.theme=t;const b=$('thmBtn');b.textContent=t==='dark'?'Light':'Dark';b.setAttribute('aria-pressed',String(t==='dark'));try{localStorage.setItem('theme',t);}catch(e){}}
+{let t='light';try{t=localStorage.getItem('theme')||'light';}catch(e){}setTheme(t);}
+$('thmBtn').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
 const setStatus=(t,bad)=>{const s=$('status');s.hidden=!t;s.className='status'+(bad?' bad':'');s.textContent=t||'';};
 async function api(path,opts){
   const r=await fetch(path,opts);
@@ -420,7 +453,8 @@ fetch('/api/metrics').then(r=>r.ok?r.json():null).then(m=>{metrics=m;renderStrip
 const STEPS=[['search','Search sheets'],['crop','Crop evidence'],['judge_a','Argon judging'],['judge_b','Carbon judging'],['grounding','Grounding check'],['revision','Revision check'],['sealed','Card sealed']];
 const PACE_MS=230;   // cosmetic: reveal events at least this far apart so replayed (instant) runs stay readable; shown times are the server's
 function buildTrace(claim){
-  const box=$('trace');box.hidden=false;box.textContent='';
+  const box=TRACE;box.hidden=false;box.textContent='';box.className='trace incard';
+  const d=$('detail');d.textContent='';d.append(box);
   const tt=el('div','tt');
   const left=el('span');left.append(el('b',null,'Agent trace'),'  '+claim);
   const total=el('span','mono','0.0 s');
@@ -504,9 +538,10 @@ async function submitClaim(){
   try{
     const card=await streamCheck(claim);
     $('claimIn').value='';
-    setTimeout(()=>{$('trace').hidden=true;},1600);
+    await new Promise(r=>setTimeout(r,700));
+    TRACE.hidden=true;
     addCards([card]);
-  }catch(e){$('trace').hidden=true;setStatus('Check failed: '+e.message,true);}
+  }catch(e){TRACE.hidden=true;setStatus('Check failed: '+e.message,true);renderDetail(false);}
   finally{$('goBtn').disabled=$('claimIn').disabled=false;document.querySelectorAll('.smp').forEach(b=>b.disabled=false);}
 }
 $('goBtn').onclick=submitClaim;
@@ -696,6 +731,32 @@ const clampBox=b=>{const cl=v=>Math.max(0,Math.min(1000,Number(v)||0));
 function place(div,b){const [y0,x0,y1,x1]=clampBox(b);
   div.style.top=(y0/10)+'%';div.style.left=(x0/10)+'%';div.style.height=((y1-y0)/10)+'%';div.style.width=((x1-x0)/10)+'%';}
 
+/* a window (0..1000 crop units) around the evidence boxes, padded, at least 150 units wide, 2:1 */
+function zoomWindow(bs){
+  let y0=1e9,x0=1e9,y1=-1e9,x1=-1e9;
+  for(const b of bs){const [a,bb,cc,dd]=clampBox(b);y0=Math.min(y0,a);x0=Math.min(x0,bb);y1=Math.max(y1,cc);x1=Math.max(x1,dd);}
+  let w=Math.max(110,(x1-x0)*1.3),h=Math.max(40,(y1-y0)*1.3);
+  if(w<h*2.6)w=h*2.6;else h=w/2.6;
+  w=Math.min(w,1000);h=Math.min(h,1000);
+  const cx=(x0+x1)/2,cy=(y0+y1)/2;
+  const L=Math.max(0,Math.min(1000-w,cx-w/2)),T=Math.max(0,Math.min(1000-h,cy-h/2));
+  return {x:L,y:T,w,h};
+}
+function zoomFig(capL,capR,old,src,win,boxes){
+  const f=el('figure','fig');
+  const cap=el('figcaption','zcap'+(old?' old':''));cap.append(el('span',null,capL),el('span','mono',capR));
+  const z=el('div','zoom');
+  const img=el('img');img.alt=capL+' (enlarged detail)';img.src=src;
+  img.style.width=(1000/win.w*100)+'%';img.style.left=(-win.x/win.w*100)+'%';
+  img.style.height=(1000/win.h*100)+'%';img.style.top=(-win.y/win.h*100)+'%';
+  img.onload=()=>{const ar=(win.w*img.naturalWidth)/(win.h*img.naturalHeight);if(ar>0&&isFinite(ar))z.style.aspectRatio=String(ar);};
+  z.append(img);
+  for(const o of boxes){const [y0,x0,y1,x1]=clampBox(o.b);const dv=el('div',o.cls);
+    dv.style.left=((x0-win.x)/win.w*100)+'%';dv.style.top=((y0-win.y)/win.h*100)+'%';
+    dv.style.width=((x1-x0)/win.w*100)+'%';dv.style.height=((y1-y0)/win.h*100)+'%';
+    if(o.tag)dv.append(el('span','btag mono',o.tag));z.append(dv);}
+  f.append(cap,z);return f;
+}
 function figure(capL,capR,old,src,alt){
   const f=el('figure','fig');
   const cap=el('figcaption','fcap'+(old?' old':''));cap.append(el('span',null,capL),el('span','mono',capR));
@@ -791,7 +852,18 @@ function renderDetail(animate){
   }
   if(x){for(const b of (x.boxes.current||[])){const dx=el('div','dbox');place(dx,b);A.wrap.append(dx);}}
   if(c.video_evidence&&c.video_evidence.frame)left.append(videoPanel(c));
-  left.append(cmp);
+  const zb=(cev.length?cev:(c.evidence||[])).map(e=>e.box_2d_on_crop).filter(b=>Array.isArray(b)&&b.length===4);
+  if(curSrc&&zb.length){
+    const win=zoomWindow(zb);
+    const dz=el('div','detail2'+(hasSup?'':' one'));
+    dz.append(zoomFig('Now: '+revLabel(first.revision)+' · '+sn,'enlarged',false,curSrc,win,
+      [...zb.map((b,i)=>({b,cls:'bbox '+vCls(c.verdict),tag:String(i+1)})),...(x?(x.boxes.current||[]).map(b=>({b,cls:'dbox'})):[])]));
+    if(hasSup)dz.append(zoomFig('Before: Original bid set',(x.d.superseded_sheet)||'superseded',true,x.crop,win,
+      (x.boxes.superseded||[]).map(b=>({b,cls:'dbox'}))));
+    left.append(dz);
+    const det=el('details','ctx');det.append(el('summary',null,'Show the full sheet crops'));det.append(cmp);
+    left.append(det);
+  }else left.append(cmp);
   if(hasSup){
     const n=el('p','cmpnote');n.append(el('span','sw'),'Amber marks words that appear on only one issue of this region'+(diffSummary(c)?': '+diffSummary(c):'')+'.');
     left.append(n);
@@ -816,7 +888,7 @@ function renderDetail(animate){
     li.append(tx);ul.append(li);
   }
   seal.append(ul);
-  aside.append(seal);
+  if(!c.replay_miss)aside.append(seal);
   const bad=items.filter(i=>i.s==='bad');
   if(c.verdict==='unclear'){
     const u=el('div','unclear','Unclear because: '+(bad.length?bad.map(b=>(b.w||b.t)).join(' '):(c.reason||'the evidence does not settle the claim.')));
@@ -838,7 +910,7 @@ function renderDetail(animate){
     }
     loc.append(lt,plan);aside.append(loc);
   }
-  if(c.reason)left.append(el('p','reason',c.reason));
+  if(c.reason&&!c.replay_miss)left.append(el('p','reason',c.reason));
   cols.append(left,aside);paper.append(cols);
 
   if(c.verdict==='conflict'||c.verdict==='unclear'){
