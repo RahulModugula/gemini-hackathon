@@ -124,6 +124,14 @@ def _alnum(s):
     return "".join(c for c in s.lower() if c.isalnum())
 
 
+NEGATIONS = {"no", "not", "never", "none", "without", "nor", "neither", "cannot", "isnt", "arent", "doesnt", "dont",
+             "wont", "wasnt", "werent", "hasnt", "havent", "cant"}
+
+
+def _negated(claim):
+    return any("".join(c for c in t.lower() if c.isalpha()) in NEGATIONS for t in claim.split())
+
+
 def grounding_report(out, crops, claim=""):
     """-> (problems, accepted). `accepted` maps each quoted token to the rule that accepted it.
     Every evidence box must cover PDF words. Quoted words (tokens) are accepted by rule:
@@ -170,14 +178,14 @@ def grounding_report(out, crops, claim=""):
             ok = "current_box"
         elif verdict == "conflict" and inside(tok, ("superseded",)):
             ok = "superseded_box"
-        elif in_claim:
-            ok = "claim_value"
+        elif in_claim and verdict == "conflict":
+            ok = "claim_value"          # the contradicted value; a consistent verdict must box every quote
         else:
             ok = None
         if ok is None:
             where = "inside any evidence box" if verdict == "unclear" else (
                 "inside a current evidence box" + (" or a superseded one, or in the claim" if verdict == "conflict"
-                                                   else " or in the claim"))
+                                                   else ""))
             problems.append(f"quoted word {tok!r} is not {where}")
         else:
             accepted[tok] = ok
@@ -191,8 +199,17 @@ def grounding_report(out, crops, claim=""):
         elif not real_evidence and verdict == "conflict":
             problems.append("no current evidence box contains a quoted word that is not just copied from the claim")
         elif not real_evidence:
-            unboxed = [t for t, rule in accepted.items() if rule == "claim_value"]
-            problems.append(f"no quoted word is inside a current evidence box (only repeated from the claim: {unboxed})")
+            problems.append("no quoted word is inside a current evidence box")
+    if verdict == "consistent" and not _negated(claim):
+        # every identifier the claim asserts (WC-2, 105A, A-36) must itself be boxed, or "consistent" is unproven;
+        # the sheet number (in the title block, not the crop) and dimensions (dimension check) are exempt
+        sheet = _alnum(str((crops.get("current") or {}).get("sheet_number") or ""))
+        boxed = {_alnum(t) for t, rule in accepted.items() if rule == "current_box"}
+        missing = [t for t in dict.fromkeys(_alnum(t) for t in claim.split())
+                   if t and t != sheet and t not in boxed and not find_dims(t + '"')
+                   and ((any(c.isdigit() for c in t) and any(c.isalpha() for c in t)) or (t.isdigit() and len(t) >= 3))]
+        if missing:
+            problems.append(f"claim identifiers not boxed on the current sheet: {missing}")
     return problems, accepted
 
 
@@ -381,7 +398,7 @@ def verify(claim, ctx):
              for t in q.split() if acc.get(n, {}).get(t) in ("current_box", "any_box")]
     dim = dimension_check(claim, boxed)
     claim_dims = find_dims(claim)
-    if not dim and claim_dims and verdict == "consistent":
+    if not dim and claim_dims and verdict in ("consistent", "conflict"):
         # the claim states a dimension but no judge boxed one: nothing backs it, so it cannot stay consistent
         dim = {"by": "code", "check": "dimension", "code_verdict": "unverified",
                "detail": f"claim states {[t for t, _ in claim_dims]} but no judge quoted a boxed dimension to back it"}

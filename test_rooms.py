@@ -150,7 +150,11 @@ def test_end_to_end_card_inside_room_keeps_verdict_and_carries_room(monkeypatch,
 
 def test_end_to_end_evidence_in_neighbour_room_is_downgraded(monkeypatch, world, words):
     """Grounding passes (WC-1 is a real word in the box), but the box is Toilet 106's closet, not 105A's."""
-    out = _judge(world, _box(words, {"WC-1"}, (1227, 1290), (900, 974)), "consistent", ("WC-1",))
+    out = _judge(world, _box(words, {"105A", "WC-2", "WC-3"}, (1360, 1430), (860, 970)), "consistent",
+                 ("105A", "WC-2", "WC-1"))
+    cur = world["cur"]       # second box: the WC-1 in Toilet 106's closet, outside 105A
+    out["evidence"].append({"image": "current", "box_2d": verify.pt_to_box(_box(words, {"WC-1"}, (1227, 1290), (900, 974)),
+                                                                            cur["rect"]), "label": "closet"})
     card = _run(monkeypatch, out)
     assert next(c for c in card["checks"] if c.get("check") == "grounding")["pass"] is True
     sp = next(c for c in card["checks"] if c.get("check") == "spatial")

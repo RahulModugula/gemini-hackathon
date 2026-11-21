@@ -582,3 +582,34 @@ def test_dev_05c_recorded_judge_output_is_grounded(world):
            "evidence": [{"image": "current", "box_2d": [814, 0, 860, 64]}, {"image": "current", "box_2d": [678, 198, 735, 284]}]}
     probs, acc = verify.grounding_report(out, {"current": c}, claim)
     assert probs == [] and acc["A-36"] == "current_box"
+
+
+# ---- review findings: consistent must box the claim's identifiers; dimension claims need a boxed dimension -------
+_RV_CROP = {"sheet": "p1", "sheet_number": "P101", "rect": [0, 0, 1000, 1000],
+            "words": [{"text": "105A", "bbox": [100, 100, 140, 110]}, {"text": "WC-3", "bbox": [600, 600, 640, 610]},
+                      {"text": "WC-2", "bbox": [700, 700, 740, 710]}, {"text": "TYP", "bbox": [300, 300, 330, 310]}]}
+
+
+def _rv(v, q, *boxes):
+    return {"verdict": v, "confidence": 0.9, "reason": "r", "quoted_words": q,
+            "evidence": [{"image": "current", "box_2d": b, "label": ""} for b in boxes]}
+
+
+def test_consistent_cannot_lean_on_an_unboxed_claim_value():
+    """Claim says WC-2; judges box only the room number and quote WC-2 from the claim: nothing proves WC-2."""
+    out = _rv("consistent", ["105A WC-2"], [95, 95, 115, 145])
+    probs, _ = verify.grounding_report(out, {"current": _RV_CROP}, "On P101, Room 105A has a WC-2 water closet")
+    assert probs
+    out = _rv("consistent", ["105A"], [95, 95, 115, 145])          # quoting only the room is not enough either
+    probs, _ = verify.grounding_report(out, {"current": _RV_CROP}, "On P101, Room 105A has a WC-2 water closet")
+    assert any("WC-2" in p or "wc2" in p for p in probs), probs
+    ok = _rv("consistent", ["105A", "WC-2"], [95, 95, 115, 145], [695, 695, 715, 745])
+    assert verify.grounding_report(ok, {"current": _RV_CROP}, "On P101, Room 105A has a WC-2 water closet")[0] == []
+
+
+def test_conflict_on_a_dimension_claim_needs_a_boxed_dimension(monkeypatch):
+    o = _rv("conflict", ["TYP", '36"'], [295, 295, 315, 335])
+    monkeypatch.setattr(verify, "_run_judge", lambda m, p, c: (o, 0.1))
+    r = verify.verify('Door 101 is 36" wide', {"judge": "a", "second": "b", "crops": {"current": _RV_CROP},
+                                               "rows": {"p1": {"current": True}}, "narrative": ()})
+    assert r["verdict"] == "unclear", r

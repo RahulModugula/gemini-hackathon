@@ -82,8 +82,7 @@ def render(crop, src):
     return crop
 
 
-NEGATIONS = {"no", "not", "never", "none", "without", "nor", "neither", "cannot", "isnt", "arent", "doesnt", "dont",
-             "wont", "wasnt", "werent", "hasnt", "havent", "cant"}
+NEGATIONS = verify.NEGATIONS
 
 
 def positive_query(claim):
