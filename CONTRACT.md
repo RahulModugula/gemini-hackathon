@@ -36,19 +36,47 @@ and listed in `skipped_non_drawing_pages`. Tiles are `tile_px` at `dpi` with `ov
 Word boxes and tile `bbox_pt` are in that rendered space. PyMuPDF calls that take unrotated coordinates
 (`get_text(clip=)`, `search_for`) need `rect * page.derotation_matrix` first.
 
-## build/sheet_index.json (`analyze_sheets.py`, ticket 5 seed)
+## build/sheet_index.json (`analyze_sheets.py`, ticket 5)
 ```json
 {
-  "summary": {"sheets": 76, "superseded": ["A201", ...], "revised_twice": ["A1100", "ED200"],
-              "conflicts": [], "unmatched": [], ...},
+  "summary": {"sheets": 76, "titles_found": 75, "unmatched_titles": ["dwg-p001"], "revisions_found": 76,
+              "unmatched_revisions": [], "superseded": ["A201", ...], "revised_twice": ["A1100", "ED200"],
+              "conflicts": [], "unmatched": [],
+              "addenda_crosscheck": {"add1": {"cover_claim_revised_sheets": 16, "narrative_listed": 17, "bound": 17,
+                 "matched": [...], "bound_not_listed": [], "listed_not_bound": [], "cover_claim_matches_listed": false,
+                 "title_mismatches": [{"sheet_number": "E400", "narrative": "ELECTRICL ...", "title_block": "ELECTRICAL ..."}],
+                 "unparsed": []},                      // drawings-section narrative lines the parser could not place
+                 "add3": {"error": "missing data/addendum-3.pdf"}},   // input PDF absent: listed, never dropped
+              ...},
   "rows": [
-    {"sheet": "add1-p007", "source": "add1", "issue_order": 1, "sheet_number": "A201",
+    {"sheet": "add2-p007", "source": "add2", "issue_order": 2, "sheet_number": "A1100",
+     "title": "INTERIOR FINISH SCHEDULES",            // null if not found (then listed in summary.unmatched_titles)
+     "revision": "6/22/26 ADDENDUM #02",              // latest revision row as printed; else the issue date; null if neither
+     "revision_no": 2,                                // 0 = no revision rows (original issue)
+     "issue_date": "6/02/2026",                       // the title block's own "Date:" (formats vary: 6/02/2026, 06/02/2026)
+     "revisions": [{"no": 1, "date": "6/12/26", "description": "ADDENDUM #01"}, {"no": 2, "...": "..."}],
      "discipline": "Architectural", "current": true, "superseded_by": null, "word_count": 812, "tiles": 35}
   ]
 }
 ```
 `current`/`superseded_by` are null when the number is unmatched or listed in `conflicts` (same number twice
-in one issue). Still to add in ticket 5: `title`, `revision` date.
+in one issue). `title` is the large text between the `Sheet:` and `Scale:` labels of the title block; `revision*`
+come from the rows between the `Description:` header and the issue-date `Date:` label. Dates are strings as
+printed, not normalised. `summary.superseded` is a sorted list of unique sheet numbers (a number revised in
+two addenda appears once). `title_mismatches` compares narrative and title-block titles ignoring case and
+punctuation; `unparsed` should be empty, anything in it needs a human look. Nothing is guessed: G000 (cover sheet, no `Sheet:`/`Scale:` labels in its text layer)
+has `title: null`.
+
+## build/addenda_changes.json (`analyze_sheets.py`, ticket 5)
+Parsed from the addendum narratives (`data/addendum-N.pdf`, pages 2+, under "Drawings:"):
+```json
+[ {"source": "add1", "sheet_number": "A201", "title": "FIRST FLOOR PLAN",
+   "changes": [ {"action": "REVISE", "text": "Alternate designation for cubbies in care rooms."},
+                {"action": "ADD",    "text": "Detail 1/A1001 and reference to sheet."} ]} ]
+```
+`action` is `REVISE | ADD | REMOVE` (the narrative's REVISED/REMOVED variants are normalised). Join to
+sheet_index rows on `(source, sheet_number)`. `summary.addenda_crosscheck` compares each narrative's sheet list
+with the sheets bound into that addendum; mismatches are listed, not resolved.
 
 **Gemini boxes:** Gemini returns `[ymin, xmin, ymax, xmax]` normalised 0–1000 on the image it saw.
 Convert to pt on that tile before writing a card: `x = bbox_pt[0] + xmin/1000 * (bbox_pt[2]-bbox_pt[0])`.
@@ -90,3 +118,17 @@ Rules:
 - `rfi_draft` is null when verdict is `consistent`. `status: "blocked"` requires `answered_by`
   pointing at the addendum Q&A that already answers it (ticket 11). Nothing is sent without a human click.
 - Every model call behind a card is logged (model, tokens in/out, latency, cost) — see PLAN review note 3.
+
+## Video cards (`POST /api/video`, feat/video-v2)
+Each card made from a site video also carries (beside the normal drawing `evidence`):
+```json
+{"source": "video", "t_start_s": 5.0, "t_end_s": 9.0, "kind": "spoken | visual",
+ "video_url": "/videos/<sha1>.mp4",
+ "video_evidence": {"frame": "/frames/<20 hex>.jpg", "t_s": 7.0, "box_2d": [ymin, xmin, ymax, xmax] | null,
+                    "kind": "spoken | visual", "text_read": "WC-3"}}      // text_read only for visual claims; null if no frame
+```
+`t_s` is the model's `frame_t_s` (validated into [0, duration], else the middle of the claim's span). `box_2d` is 0-1000
+on the frame, found by a second IMAGE call (boxes are documented for images, not video); null for spoken claims.
+Visual claims also send the boxed frame region to both judges as a field photo (`check(..., extra_images=[...])`);
+verdict semantics and drawing-only evidence boxes are unchanged. `/frames/*` and `/videos/*` serve only
+hash-named files. Follow-up (not adopted): the Gemini "agentic" video processing mode.

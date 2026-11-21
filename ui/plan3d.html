@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plan 3D</title>
+<style>
+html,body{margin:0;height:100%;background:#ffffff;color:#d6dde4;font:13px/1.4 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+#stage{position:fixed;inset:0}
+#hd{position:fixed;left:12px;top:10px;z-index:5;pointer-events:none;padding:6px 9px;background:#11161b;border:1px solid #2a333d;border-radius:3px}
+#hd b{display:block;font-size:13px;color:#fff;letter-spacing:.02em}
+#hd span{color:#8d98a3;font-size:11px}
+</style>
+<script defer src="/assets/plan3d.js"></script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="hd"><b>P101 First Floor Plumbing Plan</b><span>Built from the sheet's vector walls. Drag to orbit, shift-drag to pan, scroll to zoom.</span></div>
+<script>
+// ?card=<id> (default: the 105A fixture) &intro=rise|none &state=flat|rise|overview|focus|section|plan &t=0..1 (frozen still)
+window.addEventListener('DOMContentLoaded', function () {
+  var q = new URLSearchParams(location.search);
+  var state = q.get('state');
+  var opts = {sheet: q.get('sheet') || 'add1-p018', sheetLabel: 'P101 (Addendum 1)',
+    activeCardId: q.get('card') || 'ex1_wc_105a_all_wc2', intro: q.get('intro') || 'rise'};
+  if (state) opts.freeze = {state: state, t: q.get('t') == null ? 1 : Number(q.get('t'))};
+  fetch(q.get('cards') === 'live' ? '/api/cards' : '/cards.json').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
+    .then(function (cards) {
+      opts.cards = Array.isArray(cards) ? cards : [];
+      return window.Plan3D.mount(document.getElementById('stage'), opts);
+    })
+    .then(function () { window.__plan3dReady = true; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+[
+  {"id": "wc105a", "label": "Toilet 105A water closets", "kind": "claim",
+   "claim": "All the water closets in Toilet 105A are type WC-2.",
+   "why": "True on the bid set, changed by Addendum 1"},
+  {"id": "wc109b", "label": "Toilet 109B water closet", "kind": "claim",
+   "claim": "On P101, the water closets in Toilet 109B are tagged WC-2.",
+   "why": "Both judges catch the addendum cloud"},
+  {"id": "sink102", "label": "Sink height, Toddlers 102", "kind": "claim",
+   "claim": "On A900, the list entry for room 102 is 18\".",
+   "why": "Dimension checked in code"},
+  {"id": "rcpt109", "label": "Receptacle circuit, Flex 109", "kind": "claim",
+   "claim": "On E200, the tag at room 109 reads A-36.",
+   "why": "Consistent with the current sheet"},
+  {"id": "gates", "label": "Playground gate maglocks?", "kind": "question",
+   "claim": "Do the playground gates need maglocks?",
+   "why": "An addendum already answered this"}
+]
