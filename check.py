@@ -146,18 +146,25 @@ def best_crop_on(claim, query, sheet, sheets, src, rows, allow_title):
         c = _crop(sheet, crop_rect(h["bbox"], s["width"], s["height"]), sheets, src, rows)
         if not allow_title and in_title_strip(_centre_x(c["rect"]), s["width"]):
             continue
-        sc = _score(claim, c, i, allow_title)
+        sc = _score(claim, c, i, allow_title, superseded_twin(c, sheets, src, rows))
         if best is None or sc > best[0]:
             best = (sc, c)
     return best[1] if best else None
 
 
-def _score(claim, crop, i, title=False):
-    """(claim tokens found in the crop, -search rank). Content claims count identifiers (105A, WC-2); title-block
-    claims count every word (the title text sits above the big sheet-number label, in the same strip)."""
+def _tokens(crop):
+    return set().union(*(_norm_tokens(w["text"]) for w in crop["words"])) if crop and crop["words"] else set()
+
+
+def _score(claim, crop, i, title=False, twin=None):
+    """(claim tokens found in the crop or its superseded twin, tokens found in the crop itself, -search rank).
+    Content claims count identifiers (105A, WC-2); title-block claims count every word (the title text sits above
+    the big sheet-number label, in the same strip). The twin counts because a stale claim quotes the OLD value
+    ("room 103 is 19\""), which only the superseded sheet still shows: without it a lower-right "TWOS 103" label
+    ties the real list entry on the room number alone and wins on search order."""
     want = {t for t in _norm_tokens(claim) if t} if title else _id_tokens(claim)
-    have = set().union(*(_norm_tokens(w["text"]) for w in crop["words"])) if crop["words"] else set()
-    return (len(want & have), -i)
+    have = _tokens(crop)
+    return (len(want & (have | _tokens(twin))), len(want & have), -i)
 
 
 def candidates(claim, sheets, src, rows, n=2, k=4):
@@ -195,7 +202,7 @@ def candidates(claim, sheets, src, rows, n=2, k=4):
             c = best_crop_on(idclaim, query, sid, sheets, src, rows, False)
             if c is None:
                 continue
-        scored.append((_score(idclaim, c, i, title), c))
+        scored.append((_score(idclaim, c, i, title, superseded_twin(c, sheets, src, rows)), c))
     seen, out = set(), []
     for _, c in sorted(scored, key=lambda t: t[0], reverse=True):
         if c["sheet"] not in seen:
