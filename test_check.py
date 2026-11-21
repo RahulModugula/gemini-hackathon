@@ -392,3 +392,48 @@ def test_superseded_twin_rect_follows_the_reissue_shift(world):
     assert twin["sheet"] == "dwg-p046" and twin["offset"] == (0.0, 90.0)
     assert twin["rect"][1] == pytest.approx(cur["rect"][1] - 90) and twin["rect"][0] == pytest.approx(cur["rect"][0])
     assert t in {w["text"] for w in twin["words"]}
+
+
+# ---- named-sheet claims must not land on the title block ----------------------------------------------
+PREFIXED = "On P101, the water closets in TOILET 105A are tagged WC-2."
+UNPREFIXED = "The water closets in TOILET 105A are tagged WC-2."
+TITLE_CLAIM = "Sheet P101 is titled FIRST FLOOR PLUMBING NEW WORK PLAN"
+
+
+def _centre(c):
+    return ((c["rect"][0] + c["rect"][2]) / 2, (c["rect"][1] + c["rect"][3]) / 2)
+
+
+def test_sheet_prefix_picks_the_same_crop_as_no_prefix(world):
+    sheets, src, rows = world["sheets"], world["src"], world["rows"]
+    w = sheets["add1-p018"]["width"]
+    pre, notes = check.candidates(PREFIXED, sheets, src, rows)
+    plain, _ = check.candidates(UNPREFIXED, sheets, src, rows)
+    assert [c["sheet"] for c in pre] == ["add1-p018"] and notes
+    assert pre[0]["rect"] == pytest.approx(plain[0]["rect"])
+    cx, cy = _centre(pre[0])
+    assert cx < 0.88 * w and 1360 - 260 < cx < 1425 + 260 and 880 - 260 < cy < 895 + 260   # around 105A
+    assert "105A" in {x["text"] for x in pre[0]["words"]}
+
+
+def test_sheet_number_and_filler_are_not_search_or_identifier_text(world):
+    named = check.named_sheets(PREFIXED, world["rows"])
+    assert check.search_text(PREFIXED, named) == "the water closets in TOILET 105A are tagged WC-2."
+    assert "p101" not in check._id_tokens(check.search_text(PREFIXED, named))
+
+
+def test_title_block_claim_may_still_pick_the_title_block(world):
+    sheets, src, rows = world["sheets"], world["src"], world["rows"]
+    assert check.is_title_claim(TITLE_CLAIM) and not check.is_title_claim(PREFIXED)
+    cands, _ = check.candidates(TITLE_CLAIM, sheets, src, rows)
+    assert cands[0]["sheet"] == "add1-p018"
+    assert _centre(cands[0])[0] >= 0.88 * sheets["add1-p018"]["width"]
+    assert "NEW" in {x["text"] for x in cands[0]["words"]} or any("PLUMBING" in x["text"] for x in cands[0]["words"])
+
+
+def test_no_crop_is_centred_in_the_title_strip_for_content_claims(world):
+    sheets, src, rows = world["sheets"], world["src"], world["rows"]
+    for claim in (PREFIXED, UNPREFIXED, "Grab bar mounting height is 36\" AFF", "Sheet A201 shows cubbies in care rooms",
+                  "Project No. 250081.00 sheet P101"):   # last: its raw best hit is the title block
+        for c in check.candidates(claim, sheets, src, rows)[0]:
+            assert _centre(c)[0] < 0.88 * sheets[c["sheet"]]["width"], (claim, c["sheet"], c["rect"])
