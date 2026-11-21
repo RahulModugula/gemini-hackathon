@@ -6,6 +6,7 @@ version at the same rect) goes to two judges (verify.py), code checks ground the
 import datetime as dt
 import hashlib
 import json
+import re
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -98,39 +99,89 @@ def named_sheets(claim, rows):
     return {n: nums[n] for n in dict.fromkeys(search.norm_number(t) for t in claim.split()) if n in nums}
 
 
-def best_hit_in(query, sheet):
-    """Best-scoring search hit on one sheet (or None). Uses the index's scored candidates directly."""
+TITLE_STRIP = 0.88       # analyze_sheets: the title block is the column at x >= 0.88 * page width (rendered space)
+_TITLE_CLAIM = re.compile(r"\b(title|titled|revision|dated?|issue date|scale|sheet (?:number|name|title))\b", re.I)
+_FILLER = {"sheet", "sheets", "on", "per", "see"}   # "On P101, ..." / "Sheet P101 shows ...": locators, not content
+
+
+def is_title_claim(claim):
+    """True if the claim is about title-block content (sheet title, revision, date, scale)."""
+    return bool(_TITLE_CLAIM.search(claim))
+
+
+def search_text(claim, named):
+    """Claim -> search/identifier text once the sheet is resolved: negation words, the named sheet number(s) and
+    locator filler ("On", "Sheet") removed. The judge still sees the claim as written."""
+    kept = [t for t in positive_query(claim).split()
+            if search.norm_number(t) not in named and "".join(c for c in t.lower() if c.isalpha()) not in _FILLER]
+    return " ".join(kept) or positive_query(claim)
+
+
+def in_title_strip(x, width):
+    return x >= TITLE_STRIP * width
+
+
+def hits_on(query, sheet, limit=15):
+    """Search hits on one sheet in score order (the index's scored candidates, one box per distinct word set)."""
     idx = search.get_index()
     cand, terms = idx._candidates(query)
+    out = []
     for sc, d in cand:
         if d["sheet"] == sheet:
-            return idx._hit(sc, d, terms)
-    return None
+            out.append(idx._hit(sc, d, terms))
+            if len(out) >= limit:
+                break
+    return out
 
 
-def _score(claim, crop, i):
-    want = _id_tokens(claim)
+def _centre_x(rect):
+    return (rect[0] + rect[2]) / 2
+
+
+def best_crop_on(claim, query, sheet, sheets, src, rows, allow_title):
+    """Best crop on one sheet: hits are ranked by the claim's identifiers (105A, WC-2) found in their crop, then by
+    search order. A crop centred in the title-block strip is skipped unless the claim is about the title block."""
+    s, best = sheets[sheet], None
+    for i, h in enumerate(hits_on(query, sheet)):
+        c = _crop(sheet, crop_rect(h["bbox"], s["width"], s["height"]), sheets, src, rows)
+        if not allow_title and in_title_strip(_centre_x(c["rect"]), s["width"]):
+            continue
+        sc = _score(claim, c, i, allow_title)
+        if best is None or sc > best[0]:
+            best = (sc, c)
+    return best[1] if best else None
+
+
+def _score(claim, crop, i, title=False):
+    """(claim tokens found in the crop, -search rank). Content claims count identifiers (105A, WC-2); title-block
+    claims count every word (the title text sits above the big sheet-number label, in the same strip)."""
+    want = {t for t in _norm_tokens(claim) if t} if title else _id_tokens(claim)
     have = set().union(*(_norm_tokens(w["text"]) for w in crop["words"])) if crop["words"] else set()
     return (len(want & have), -i)
 
 
 def candidates(claim, sheets, src, rows, n=2, k=4):
     """-> (list of up to n crops, list of note strings).
-    A claim naming a sheet number is judged on that sheet's CURRENT version only (noting any superseded version).
-    Otherwise the top-k search hits are re-ranked by how many of the claim's identifiers (105A, WC-2) their crop
-    holds, superseded hits are swapped for their current sheet, and the best n distinct sheets are kept."""
-    query, notes, out = positive_query(claim), [], []
-    for num in named_sheets(claim, rows).values():
+    A claim naming a sheet number is judged on that sheet's CURRENT version only (noting any superseded version);
+    the sheet number and locator words are dropped from the search and identifier scoring, so hits are ranked by
+    the remaining tokens. Otherwise the top-k search hits are re-ranked by how many of the claim's identifiers their
+    crop holds, superseded hits are swapped for their current sheet, and the best n distinct sheets are kept.
+    Crops centred in the title-block strip are never chosen unless the claim is about the title block."""
+    notes, out = [], []
+    named = named_sheets(claim, rows)
+    title = is_title_claim(claim)
+    query = positive_query(claim) if title else search_text(claim, named)
+    idclaim = positive_query(claim) if title else query     # identifier scoring text: no sheet number
+    for num in named.values():
         vers = [r for r in rows.values() if r.get("sheet_number") == num and r["sheet"] in sheets]
         cur = max([r for r in vers if r.get("current") is not False] or vers, key=lambda r: r["issue_order"])
-        hit = best_hit_in(query, cur["sheet"])
-        if hit is None:
+        crop = best_crop_on(idclaim, query, cur["sheet"], sheets, src, rows, title)
+        if crop is None:
             continue
         old = [r["sheet"] for r in vers if r["sheet"] != cur["sheet"] and r.get("current") is False]
         notes.append(f"claim names sheet {num}: judging current {cur['sheet']}"
                      + (f" (superseded: {', '.join(old)})" if old else ""))
-        s = sheets[cur["sheet"]]
-        out.append(_crop(cur["sheet"], crop_rect(hit["bbox"], s["width"], s["height"]), sheets, src, rows))
+        out.append(crop)
     if out:
         return out[:n], notes
     scored = []
@@ -140,7 +191,11 @@ def candidates(claim, sheets, src, rows, n=2, k=4):
             sid = h["superseded_by"]           # judge the current version, at the hit's rect
         s = sheets[sid]
         c = _crop(sid, crop_rect(h["bbox"], s["width"], s["height"]), sheets, src, rows)
-        scored.append((_score(claim, c, i), c))
+        if not title and in_title_strip(_centre_x(c["rect"]), s["width"]):
+            c = best_crop_on(idclaim, query, sid, sheets, src, rows, False)
+            if c is None:
+                continue
+        scored.append((_score(idclaim, c, i, title), c))
     seen, out = set(), []
     for _, c in sorted(scored, key=lambda t: t[0], reverse=True):
         if c["sheet"] not in seen:
