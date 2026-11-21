@@ -2,6 +2,7 @@
 `crop_region` cuts the boxed region (for the judge); `store_video` keeps the upload under build/videos/<sha>.<ext>."""
 import hashlib
 import subprocess
+import uuid
 from pathlib import Path
 
 from PIL import Image
@@ -43,13 +44,13 @@ def extract_frame(video_path, t_s, out_dir, video_sha=None, max_px=MAX_PX):
     out = Path(out_dir) / (hashlib.sha1(f"{vsha}|{round(t_s * 1000)}|{max_px}".encode()).hexdigest()[:20] + ".jpg")
     out.parent.mkdir(parents=True, exist_ok=True)
     if not out.exists():
-        tmp = out.with_name(out.stem + ".part.jpg")
+        tmp = out.with_name(f"{out.stem}.{uuid.uuid4().hex}.part.jpg")     # unique: concurrent claims on one frame
         r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t_s:.3f}", "-i", str(video_path), "-frames:v", "1",
                             "-vf", _scale(max_px), "-q:v", "3", str(tmp)], capture_output=True, text=True, timeout=60)
         if r.returncode != 0 or not tmp.exists() or tmp.stat().st_size == 0:
             tmp.unlink(missing_ok=True)
             raise RuntimeError(f"ffmpeg produced no frame at {t_s}s: {r.stderr.strip()[-200:]}")
-        tmp.replace(out)
+        tmp.replace(out)    # atomic; a concurrent writer of the same frame replaces it with identical bytes
     with Image.open(out) as im:
         w, h = im.size
     return {"path": out, "width": w, "height": h, "t_s": t_s}

@@ -8,6 +8,7 @@ import re
 import threading
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi import Query
@@ -64,6 +65,19 @@ if genai_errors is not None:
 
 def _bad(msg, code=400):
     return JSONResponse({"error": msg}, status_code=code)
+
+
+def _cross_site(request):
+    """403 response when the request is cross-site, else None. Browsers send Sec-Fetch-Site (and Origin on POST/CORS);
+    plain clients (curl, TestClient) send neither and pass. Guards every endpoint that spends model money, so an
+    <img src=...> on another site cannot trigger a check."""
+    site = request.headers.get("sec-fetch-site")
+    if site is not None and site.strip().lower() not in ("same-origin", "none"):
+        return _bad("cross-site", 403)
+    origin = request.headers.get("origin")
+    if origin is not None and urlsplit(origin).netloc.lower() != (request.headers.get("host") or "").lower():
+        return _bad("cross-site", 403)
+    return None
 
 
 def _encodable(obj):
@@ -221,6 +235,8 @@ def _finish(card, claim, spend0=None, t0=None):
 # ---- API ------------------------------------------------------------------------------------------------
 @app.post("/api/check")
 async def api_check(request: Request):
+    if (xs := _cross_site(request)) is not None:
+        return xs
     body, err = await _json_body(request)
     if err:
         return err
@@ -252,9 +268,11 @@ def _sse(event, data):
 
 
 @app.get("/api/check/stream")
-async def api_check_stream(claim: str = Query("")):
+async def api_check_stream(request: Request, claim: str = Query("")):
     """Server-Sent Events: `step` events {step, status, t, ...} as check() progresses, then one `card` event with the
     finished card (same body as POST /api/check), or one `error` event {error: <exception type>} (never the message)."""
+    if (xs := _cross_site(request)) is not None:
+        return xs
     claim, err = _valid_claim(claim)
     if err:
         return _bad(err)
@@ -328,6 +346,8 @@ async def api_cards():
 
 @app.post("/api/audio")
 async def api_audio(request: Request):
+    if (xs := _cross_site(request)) is not None:
+        return xs
     mime = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
     if mime not in AUDIO_MIMES:
         return _bad("Unsupported audio type: use wav, webm, ogg, mp4/m4a, aac or mp3", 415)
@@ -363,6 +383,20 @@ def _check_with(text, extra):
     return checker.check(text, extra_images=extra) if extra else checker.check(text)
 
 
+def _crop_box(frame, box_2d):
+    """Crop `box_2d` of `frame` into a file named by (frame, box), so claims on one frame with different boxes never
+    share a file. Written via a unique temp file + os.replace: concurrent identical crops are atomic, never torn."""
+    key = hashlib.sha1(json.dumps([frame.name, [round(float(v), 2) for v in box_2d]]).encode()).hexdigest()[:20]
+    out = frame.with_name(f"{key}_crop.jpg")
+    tmp = out.with_name(f"{out.stem}.{threading.get_ident()}.{os.getpid()}.{time.monotonic_ns()}.part.jpg")
+    try:
+        video_frames.crop_region(frame, box_2d, tmp)
+        os.replace(tmp, out)
+    finally:
+        tmp.unlink(missing_ok=True)
+    return out
+
+
 def _frame_evidence(vpath, vsha, c):
     """Extract the claim's frame; for a VISUAL claim also locate the thing on that frame (an image call) and build the
     field photo for the judges (the boxed region, else the whole frame). -> (video_evidence or None, extra_images or
@@ -384,13 +418,18 @@ def _frame_evidence(vpath, vsha, c):
         ve["text_read"] = loc["text_read"]
     img = fr["path"]
     if loc["box_2d"]:
-        img = video_frames.crop_region(fr["path"], loc["box_2d"], fr["path"].with_name(fr["path"].stem + "_crop.jpg"))
+        try:
+            img = _crop_box(fr["path"], loc["box_2d"])
+        except Exception:    # crop failed: judge the whole frame and report no box
+            img, ve["box_2d"] = fr["path"], None
     label = f"FIELD PHOTO from the site video at {video_frames.fmt_t(c['frame_t_s'])}"
     return ve, [{"path": img, "mime": "image/jpeg", "label": label}]
 
 
 @app.post("/api/video")
 async def api_video(request: Request, sheet: str | None = None):
+    if (xs := _cross_site(request)) is not None:
+        return xs
     mime = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
     if mime not in VIDEO_MIMES:
         return _bad("Content-Type must be video/mp4 or video/quicktime", 415)
@@ -438,6 +477,8 @@ async def api_video(request: Request, sheet: str | None = None):
 
 @app.post("/api/rfi")
 async def api_rfi(request: Request):
+    if (xs := _cross_site(request)) is not None:
+        return xs
     try:
         body = await request.json()
     except ValueError:
@@ -480,7 +521,7 @@ async def frames(name: str):
     p = Path(BUILD) / "frames" / name
     if not p.is_file():
         return _bad("not found", 404)
-    # <sha1(video|t)>.jpg never changes; <..>_crop.jpg is re-cut per claim box under the same name
+    # <sha1(video|t)>.jpg never changes; <sha1(frame|box)>_crop.jpg is named by its box (kept SHORT-cached)
     return FileResponse(p, headers=SHORT if name.endswith("_crop.jpg") else IMMUTABLE)
 
 
