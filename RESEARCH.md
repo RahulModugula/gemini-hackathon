@@ -59,7 +59,7 @@ Treat anything not marked VERIFIED as a lead, not a fact. Re-check prices after 
 - Base by discipline: Arch 14, Elec 8 (+3 demo), Civil 6, Mech 5 (+2 demo), Plumb 4 (+2 demo), General 3, Struct 3,
   Landscape 2, Arch demo 1, ME 1.
 - Supersession preview: 20 distinct sheet numbers superseded; **A1100 and ED200 revised in both addenda**.
-  Add 1 cover says 16 revised sheets but 17 are bound in (T5 to resolve).
+  Add 1 cover says 16 revised sheets but its own narrative lists 17 and 17 are bound in; narrative and drawings agree, so the cover count is off by one (T5). Add 2: cover 5 = 5 listed = 5 bound.
 - Civil/landscape sheets are `/Rotate 270`: word boxes must be rotated into render space (bug found and fixed, test added).
 - Context sizing (chars/4 estimate, **not** a token count): current sheets ≈ 94K tokens; project manual ≈ 457K;
   addenda ≈ 52K; A201 ≈ 79K; **whole current bid set ≈ 680K tokens → fits one 1M context** (T17).
