@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "verdict": {"type": "string", "enum": ["conflict", "consistent", "unclear"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "reason": {"type": "string", "description": "One or two sentences a superintendent would accept."},
+    "quoted_words": {"type": "array", "items": {"type": "string"}},
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "image": {"type": "string", "enum": ["current", "superseded"]},
+          "box_2d": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 1000}, "minItems": 4, "maxItems": 4},
+          "label": {"type": "string"}
+        },
+        "required": ["image", "box_2d", "label"]
+      }
+    },
+    "changed_by_addendum": {"type": "boolean"},
+    "needs_code": {"type": "string", "description": "Empty, or what code must check (count, sum, dimension)."}
+  },
+  "required": ["verdict", "confidence", "reason", "quoted_words", "evidence", "changed_by_addendum", "needs_code"]
+}
