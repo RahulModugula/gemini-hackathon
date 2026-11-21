@@ -17,8 +17,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.gzip import GZipMiddleware
 
+import ask
 import audio_claims
 import check as checker
+import digest
 import llm
 import rfi
 import video_claims
@@ -248,6 +250,26 @@ async def api_check(request: Request):
         return rec
     spend0, t0 = llm.run_spend(), time.time()
     card = _finish(await run_in_threadpool(checker.check, claim), claim, spend0, t0)
+    _append(card)
+    return card
+
+
+@app.post("/api/ask")
+async def api_ask(request: Request):
+    """Free text (a claim, a question, or a request for an RFI) -> card. Same guards as /api/check."""
+    if (xs := _cross_site(request)) is not None:
+        return xs
+    body, err = await _json_body(request)
+    if err:
+        return err
+    text, err = _valid_claim(body.get("text") if isinstance(body, dict) else None)
+    if err:
+        return _bad(err.replace("claim", "text"))
+    rec = _replay_card(text)
+    if rec is not None:
+        return rec
+    spend0, t0 = llm.run_spend(), time.time()
+    card = _finish(await run_in_threadpool(ask.run, text), text, spend0, t0)
     _append(card)
     return card
 
@@ -612,6 +634,33 @@ async def sheet_image(name: str):
     except (OSError, RuntimeError, ValueError, IndexError, KeyError):
         return _bad("not found", 404)
     return FileResponse(p, media_type="image/jpeg", headers=SHORT)
+
+
+_digest_lock = threading.Lock()
+
+
+@app.get("/api/digest")
+async def api_digest():
+    """The cached addendum impact digest (build/digest.json); 404 until one has been run."""
+    try:
+        d = json.loads((Path(BUILD) / "digest.json").read_text())
+    except (OSError, ValueError):
+        return _bad("no digest yet: POST /api/digest/refresh", 404)
+    return JSONResponse(d, headers={"Cache-Control": "no-cache"})
+
+
+@app.post("/api/digest/refresh")
+async def api_digest_refresh(request: Request):
+    if (xs := _cross_site(request)) is not None:
+        return xs
+    if not _digest_lock.acquire(blocking=False):
+        return _bad("a digest run is already in progress", 409)
+    try:
+        return await run_in_threadpool(digest.run, Path(BUILD))
+    except digest.DigestError:
+        return _bad("digest failed", 503)
+    finally:
+        _digest_lock.release()
 
 
 @app.get("/api/health")

@@ -24,6 +24,7 @@ from roles import ROLES, THINKING
 HERE = Path(__file__).parent
 BUILD = HERE / "build"          # symlink to the shared build dir; tests may monkeypatch
 PROMPT = HERE / "studio/prompts/judge_v0.md"
+ANSWER_PROMPT = HERE / "studio/prompts/answer_v0.md"
 SCHEMA = HERE / "studio/prompts/judge.schema.json"
 HALF_PT, DPI, K = 260, 200, 3
 
@@ -169,15 +170,21 @@ def _score(claim, crop, i, title=False, twin=None):
     return (len(want & (have | _tokens(twin))), len(want & have), -i)
 
 
-def candidates(claim, sheets, src, rows, n=2, k=4):
+def candidates(claim, sheets, src, rows, n=2, k=4, hints=None):
     """-> (list of up to n crops, list of note strings).
     A claim naming a sheet number is judged on that sheet's CURRENT version only (noting any superseded version);
     the sheet number and locator words are dropped from the search and identifier scoring, so hits are ranked by
     the remaining tokens. Otherwise the top-k search hits are re-ranked by how many of the claim's identifiers their
     crop holds, superseded hits are swapped for their current sheet, and the best n distinct sheets are kept.
-    Crops centred in the title-block strip are never chosen unless the claim is about the title block."""
+    Crops centred in the title-block strip are never chosen unless the claim is about the title block.
+    hints (ask.py, already validated): {"sheets": [sheet numbers], "search_terms": "..."} only IMPROVE retrieval: hinted
+    sheets count as named when the text names none, and the terms run as one extra search merged after the main one."""
     notes, out = [], []
+    hints = hints or {}
     named = named_sheets(claim, rows)
+    if not named and hints.get("sheets"):
+        nums = {search.norm_number(r["sheet_number"]): r["sheet_number"] for r in rows.values() if r.get("sheet_number")}
+        named = {n_: nums[n_] for n_ in (search.norm_number(t) for t in hints["sheets"]) if n_ in nums}
     title = is_title_claim(claim)
     query = positive_query(claim) if title else search_text(claim, named)
     idclaim = positive_query(claim) if title else query     # identifier scoring text: no sheet number
@@ -196,7 +203,10 @@ def candidates(claim, sheets, src, rows, n=2, k=4):
     if out:
         return out[:n], notes
     scored = []
-    for i, h in enumerate(search.search_sheets(query, k=k)):
+    hits = search.search_sheets(query, k=k)
+    if hints.get("search_terms"):
+        hits = hits + search.search_sheets(hints["search_terms"], k=k)
+    for i, h in enumerate(hits):
         sid = h["sheet"]
         if rows.get(sid, {}).get("current") is False and h.get("superseded_by") in sheets:
             sid = h["superseded_by"]           # judge the current version, at the hit's rect
@@ -264,8 +274,8 @@ EXTRA_NOTE = ("{label}. This is a FIELD PHOTO, not a drawing sheet. Compare what
               "words must come from the drawing images (IMAGE 1 / IMAGE 2) only, never from this photo.")
 
 
-def build_parts(claim, crops, extra_images=None):
-    system, _, template = PROMPT.read_text().partition("\n---\n")
+def build_parts(claim, crops, extra_images=None, mode="claim", lookup=None):
+    system, _, template = (ANSWER_PROMPT if mode == "answer" else PROMPT).read_text().partition("\n---\n")
     lines = []
     parts = [llm.text_part(system.strip())]
     for label, key in (("IMAGE 1 = CURRENT sheet", "current"), ("IMAGE 2 = SUPERSEDED sheet", "superseded")):
@@ -276,7 +286,7 @@ def build_parts(claim, crops, extra_images=None):
     for x in extra_images or []:
         parts += [llm.text_part(EXTRA_NOTE.format(label=x.get("label") or "FIELD PHOTO")),
                   llm.image_part(x["path"], x.get("mime", "image/jpeg"))]
-    parts.append(llm.text_part(template.strip().replace("{{claim}}", claim).replace("{{words}}", "\n".join(lines))))
+    parts.append(llm.text_part(template.strip().replace("{{lookup}}", lookup or "").replace("{{claim}}", claim).replace("{{words}}", "\n".join(lines))))
     return parts
 
 
@@ -291,7 +301,8 @@ def _room_geometry(claim, crop):
         return None
 
 
-def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema, progress=None, extra_images=None):
+def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema, progress=None, extra_images=None,
+                   mode="claim", lookup=None):
     crops = {"current": cur}
     if cur.get("twin"):
         crops["superseded"] = cur["twin"]
@@ -299,7 +310,7 @@ def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr,
     narrative = [{"action": ch["action"], "text": ch["text"]} for n in narr
                  if n["source"] == cur["source"] and n["sheet_number"] == r.get("sheet_number") for ch in n["changes"]]
     ctx = {"judge": judge, "second": second, "thinking": thinking, "schema": schema,
-           "parts": build_parts(claim, crops, extra_images), "crops": crops, "rows": rows, "narrative": narrative,
+           "parts": build_parts(claim, crops, extra_images, mode, lookup), "crops": crops, "rows": rows, "narrative": narrative,
            "progress": progress}
     return cur, verify.verify(claim, ctx)
 
@@ -310,7 +321,25 @@ def _rank(res):
     return (bool(g.get("pass")), res["verdict"] != "unclear", res["confidence"])
 
 
-def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING, progress=None, extra_images=None):
+def _answer(card):
+    """Answer part of a question card: the value is only the quoted words that grounding accepted inside a CURRENT
+    evidence box (a word the judge merely repeated or invented is never reported). None unless the verdict is a grounded
+    'consistent'. A question has no 'conflict': that is shown as unclear."""
+    g = next((c for c in card["checks"] if c.get("check") == "grounding"), {})
+    if card["verdict"] != "consistent" or not g.get("pass"):
+        card["verdict"] = "unclear"
+        return None
+    first = next((c for c in card["checks"] if c.get("by") not in (None, "code") and c.get("quoted_words")), None)
+    acc = (g.get("accepted") or {}).get(first["by"], {}) if first else {}
+    words = [t for q in (first or {}).get("quoted_words", []) for t in q.split() if acc.get(t) == "current_box"]
+    if not words or not card["evidence"]:
+        card["verdict"] = "unclear"
+        return None
+    return {"value": " ".join(dict.fromkeys(words)), "text": card["reason"].split(" [Downgraded")[0]}
+
+
+def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING, progress=None, extra_images=None,
+          mode="claim", hints=None):
     """progress(step, status, **info), optional. step: search | crop | judge_a | judge_b | grounding | revision;
     status: start | done. Judge/grounding/revision events carry cand=<index> and sheet=<id>, one set per candidate;
     they are called from worker threads. extra_images: optional [{"path", "mime", "label"}] field photos (e.g. a
@@ -321,7 +350,7 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     card = {"claim": claim, "speaker": None, "timestamp": now, "verdict": "unclear", "confidence": 0.0,
             "evidence": [], "spec_refs": [], "checks": [], "reason": "", "rfi_draft": None}
-    cands, notes = candidates(claim, sheets, src, rows)
+    cands, notes = candidates(claim, sheets, src, rows, hints=hints)
     emit("search", "done", hits=len(cands), sheet=cands[0]["sheet"] if cands else None)
     if not cands:
         card["reason"] = "No sheet matched the claim."
@@ -341,7 +370,8 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
     # each candidate runs a judge pair concurrently: at most 2 x 2 = 4 model calls in flight
     with ThreadPoolExecutor(max_workers=len(cands)) as ex:
         results = list(ex.map(lambda ic: _run_candidate(claim, ic[1], judge, second, thinking, sheets, src, rows, narr,
-                                                        schema, per_cand(*ic), extra_images), enumerate(cands)))
+                                                        schema, per_cand(*ic), extra_images, mode,
+                                                        (hints or {}).get("lookup")), enumerate(cands)))
     best = max(range(len(results)), key=lambda i: (_rank(results[i][1]), -i))
     cur, res = results[best]
     card.update(verdict=res["verdict"], confidence=res["confidence"], reason=res["reason"], checks=list(res["checks"]))
@@ -355,6 +385,9 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
     # Only boxes on the current sheet are evidence; the superseded image only explains what changed.
     card["evidence"] = [{"sheet": cur["sheet"], "revision": cur["revision"], "bbox": [round(v, 2) for v in e["bbox"]],
                          "sheet_number": cur["sheet_number"], "crop": cur["path"], "crop_rect_pt": [round(v, 1) for v in cur["rect"]], "label": e["label"]} for e in res["evidence"] if e["image"] == "current"]
+    if mode == "answer":
+        card["mode"] = "answer"
+        card["answer"] = _answer(card)
     room = next((c.get("room") for c in card["checks"] if c.get("check") == "spatial"), None)
     if room:        # the room region in crop 0-1000 coordinates, so the UI can highlight it
         for e in card["evidence"]:

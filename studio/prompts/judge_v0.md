@@ -10,6 +10,9 @@ Rules:
 2. verdict = "conflict" if the current sheet contradicts the claim; "consistent" if the current sheet clearly
    supports it; "unclear" if the crops don't show enough, the claim is ambiguous, or it needs counting more than
    3 symbols or arithmetic (code does those; say so in `needs_code`).
+   Silence is not a contradiction: if the claim names a value, maker, supplier, rating or item that the crops simply
+   do not mention (e.g. "the note says the concrete comes from Wells" and no supplier is printed), the verdict is
+   "unclear", not "conflict". "conflict" needs printed words that state something different for the same thing.
 3. Quote the exact printed words you relied on in `quoted_words` (copied from WORDS, no paraphrase). If you can't
    quote any, the verdict must be "unclear".
 4. For each piece of evidence give a box on the image you used: box_2d = [ymin, xmin, ymax, xmax] normalised 0–1000.
