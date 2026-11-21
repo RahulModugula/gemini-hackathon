@@ -619,7 +619,7 @@ async def api_sheet(sheet: str):
 
 
 THUMB_PX = 360
-HELDOUT_RUNS = ("metrics_heldout_v1_final.json", "metrics_heldout_v2.json")
+HELDOUT_RUNS = ("metrics_heldout_v1_final.json", "metrics_heldout_v2.json", "metrics_heldout_v3.json")
 
 
 @app.get("/api/heldout")

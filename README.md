@@ -110,15 +110,21 @@ All roles run at thinking level LOW. In our comparison it matched higher levels 
 Live, end to end (`check()`: search → crop → Argon ∥ Carbon → verifier), scored with Wilson 95% intervals.
 Held-out sets are frozen by sha256 (`eval/HELDOUT.md`) and were never used for tuning.
 
-| Set (2026-11-21) | n | Correct | 95% CI | False alarms | Right when it answered |
-|---|---|---|---|---|---|
-| **Held-out v2** | 43 | **27 (62.8%)** | 48–76% | **0** | 100% |
-| Held-out v1 | 17 | 9 (52.9%) | 31–74% | **0** | 100% |
-| Dev v3 (tuning) | 111 | 79 (71.2%) | 62–79% | 3 → fixed* | 94.7% |
+| Frozen held-out set (2026-11-21) | n | Correct | 95% CI | Answered | Right when it answered | False alarms |
+|---|---|---|---|---|---|---|
+| **v3** (fresh; built after tuning, run once) | 51 | 32 (62.7%) | 49–75% | 21 | 20 | 1 |
+| v2 | 43 | 27 (62.8%) | 48–76% | 14 | 14 | 0 |
+| v1 | 17 | 9 (52.9%) | 31–74% | 8 | 8 | 0 |
+| **All held-out** | **111** | **68 (61.3%)** | 52–70% | **43** | **42 (97.7%, CI 88–99.6%)** | **1** |
 
-**0 false alarms across 60 held-out claims.** Misses are abstentions (*unclear*), which cost a person a glance, not a wrong build.
-*The 3 dev false alarms were one pattern (a claim naming something the sheet never mentions); a prompt rule fixed it, re-checked on a dev subset at 19/19 with conflict recall unchanged.
-A fresh frozen held-out v3 (51 claims) is in `eval/heldout_v3.json` for the next measurement.
+**When SheetSight gives an answer, it has been right 42 of 43 times on claims it had never seen.** It answers about
+4 in 10 claims; the rest come back *unclear* with the evidence it looked at, which costs a person a glance, not a
+wrong build. The one false alarm (v3, `ho3-30`) was a claim that coils are "matched to Lennox condensers": the
+schedule lists Trane and names no condenser, so the frozen label is *unclear* and the system said *conflict*. We
+report it as labelled.
+
+Dev v3 (111 claims, used for tuning): 79/111 (71.2%). Its 3 false alarms were one pattern (a claim naming something
+the sheet never mentions); a prompt rule fixed it, re-checked on a dev subset at 19/19 with conflict recall unchanged.
 
 **About 1,150 automated tests,** including adversarial suites written to break each module (Unicode dashes, NaN confidence, malformed requests, spend-cap races, cross-site requests, concurrent PDF rendering).
 
