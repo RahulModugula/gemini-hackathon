@@ -18,7 +18,8 @@ import verify
 from roles import ROLES, THINKING
 
 BUILD = Path(__file__).parent / "build"
-TOKEN_BUDGET = 200_000          # input tokens (llm's bytes/3 estimate, i.e. conservative)
+TOKEN_BUDGET = 200_000          # input tokens
+BYTES_PER_TOKEN = 1.25          # measured 2026-11-21: 96.6 KB of this diff text = 77,034 prompt tokens (bytes/3 said 32K)
 MAX_BOXES = 12                  # boxes kept per digest item
 MAX_BOXES_IN_PROMPT = 6         # bboxes listed per token in the prompt
 LABEL = {"add1": "Addendum 1", "add2": "Addendum 2"}
@@ -59,10 +60,11 @@ revision-date churn). Each item has:
 - what_changed: plain words a superintendent understands, one or two sentences;
 - trades_affected: trade names (for example Plumbing, Electrical, Framing, Roofing, Finishes);
 - risk: why it matters on site or for pricing, one sentence, concrete;
-- evidence_tokens: 1 to 6 words copied EXACTLY from that sheet's "+" or "-" lines that prove the change. Never use
+- evidence_tokens: 1 to 4 words copied EXACTLY from that sheet's "+" or "-" lines that prove the change. Never use
   a word that is not in that sheet's diff;
 - qa_refs: ids of bidder Q&As that bear on this change (empty list when none). Use only ids that appear below.
-Do not invent changes the narrative and the diff do not support. Be concise."""
+Do not invent changes the narrative and the diff do not support. Be concise: at most 20 items in total, what_changed
+under 25 words, risk under 20 words, at most 4 evidence_tokens per item. Your whole answer must stay short."""
 
 
 def _norm(s):
@@ -144,7 +146,7 @@ def build_context(build=None):
     for q in qa:
         parts.append(f"[{q['id']}] ({q['source']}) Q: {q['question']} A: {q['response']}")
     text = "\n".join(parts)
-    est = int(len(text.encode()) / 3)
+    est = int(len(text.encode()) / BYTES_PER_TOKEN)
     if est > TOKEN_BUDGET:
         raise DigestError(f"digest context ~{est} tokens exceeds the {TOKEN_BUDGET} budget")
     return {"text": text, "est_tokens": est, "diffs": diffs, "qa_ids": {q["id"] for q in qa}, "qa": {q["id"]: q for q in qa}}
@@ -249,7 +251,7 @@ def run(build=None):
     """Build the context, make the single Neon call, verify, and write build/digest.json atomically."""
     build = Path(build or BUILD)
     ctx = build_context(build)
-    print(f"digest: ~{ctx['est_tokens']} input tokens (bytes/3 estimate, budget {TOKEN_BUDGET}), "
+    print(f"digest: ~{ctx['est_tokens']} input tokens (bytes/1.25 estimate, budget {TOKEN_BUDGET}), "
           f"{len(ctx['diffs'])} changed sheets, {len(ctx['qa_ids'])} Q&As", file=sys.stderr)
     res = llm.call(ROLES["audit"], [ctx["text"]], schema=SCHEMA, purpose="digest", thinking=THINKING)
     raw = (res.json or {}).get("items") if isinstance(res.json, dict) else None

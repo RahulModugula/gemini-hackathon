@@ -783,6 +783,7 @@ function renderDigest(){
     const h=el('h3',null,list[0].addendum_label||k);h.append(el('span','mono',list.length+' item'+(list.length>1?'s':'')));
     g.append(h);for(const it of list)g.append(digestItem(it));v.append(g);
   }
+  const first=v.querySelector('.dgBtn');if(first)first.click();   // open the first item so the view shows a boxed sheet
   if((d.dropped||[]).length)v.append(el('div','dgDropped',(d.dropped.length)+' model item'+(d.dropped.length>1?'s were':' was')+' dropped because the diff did not support them.'));
 }
 
