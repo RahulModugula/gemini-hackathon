@@ -22,8 +22,10 @@ so confirm them on screen.
 | ex1 "All WCs in 105A are WC-2" | conflict | conflict | 0.98 | $0.015 | 10.4 s | yes, 4/4 |
 | ex2 "Add 1 changed two 105A WCs to WC-3" | consistent | consistent | 0.98 | $0.024 | 16.6 s | yes, 3/3 |
 | ex3 "109A has a WC-3" (unlabelled) | (code diff: WC-1) | conflict (WC-1) | 0.99 | $0.015 | 8.6 s | yes, 2/2 |
-n = 3 dev examples. Too small to claim accuracy; it shows the format, grounding and cost work. **Latency is the gap**
-(goal 6 s per clip, 15 s typed): try thinking LOW first.
+**Re-run with thinking LOW** (same day, same packs): 3/3 correct again, confidence 0.98–0.99, **5.3–6.1 s** per call,
+**$0.036** total (vs 8.6–16.6 s and $0.054 at the default high thinking); 443–600 thinking tokens per call.
+n = 3 dev examples: too small to claim accuracy. It shows the format, grounding, cost and latency work.
+**Start from Hydrogen + thinking LOW**, and only raise thinking where the dev set shows LOW failing.
 
 ## A. Prompt lab: the 20-minute loop
 1. **Open** aistudio.google.com → new prompt. **Run settings** (tune icon): model `Gemini 4 Hydrogen`; set the thinking
