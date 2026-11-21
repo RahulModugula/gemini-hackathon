@@ -14,6 +14,7 @@ from fastapi import Query
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
+from starlette.middleware.gzip import GZipMiddleware
 
 import audio_claims
 import check as checker
@@ -42,7 +43,11 @@ VIDEO_MIMES = {"video/mp4", "video/quicktime"}
 VIDEO_CONCURRENCY = 3
 
 app = FastAPI(title="Drawing Claim Checker")
+# JSON and the UI page compress well; Starlette already skips text/event-stream (SSE stays unbuffered) and images/video.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 _lock = threading.Lock()
+IMMUTABLE = {"Cache-Control": "public, max-age=31536000, immutable"}   # content-addressed names never change content
+SHORT = {"Cache-Control": "public, max-age=300"}
 
 
 # Only the exception type is returned: never the message (may hold prompt text) or a stack trace.
@@ -125,6 +130,53 @@ def _find_card(card_id):
     return next((c for c in _read_ledger() + _fixtures() if c.get("id") == card_id), None)
 
 
+# ---- replay / demo mode -----------------------------------------------------------------------------------
+def _cache_mode():
+    return os.environ.get("LLM_CACHE", "readwrite")
+
+
+def _norm_claim(s):
+    return " ".join(str(s or "").lower().split())
+
+
+def _replay_miss(card):
+    """True when a judge was 'unclear' only because LLM_CACHE=replay had no recorded answer: not a real verdict."""
+    return any("CacheMiss" in str(k.get("note") or "") for k in card.get("checks") or []
+               if k.get("by") and k.get("by") != "code")
+
+
+def _recorded(claim):
+    """Newest recorded card (ledger, then UI fixtures) for exactly this claim (case/space-insensitive), skipping
+    cards that only hold a replay miss."""
+    n = _norm_claim(claim)
+    return next((c for c in _read_ledger() + _fixtures()
+                 if _norm_claim(c.get("claim")) == n and not c.get("replay_miss") and not _replay_miss(c)), None)
+
+
+def _replay_card(claim):
+    """In LLM_CACHE=replay, a claim that already has a recorded card is answered from it instantly (no model call,
+    nothing appended). Marked replayed=True so the UI can say so. None outside replay mode or when not recorded."""
+    if _cache_mode() != "replay":
+        return None
+    rec = _recorded(claim)
+    return None if rec is None else {**rec, "replayed": True}
+
+
+def _samples():
+    """ui/samples.json: [{id, label, kind: claim|question, claim, why}]; malformed entries are dropped."""
+    try:
+        data = json.loads((UI / "samples.json").read_text())
+    except (OSError, ValueError):
+        return []
+    out = []
+    for s in data if isinstance(data, list) else []:
+        if (isinstance(s, dict) and isinstance(s.get("id"), str) and isinstance(s.get("claim"), str)
+                and 0 < len(s["claim"].strip()) <= MAX_CLAIM):
+            out.append({"id": s["id"], "label": str(s.get("label") or s["claim"]).strip(), "claim": s["claim"].strip(),
+                        "kind": "question" if s.get("kind") == "question" else "claim", "why": str(s.get("why") or "")})
+    return out
+
+
 def _box_2d(bbox, rect):
     """PDF-pt box -> [ymin, xmin, ymax, xmax] on a 0..1000 scale of the crop."""
     w, h = (rect[2] - rect[0]) or 1.0, (rect[3] - rect[1]) or 1.0
@@ -157,6 +209,8 @@ def _finish(card, claim, spend0=None, t0=None):
     card["checks"] = [{**ck, "superseded_crop": "/crops/" + Path(ck["superseded_crop"]).name}
                       if ck.get("superseded_crop") else ck for ck in card.get("checks") or []]
     card["seal"] = seal_hash(claim, evs)
+    if _replay_miss(card):
+        card["replay_miss"] = True
     if t0 is not None:
         card["latency_s"] = round(time.time() - t0, 1)
     if spend0 is not None:
@@ -173,6 +227,9 @@ async def api_check(request: Request):
     claim, err = _valid_claim(body.get("claim") if isinstance(body, dict) else None)
     if err:
         return _bad(err)
+    rec = _replay_card(claim)
+    if rec is not None:
+        return rec
     spend0, t0 = llm.run_spend(), time.time()
     card = _finish(await run_in_threadpool(checker.check, claim), claim, spend0, t0)
     _append(card)
@@ -201,6 +258,10 @@ async def api_check_stream(claim: str = Query("")):
     claim, err = _valid_claim(claim)
     if err:
         return _bad(err)
+    rec = _replay_card(claim)
+    if rec is not None:
+        return StreamingResponse(_replay_events(rec), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
     q = queue.Queue()
     t0 = time.time()
     spend0 = llm.run_spend()
@@ -225,6 +286,29 @@ async def api_check_stream(claim: str = Query("")):
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+REPLAY_STEPS = ("search", "crop", "judge_a", "judge_b", "grounding", "revision")
+
+
+def _replay_events(card):
+    """The same event shapes as a live run, each step flagged replay=True with t=0: nothing was re-run."""
+    for st in REPLAY_STEPS:
+        for status in ("start", "done"):
+            yield _sse("step", {"step": st, "status": status, "t": 0.0, "replay": True})
+    yield _sse("step", {"step": "sealed", "status": "done", "t": 0.0, "replay": True, "seal": card.get("seal")})
+    yield _sse("card", card)
+
+
+@app.get("/api/samples")
+async def api_samples():
+    """One-click sample claims for the first screen. card_id is set when a recorded card already answers the claim
+    (so replay mode can show it with zero network); null means the claim runs through the checker."""
+    out = []
+    for s in _samples():
+        rec = _recorded(s["claim"])
+        out.append({**s, "card_id": rec["id"] if rec else None})
+    return out
 
 
 @app.get("/api/metrics")
@@ -377,9 +461,12 @@ async def crops(name: str):
     if Path(name).name != name or name.startswith("."):
         return _bad("not found", 404)
     for d in (Path(BUILD) / "crops", UI / "crops"):
-        if (d / name).is_file():
-            return FileResponse(d / name)
+        if (d / name).is_file():   # build crops are named by sha1(sheet, rect, dpi); fixture names are not
+            return FileResponse(d / name, headers=IMMUTABLE if _CROP_RE.match(name) else SHORT)
     return _bad("not found", 404)
+
+
+_CROP_RE = re.compile(r"^[0-9a-f]{16}\.png$")
 
 
 _FRAME_RE = re.compile(r"^[0-9a-f]{20}(_crop)?\.jpg$")
@@ -391,7 +478,10 @@ async def frames(name: str):
     if not _FRAME_RE.match(name):
         return _bad("not found", 404)
     p = Path(BUILD) / "frames" / name
-    return FileResponse(p) if p.is_file() else _bad("not found", 404)
+    if not p.is_file():
+        return _bad("not found", 404)
+    # <sha1(video|t)>.jpg never changes; <..>_crop.jpg is re-cut per claim box under the same name
+    return FileResponse(p, headers=SHORT if name.endswith("_crop.jpg") else IMMUTABLE)
 
 
 @app.get("/videos/{name}")
@@ -401,12 +491,12 @@ async def videos(name: str):
     p = Path(BUILD) / "videos" / name
     if not p.is_file():
         return _bad("not found", 404)
-    return FileResponse(p, media_type="video/quicktime" if name.endswith(".mov") else "video/mp4")
+    return FileResponse(p, media_type="video/quicktime" if name.endswith(".mov") else "video/mp4", headers=IMMUTABLE)
 
 
 @app.get("/")
 async def index():
-    return FileResponse(UI / "index.html")
+    return FileResponse(UI / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 app.mount("/assets", StaticFiles(directory=UI / "assets"), name="assets")
