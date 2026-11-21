@@ -15,6 +15,7 @@ from pathlib import Path
 import pymupdf
 
 import llm
+import pdflock
 import rooms
 import search
 import verify
@@ -76,8 +77,9 @@ def render(crop, src):
     key = hashlib.sha1(json.dumps([crop["sheet"], [round(v, 1) for v in crop["rect"]], DPI]).encode()).hexdigest()[:16]
     out = BUILD / "crops" / f"{key}.png"
     out.parent.mkdir(parents=True, exist_ok=True)
-    page = pymupdf.open(_pdf_path(src[crop["source"]]))[crop["page"] - 1]
-    page.get_displaylist().get_pixmap(matrix=pymupdf.Matrix(DPI / 72, DPI / 72), clip=pymupdf.Rect(*crop["rect"])).save(str(out))
+    with pdflock.LOCK:      # pymupdf is not thread-safe
+        page = pymupdf.open(_pdf_path(src[crop["source"]]))[crop["page"] - 1]
+        page.get_displaylist().get_pixmap(matrix=pymupdf.Matrix(DPI / 72, DPI / 72), clip=pymupdf.Rect(*crop["rect"])).save(str(out))
     crop["png"], crop["path"] = out, f"build/crops/{key}.png"
     return crop
 

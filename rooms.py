@@ -21,6 +21,8 @@ from pathlib import Path
 import numpy as np
 import pymupdf
 
+import pdflock
+
 HERE = Path(__file__).parent
 BUILD = HERE / "build"
 WALL_STROKE_MIN = 1.0            # pt; grey strokes at least this heavy are walls
@@ -44,6 +46,11 @@ def _is_name(t):
 
 def wall_mask(page):
     """Bool array [H, W] at 1 px per pt (page space as rendered): True on wall primitives."""
+    with pdflock.LOCK:      # pymupdf is not thread-safe
+        return _wall_mask(page)
+
+
+def _wall_mask(page):
     W, H = math.ceil(page.rect.width), math.ceil(page.rect.height)
     doc = pymupdf.open()
     q = doc.new_page(width=page.rect.width, height=page.rect.height)
@@ -343,8 +350,9 @@ def sheet_rooms(sheet, build=None, use_cache=True):
         s = next(x for x in idx["sheets"] if x["sheet"] == sheet)
         path = next(x["path"] for x in idx["sources"] if x["source"] == s["source"])
         words = json.loads((build / "words" / f"{sheet}.json").read_text())["words"]
-        page = pymupdf.open(_pdf(path))[s["page"] - 1]
-        rooms, unresolved = extract(page, words, s["width"])
+        with pdflock.LOCK:
+            page = pymupdf.open(_pdf(path))[s["page"] - 1]
+            rooms, unresolved = extract(page, words, s["width"])
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(json.dumps({"v": CACHE_VERSION, "sheet": sheet, "unresolved": unresolved, "rooms": [r.to_json() for r in rooms]}))
     return {"sheet": sheet, "rooms": rooms, "unresolved": unresolved,
