@@ -3,10 +3,11 @@
 For every superseded -> current sheet pair: spatial word diff (global offset estimated from unique tokens),
 cluster changed words (<=150 pt), keep clusters with tag-like tokens, then build claims whose labels hold by
 construction:
-  * stale   : asserts the OLD value (N x token in a small region) -> conflict
-  * current : asserts the NEW value                                 -> consistent
-  * unclear : asks for a fact (a manufacturer) that is not on the sheet at all -> unclear
-Counts are measured on the words, never guessed, and capped at 3.
+  * stale   : "On P101, the water closets in Toilet 105A are tagged WC-2." (OLD value)        -> conflict
+              (pure additions: a same-shaped decoy value verified absent from both crops)
+  * current : the same sentence with the NEW value                                         -> consistent
+  * unclear : asks for a fact (a manufacturer) that is not on the sheet at all             -> unclear
+Every claim names its sheet; no counts, no negations. Values are checked against the words in the crop window.
 
 Usage (repo root): python studio/devset.py [--out studio/devset] [--packs studio/packs] [--dpi 200] [--no-packs]
 """
@@ -14,20 +15,22 @@ import argparse
 import importlib.util
 import json
 import re
+import os
 import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MAIN_DATA = Path("/Users/rmodugula/projects/gemini-hackathon/data")  # PDFs are not tracked in git
+ATTRIB_PT = 125.0       # an asserted value must be this close to its room-number anchor (and checked within this radius)
+ROW_TOL_PT = 3.0        # same text row (schedule line) if centres differ by <= this in y
+MARGIN = 1.3            # off-row anchors must be this much nearer than the next room tag
 CLUSTER_PT = 150.0
 TOL_PT = 4.0            # position tolerance after the global offset is removed
 WINDOW_HALF = 220.0     # claim window = the crop the judge sees: square of this half-size around the change (pt)
-ANCHOR_MAX_PT = 150.0   # a room-number anchor must be this close to the change
-MAX_CHANGES_PER_SHEET = 3   # a stale+current pair per change => at most 6 claims per sheet
-TARGET_CHANGES = 22
+ANCHOR_MAX_PT = 150.0   # cluster-level anchor (only used for the unclear claims)
+MAX_CHANGES_PER_SHEET = 5   # a stale+current pair per change => at most 8 claims per sheet
+TARGET_CHANGES = 15
 TITLE_BLOCK = (2700.0, 1800.0)  # words right/below this point are title block / revision stamp, not content
-WORD_NUMS = {1: "one", 2: "two", 3: "three"}
 
 TAG_RES = [
     re.compile(r"^[A-Z]{1,4}-?\d{1,3}[A-Z]?$"),          # WC-3, BL06, P1, DF-2, T09
@@ -135,24 +138,45 @@ def cluster(removed, added, off):
     return list(groups.values())
 
 
-def nearest_anchor(bbox, words, exclude=()):
-    """Nearest room-number word (###/###A) to the bbox centre within 400 pt, else nearest tag word, else None.
-    Words whose text is one of the changed tokens (`exclude`) are never anchors."""
-    cx, cy = (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
+def has_label(w, words):
+    """A real room tag carries a room name (>= 4 capital letters) just above it or on the same row to its left."""
+    ax, ay = center(w)
+    for o in words:
+        if o is w or not re.match(r"^[A-Z][A-Z/.&-]{3,}$", o["text"]):
+            continue
+        ox, oy = center(o)
+        if (0 < ay - oy <= 60 and abs(ox - ax) <= 80) or (abs(oy - ay) <= ROW_TOL_PT and 0 < ax - ox <= 150):
+            return True
+    return False
+
+
+def is_value_token(t):
+    """Tokens a claim may assert: tags / refs / dimensions, not bare numbers (areas, loads) or room-like numbers."""
+    return not is_room(t) and not (re.match(r"^\d+(\.\d+)?$", t) and not t.startswith("0"))
+
+
+def rooms_by_distance(box, words, exclude=(), loose=False):
+    """Room-number words (###/###A) sorted by distance to the centre of `box`. Words whose text is a changed token,
+    repeated numbers (> 3 on the sheet) and area-table cells (SF / Occs lines) are not room tags."""
+    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    if loose:    # every room-looking word, no filters: used to catch a nearer tag the strict filters would hide
+        return sorted(((((center(w)[0] - cx) ** 2 + (center(w)[1] - cy) ** 2) ** 0.5, w) for w in words
+                       if is_room(w["text"]) and w["text"] not in exclude and not in_title_block(w)), key=lambda t: (t[0], t[1]["text"]))
     freq = Counter(w["text"] for w in words)
     area_lines = {(w.get("block"), w.get("line")) for w in words if w["text"] in {"SF", "SF/Occ", "Occs", "AREA", "Occ."}}
-    words = [w for w in words if w["text"] not in exclude and freq[w["text"]] <= 3
-             and (w.get("block"), w.get("line")) not in area_lines]  # repeats / area-table cells are not room tags
-    for pool in ([w for w in words if is_room(w["text"]) and not in_title_block(w)],):  # room numbers only: claims read naturally
-        best, bd = None, ANCHOR_MAX_PT
-        for w in pool:
+    out = []
+    for w in words:
+        if (is_room(w["text"]) and w["text"] not in exclude and freq[w["text"]] <= 3 and not in_title_block(w)
+                and (w.get("block"), w.get("line")) not in area_lines and has_label(w, words)):
             x, y = center(w)
-            d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-            if d < bd:
-                best, bd = w, d
-        if best is not None:
-            return best["text"], ("room" if is_room(best["text"]) else "tag")
-    return None, None
+            out.append((((x - cx) ** 2 + (y - cy) ** 2) ** 0.5, w))
+    return sorted(out, key=lambda t: (t[0], t[1]["text"]))
+
+
+def nearest_anchor(bbox, words, exclude=()):
+    """Cluster-level anchor: nearest room tag within ANCHOR_MAX_PT, else (None, None)."""
+    rs = rooms_by_distance(bbox, words, exclude)
+    return (rs[0][1]["text"], "room") if rs and rs[0][0] <= ANCHOR_MAX_PT else (None, None)
 
 
 def union(boxes):
@@ -201,8 +225,6 @@ def diff_pair(old_row, new_row):
         boxes = [i[2] for i in g]
         bbox = union(boxes)
         anchor, akind = nearest_anchor(bbox, new, exclude=set(otok) | set(ntok))
-        if anchor is None:
-            continue
         changes.append({
             "sheet_number": new_row["sheet_number"], "old_sheet": old_row["sheet"], "new_sheet": new_row["sheet"],
             "old_tokens": [t for t in otok if o_only[t] > 0], "new_tokens": [t for t in ntok if n_only[t] > 0],
@@ -213,62 +235,194 @@ def diff_pair(old_row, new_row):
     return changes, off
 
 
+def expand(changes):
+    """One candidate per added tag: pair it with the nearest removed tag within 100 pt (a replacement), else it is an addition."""
+    out = []
+    for c in changes:
+        for nk in c["_nkeys"]:
+            olds = sorted((o for o in c["_okeys"] if gap(o[2], nk[2]) <= 100), key=lambda o: gap(o[2], nk[2]))
+            out.append({**c, "_nkeys": [nk], "_okeys": olds[:1], "new_tokens": [nk[1]["text"]],
+                        "old_tokens": [olds[0][1]["text"]] if olds else []})
+    return out
+
+
 def pairs(index):
     by = {r["sheet"]: r for r in index["rows"]}
     return [(r, by[r["superseded_by"]]) for r in index["rows"] if not r["current"] and r["superseded_by"]]
 
 
 # ---------------------------------------------------------------- claims
-def phrase(tok, n, where):
-    times = "" if n == 1 else f" {WORD_NUMS[n]} times"
-    return f'The current sheet shows "{tok}"{times} {where}.'
+def loc_label(anchor, words):
+    """'Toilet 105A' when a TOILET label sits just above the room number, else 'room 105A'."""
+    for a in (w for w in words if w["text"] == anchor):
+        ax, ay = center(a)
+        if any(w["text"].upper() == "TOILET" and abs(center(w)[0] - ax) <= 80 and 0 <= ay - center(w)[1] <= 60 for w in words):
+            return f"Toilet {anchor}"
+    return f"room {anchor}"
 
 
-def build_pair(ch, old_words, new_words, seq):
-    """Turn one verified change into (stale, current) claim dicts, or None when counts are not clean (n>3 / ambiguous)."""
+def claim_text(sheet, tok, loc, row_aligned=False):
+    """One plain sentence naming the sheet and stating a value at a location (no counts, no negations)."""
+    if row_aligned:   # value sits on the same text row as the room number (a schedule / list line)
+        return f"On {sheet}, the list entry for {loc} is {tok}."
+    if re.match(r"^WC-\d+$", tok):
+        return f"On {sheet}, the water closets in {loc} are tagged {tok}."
+    if re.match(r"^A\d{3,4}$", tok):
+        return f"On {sheet}, {loc} references detail {tok}."
+    if re.match(r"^[A-Z]{1,3}-?\d+[A-Z]?$", tok):
+        return f"On {sheet}, the tag at {loc} reads {tok}."
+    return f"On {sheet}, the callout at {loc} reads {tok}."
+
+
+def decoy_for(tok, *windows_words):
+    """A same-shaped wrong value (numeric part bumped) that appears in none of the given word lists."""
+    m = re.search(r"\d+", tok)
+    if not m:
+        return None
+    present = {w["text"] for ws in windows_words for w in ws}
+    for k in range(3, 40):
+        cand = tok[:m.start()] + str(int(m.group()) + k).zfill(len(m.group())) + tok[m.end():]
+        if cand not in present:
+            return cand
+    return None
+
+
+def in_window(words, region):
+    return [w for w in words if region[0] <= center(w)[0] <= region[2] and region[1] <= center(w)[1] <= region[3]]
+
+
+def count_near(words, pt, tok, radius=ATTRIB_PT):
+    """Words with text `tok` whose centre is within `radius` of point pt."""
+    return sum(1 for w in words if w["text"] == tok and ((center(w)[0] - pt[0]) ** 2 + (center(w)[1] - pt[1]) ** 2) ** 0.5 <= radius)
+
+
+def _no(trace, why):
+    if trace is not None:
+        trace.append(why)
+    return None
+
+
+ROOM_NAMES = ["STORAGE", "JANITOR", "KITCHEN", "OFFICE", "CLASSROOM", "MECHANICAL", "LOBBY", "LAUNDRY"]
+
+
+def room_name(w, words):
+    """Name printed above a room-number tag (uppercase words on the nearest line above, within 60 pt), or None."""
+    ax, ay = center(w)
+    above = [o for o in words if re.match(r"^[A-Z][A-Z/.&-]{2,}$", o["text"]) and 0 < ay - center(o)[1] <= 60 and abs(center(o)[0] - ax) <= 90]
+    if not above:
+        return None
+    line_y = max(center(o)[1] for o in above)     # the line closest above the tag
+    run = sorted((o for o in above if abs(center(o)[1] - line_y) <= ROW_TOL_PT), key=lambda o: o["bbox"][0])
+    name = " ".join(o["text"] for o in run)
+    return (name, run) if sum(c.isalpha() for c in name) >= 4 else None
+
+
+def room_name_pair(ch, old_words, new_words, seq, ntok, nk, trace=None):
+    """A room tag that the addendum ADDED (e.g. ED200): current claim names the room, conflict claim names a different one."""
+    off = ch["offset_pt"]
+    if sum(1 for w in new_words if w["text"] == ntok) != 1:
+        return _no(trace, "room number not unique on the sheet")
+    w = next(w for w in new_words if w["text"] == ntok)
+    rn = room_name(w, new_words)
+    if not rn:
+        return _no(trace, "no room name above the tag")
+    name, run = rn
+    ax, ay = center(w)
+    region = window(union([list(w["bbox"])] + [o["bbox"] for o in run]))
+    reg_old = [r - o for r, o in zip(region, off + off)]
+    if count_near(old_words, (ax - off[0], ay - off[1]), ntok, 20):
+        return _no(trace, "room tag already there")
+    present = {o["text"] for ws in (in_window(new_words, region), in_window(old_words, reg_old)) for o in ws}
+    decoy = next((n for n in ROOM_NAMES if n not in present), None)
+    if decoy is None:
+        return _no(trace, "no decoy")
+    S = ch["sheet_number"]
+    base = {"sheet_number": S, "current_sheet": ch["new_sheet"], "superseded_sheet": ch["old_sheet"], "anchor": ntok,
+            "bbox_pt": [round(v, 1) for v in region], "offset_pt": off}
+    current = {**base, "id": f"dev_{seq:02d}c", "claim": f"On {S}, room {ntok} is {name}.", "expected": "consistent",
+               "evidence_tokens": [o["text"] for o in run] + [ntok], "kind": "current", "name": name}
+    stale = {**base, "id": f"dev_{seq:02d}s", "claim": f"On {S}, room {ntok} is {decoy}.", "expected": "conflict",
+             "evidence_tokens": [o["text"] for o in run] + [ntok], "absent_tokens": [decoy], "kind": "stale_decoy", "name": name}
+    return stale, current
+
+
+def count_row(words, pt, tok, reach=150.0):
+    """Words with text `tok` on the same text row as point pt (|dy| <= ROW_TOL_PT), within `reach` horizontally."""
+    return sum(1 for w in words if w["text"] == tok and abs(center(w)[1] - pt[1]) <= ROW_TOL_PT and abs(center(w)[0] - pt[0]) <= reach)
+
+
+def build_pair(ch, old_words, new_words, seq, trace=None):
+    """One verified change -> (conflict claim, consistent claim), or None when it cannot be stated attributably.
+    The location is a labelled room tag within ATTRIB_PT of the asserted (new) token, on the same text row (|dy| <=
+    ROW_TOL_PT) or MARGIN x nearer than the next room tag, and the changed word must be the nearest copy of that token
+    to the tag. (Table row labels were tried as a second anchor type and dropped: they read wrongly on annotations.)"""
     off = ch["offset_pt"]
     okeys, nkeys = ch["_okeys"], ch["_nkeys"]
     old_it = okeys[0] if okeys else None
-    ref = old_it[2] if old_it else None
-    if nkeys:   # pick the added tag nearest the removed one (or the first one for pure additions)
-        nk = min(nkeys, key=lambda i: gap(i[2], ref) if ref else reading_order(i))
-    else:
-        nk = None
-    boxes = [b for b in ([old_it[2]] if old_it else []) + ([nk[2]] if nk else [])]
-    region = window(union(boxes))
-    old_region = [region[0] - off[0], region[1] - off[1], region[2] - off[0], region[3] - off[1]]
+    if not nkeys:
+        return _no(trace, "no new tag")
+    nk = min(nkeys, key=lambda i: gap(i[2], old_it[2]) if old_it else reading_order(i))
     otok = old_it[1]["text"] if old_it else None
-    ntok = nk[1]["text"] if nk else None
+    ntok = nk[1]["text"]
     if otok == ntok:
-        return None
-    where = (f"next to room {ch['anchor']}" if ch["anchor_kind"] == "room" else f"near {ch['anchor']}") if ch["anchor"] else "in this area"
-    base = {"sheet_number": ch["sheet_number"], "current_sheet": ch["new_sheet"], "superseded_sheet": ch["old_sheet"],
-            "anchor": ch["anchor"], "bbox_pt": [round(v, 1) for v in region], "offset_pt": off}
-    stale = current = None
-    # stale: claim asserts the OLD token count seen on the superseded sheet; false now because it dropped
-    if otok:
-        n_old, n_cur = count_in(old_words, old_region, otok), count_in(new_words, region, otok)
-        if 1 <= n_old <= 3 and n_cur < n_old:
-            stale = {**base, "id": f"dev_{seq:02d}s", "claim": phrase(otok, n_old, where), "expected": "conflict",
-                     "evidence_tokens": [otok] * n_old, "kind": "stale"}
-    # current: claim asserts the NEW token count on the current sheet; it was lower on the superseded sheet
-    if ntok:
-        n_new, n_was = count_in(new_words, region, ntok), count_in(old_words, old_region, ntok)
-        if 1 <= n_new <= 3 and n_was < n_new:
-            current = {**base, "id": f"dev_{seq:02d}c", "claim": phrase(ntok, n_new, where), "expected": "consistent",
-                       "evidence_tokens": [ntok] * n_new, "kind": "current"}
-    elif otok and stale:   # pure removal: "no X here" is true now
-        current = {**base, "id": f"dev_{seq:02d}c", "claim": f'The current sheet shows no "{otok}" {where}.',
-                   "expected": "consistent", "evidence_tokens": [], "absent_tokens": [otok], "kind": "current"}
-    if stale and not current and ntok is None:
-        return None
-    if not (stale and current):
-        # additions: the stale claim is "sheet shows no <new token>", false because the new token is there
-        if current and not stale and ntok and count_in(old_words, old_region, ntok) == 0:
-            stale = {**base, "id": f"dev_{seq:02d}s", "claim": f'The current sheet shows no "{ntok}" {where}.', "expected": "conflict",
-                     "evidence_tokens": [ntok] * current["evidence_tokens"].__len__(), "kind": "stale_absence"}
-        else:
-            return None
+        return _no(trace, "same token")
+    S = ch["sheet_number"]
+    if is_room(ntok) and not otok:
+        return room_name_pair(ch, old_words, new_words, seq, ntok, nk, trace)
+    tx, ty = (nk[2][0] + nk[2][2]) / 2, (nk[2][1] + nk[2][3]) / 2
+    mode = None
+    oc = ((old_it[2][0] + old_it[2][2]) / 2, (old_it[2][1] + old_it[2][3]) / 2) if old_it else None
+    allr = rooms_by_distance(nk[2], new_words, exclude={otok, ntok}, loose=True)   # every room-looking word, unfiltered
+    # (1) same text row: exactly one labelled room number to the left of the token on its row (a list / schedule line,
+    #     e.g. "TODDLERS 102 - 18" TO RIM"), and the token is the only copy of itself on that row
+    row = [w for d, w in allr if abs(center(w)[1] - ty) <= ROW_TOL_PT and center(w)[0] < tx and d <= ATTRIB_PT and has_label(w, new_words)]
+    same_row = [w for w in new_words if w["text"] == ntok and abs(center(w)[1] - ty) <= ROW_TOL_PT and abs(center(w)[0] - tx) <= 150]
+    if is_value_token(ntok) and not (otok and not is_value_token(otok)) and len(row) == 1 and len(same_row) == 1:
+        aw, aligned = row[0], True
+        d1 = ((center(aw)[0] - tx) ** 2 + (center(aw)[1] - ty) ** 2) ** 0.5
+        ax, ay = center(aw)
+        if oc is None or abs(oc[1] - ty) <= ROW_TOL_PT:
+            mode = "room"
+    # (2) otherwise the nearest strictly-filtered room tag, clearly nearer than any other room-looking word
+    rooms = rooms_by_distance(nk[2], new_words, exclude={otok, ntok})
+    if mode is None and is_value_token(ntok) and not (otok and not is_value_token(otok)) and rooms and rooms[0][0] <= ATTRIB_PT:
+        d1, aw = rooms[0]
+        ax, ay = center(aw)
+        aligned = abs(ay - ty) <= ROW_TOL_PT
+        near = sorted((((center(w)[0] - ax) ** 2 + (center(w)[1] - ay) ** 2) ** 0.5, w["bbox"]) for w in new_words if w["text"] == ntok)
+        if allr[0][1]["bbox"] == aw["bbox"] and (aligned or len(allr) == 1 or allr[1][0] >= max(MARGIN * d1, d1 + 20.0)) \
+                and near[0][1] == nk[1]["bbox"] and (oc is None or ((oc[0] - ax) ** 2 + (oc[1] - ay) ** 2) ** 0.5 <= ATTRIB_PT):
+            mode = "room"
+    if mode == "room":
+        region = window(union([nk[2], list(aw["bbox"])] + ([old_it[2]] if old_it else [])))
+        a_old = (ax - off[0], ay - off[1])
+        loc = loc_label(aw["text"], new_words)
+        anchor = aw["text"]
+        cnt = count_row if aligned else count_near        # list lines: count on that row only
+        n_new, n_was = cnt(new_words, (ax, ay), ntok), cnt(old_words, a_old, ntok)
+        n_old = cnt(old_words, a_old, otok) if otok else 0
+        n_cur = cnt(new_words, (ax, ay), otok) if otok else 0
+        txt = lambda v: claim_text(S, v, loc, aligned)   # noqa: E731
+        kind_anchor = "room"
+    else:
+        return _no(trace, "no attributable room tag")
+    if not (n_new >= 1 and n_was < n_new):
+        return _no(trace, "new value not new at the location")
+    base = {"sheet_number": S, "current_sheet": ch["new_sheet"], "superseded_sheet": ch["old_sheet"],
+            "anchor": anchor, "anchor_kind": kind_anchor, "bbox_pt": [round(v, 1) for v in region], "offset_pt": off}
+    current = {**base, "id": f"dev_{seq:02d}c", "claim": txt(ntok), "expected": "consistent",
+               "evidence_tokens": [ntok], "kind": "current"}
+    if otok:     # replacement: the stale claim asserts the OLD value, which dropped out at the location
+        if not (n_old >= 1 and n_cur < n_old):
+            return _no(trace, "old value not dropped at the location")
+        stale = {**base, "id": f"dev_{seq:02d}s", "claim": txt(otok), "expected": "conflict",
+                 "evidence_tokens": [otok], "kind": "stale"}
+    else:        # pure addition: nothing was there, so assert a plausible wrong value absent from both crops
+        d = decoy_for(ntok, in_window(old_words, [r - o for r, o in zip(region, off + off)]), in_window(new_words, region))
+        if not d:
+            return _no(trace, "no decoy")
+        stale = {**base, "id": f"dev_{seq:02d}s", "claim": txt(d), "expected": "conflict",
+                 "evidence_tokens": [ntok], "absent_tokens": [d], "kind": "stale_decoy"}
     return stale, current
 
 
@@ -287,39 +441,51 @@ def provenance(ch, claim, bullets, new_words, region):
     diff = f"word diff {ch['old_sheet']} -> {ch['new_sheet']} (global offset {ch['offset_pt']} pt): removed {ch['old_tokens'][:6]}, added {ch['new_tokens'][:6]}"
     bullet = (f"; addendum bullet most similar (overlap score {bs}): {best['action']}: {best['text']}" if best and bs >= 2
               else f"; no addendum bullet matches by word overlap (bullets: {[b['text'][:50] for b in bullets]})")
-    how = {"stale": f"label conflict: the superseded sheet has {len(claim['evidence_tokens'])}x \"{claim['evidence_tokens'][0]}\" in the region, the current sheet has fewer",
-           "stale_absence": f"label conflict: \"{claim['evidence_tokens'][0] if claim['evidence_tokens'] else ''}\" is absent on the superseded sheet region but present on the current sheet, so 'shows no' is false",
-           "current": f"label consistent: the current sheet region has exactly {len(claim['evidence_tokens'])}x the asserted token and the superseded sheet had fewer" if claim['evidence_tokens'] else "label consistent: the token was removed, none remain in the region"}[claim["kind"]]
+    t = claim["evidence_tokens"][0] if claim["evidence_tokens"] else ""
+    how = {"stale": f'label conflict: the claim asserts the OLD value "{t}", which is in this window on the superseded sheet but not (or less) on the current sheet',
+           "stale_decoy": f'label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value "{claim.get("absent_tokens", ["?"])[0]}" '
+                          f'(same shape as the real "{t}"), verified absent from the words of both crops; the real value is "{t}"',
+           "current": f'label consistent: "{t}" is in this window on the current sheet and was not (or less) on the superseded sheet'}[claim["kind"]]
     return f"{how}. {diff}{bullet}."
 
 
-MANUFACTURERS = ["Kohler", "Sloan Valve", "Lutron", "Trane", "Armstrong", "Zurn", "Cooper Lighting", "Schneider Electric", "Carrier", "Mohawk"]
+# (template, absent words): each asks for a fact no drawing sheet shows, so no crop can settle it.
+UNCLEAR_TEMPLATES = [
+    ("On {S}, the product at {loc} is manufactured by Kohler.", ["Kohler"]),
+    ("On {S}, the work at {loc} is scheduled for completion in March 2027.", ["March", "2027"]),
+    ("On {S}, the finish at {loc} is Sherwin-Williams SW 7005.", ["Sherwin", "7005"]),
+    ("On {S}, the unit cost for the work at {loc} is $4,500.", ["$4,500"]),
+    ("On {S}, the contractor responsible for {loc} is Kellerman Construction.", ["Kellerman"]),
+    ("On {S}, the product at {loc} carries a 10-year manufacturer warranty.", ["warranty"]),
+    ("On {S}, the product at {loc} is manufactured by Lutron.", ["Lutron"]),
+]
 
 
 def unclear_claims(sheets, n=5):
-    """`n` claims about a manufacturer that appears nowhere on the (current or superseded) sheet => expected unclear."""
-    out, used = [], 0
+    """`n` varied claims about facts that appear nowhere on the (current or superseded) sheet => expected unclear."""
+    out = []
     for ch in sheets:   # ch: representative change per sheet, deterministic order
         if len(out) >= n:
             break
         cur, old = load_words(ch["new_sheet"]), load_words(ch["old_sheet"])
         text = " ".join(w["text"] for w in cur + old).lower()
-        for k in range(len(MANUFACTURERS)):
-            m = MANUFACTURERS[(used + k) % len(MANUFACTURERS)]
-            if m.split()[0].lower() not in text:
+        for k in range(len(UNCLEAR_TEMPLATES)):
+            tpl, absent = UNCLEAR_TEMPLATES[(len(out) + k) % len(UNCLEAR_TEMPLATES)]
+            if all(a.lower() not in text for a in absent):
                 break
         else:
             continue
-        used += k + 1
-        where = f"room {ch['anchor']}" if ch["anchor_kind"] == "room" else (ch["anchor"] or "this area")
+        loc = loc_label(ch["anchor"], cur)
         region = window(ch["bbox_pt"])
+        if not in_window(cur, region) or not any(w["text"] == ch["anchor"] for w in in_window(cur, region)):
+            continue   # the named location must be inside the crop
         out.append({"id": f"dev_u{len(out) + 1:02d}", "sheet_number": ch["sheet_number"], "current_sheet": ch["new_sheet"],
                     "superseded_sheet": ch["old_sheet"], "anchor": ch["anchor"], "bbox_pt": [round(v, 1) for v in region],
                     "offset_pt": ch["offset_pt"], "expected": "unclear", "kind": "unclear",
-                    "claim": f"The product at {where} on sheet {ch['sheet_number']} is manufactured by {m}.",
-                    "evidence_tokens": [], "absent_tokens": [m.split()[0]],
-                    "provenance": f"label unclear: the word '{m.split()[0]}' occurs nowhere on {ch['new_sheet']} or {ch['old_sheet']} "
-                                  f"(checked all {len(cur)}+{len(old)} words, case-insensitive), so no crop can support or refute a manufacturer."})
+                    "claim": tpl.format(S=ch["sheet_number"], loc=loc),
+                    "evidence_tokens": [], "absent_tokens": absent,
+                    "provenance": f"label unclear: {absent} occur nowhere on {ch['new_sheet']} or {ch['old_sheet']} "
+                                  f"(checked all {len(cur)}+{len(old)} words, case-insensitive), so no crop can support or refute it."})
     return out
 
 
@@ -333,7 +499,7 @@ def build(verbose=True):
         ow, nw = load_words(o["sheet"]), load_words(n["sheet"])
         changes, off = diff_pair(o, n)
         built = []
-        for c in changes:
+        for c in expand(changes):
             r = build_pair(c, ow, nw, 0)
             if r:
                 built.append((c, r))
@@ -354,16 +520,17 @@ def build(verbose=True):
             def dup(item):
                 s0, c0 = build_pair(item[0], ow, nw, 0)
                 # same change re-issued across two addenda, or the same token swap repeated (A5 -> A6): keep few
-                return (sn, s0["claim"]) in seen_claims or pair_n[(sn, s0["evidence_tokens"][0], c0["evidence_tokens"][:1].__repr__())] >= 1 \
-                    or pair_n[(s0["evidence_tokens"][0], c0["evidence_tokens"][:1].__repr__())] >= 2
+                k1 = (s0["kind"], s0["evidence_tokens"][0], c0["evidence_tokens"][0])
+                return (sn, s0["claim"]) in seen_claims or pair_n[(sn,) + k1] >= 1 or pair_n[k1] >= 2
             while q and dup(q[0]):
                 q.pop(0)
             if q and taken[sn] < MAX_CHANGES_PER_SHEET and len(chosen) < TARGET_CHANGES:
                 item = q.pop(0)
                 s0, c0 = build_pair(item[0], ow, nw, 0)
                 seen_claims.add((sn, s0["claim"]))
-                pair_n[(sn, s0["evidence_tokens"][0], c0["evidence_tokens"][:1].__repr__())] += 1
-                pair_n[(s0["evidence_tokens"][0], c0["evidence_tokens"][:1].__repr__())] += 1
+                k1 = (s0["kind"], s0["evidence_tokens"][0], c0["evidence_tokens"][0])
+                pair_n[(sn,) + k1] += 1
+                pair_n[k1] += 1
                 chosen.append((o, n, ow, nw, item))
                 taken[sn] += 1
                 progressed = True
@@ -402,8 +569,12 @@ def make_packs(claims, packs_dir, dpi=200):
     """pack.py format per claim: crop_current.png, crop_superseded.png (same content window), words.txt, claim.txt, paste file."""
     import pymupdf
     pk = load_pack_module()
-    data = ROOT / "data"
-    pk.SRC = {k: str(data / Path(v).name if (data / Path(v).name).exists() else MAIN_DATA / Path(v).name) for k, v in pk.SRC.items()}
+    data = Path(os.environ.get("DEVSET_DATA_DIR", ROOT / "data"))   # the bid-set PDFs are gitignored: point this at them
+    pk.SRC = {k: str(data / Path(v).name) for k, v in pk.SRC.items()}
+    missing = [v for v in pk.SRC.values() if not Path(v).exists()]
+    if missing:
+        raise SystemExit(f"PDFs not found: {missing}. Put them in {data} or set DEVSET_DATA_DIR to the folder that has them "
+                         "(or run with --no-packs).")
     index = json.loads((ROOT / "build/sheet_index.json").read_text())
     rows = {r["sheet"]: r for r in index["rows"]}
     packs_dir.mkdir(parents=True, exist_ok=True)
@@ -411,7 +582,6 @@ def make_packs(claims, packs_dir, dpi=200):
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text())
     else:   # regenerate the 3 original examples (pack.py works from cwd-relative paths; we gave it absolute SRC)
-        import os
         cwd = os.getcwd()
         os.chdir(ROOT)
         try:
