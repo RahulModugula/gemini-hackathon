@@ -136,6 +136,20 @@ def currency(sheets, rows):
     return problems
 
 
+MAX_DIFF_BOXES = 60
+
+
+def diff_boxes(crop, only):
+    """box_2d ([ymin, xmin, ymax, xmax], 0-1000 on the crop) of the words of `crop` counted in `only`
+    ({text: n}): words that exist on this version and not on the other. Each text is used at most n times."""
+    left, out = dict(only), []
+    for w in crop["words"]:
+        if left.get(w["text"], 0) > 0 and len(out) < MAX_DIFF_BOXES:
+            left[w["text"]] -= 1
+            out.append(pt_to_box(w["bbox"], crop["rect"]))
+    return out
+
+
 def addendum_diff(crops, narrative=()):
     cur, old = crops.get("current"), crops.get("superseded")
     if not old:
@@ -144,6 +158,8 @@ def addendum_diff(crops, narrative=()):
     only_old, only_cur = dict(a - b), dict(b - a)
     return {"by": "code", "check": "addendum_diff", "info": True, "pass": True,
             "only_superseded": only_old, "only_current": only_cur, "narrative": list(narrative),
+            "current_sheet": cur["sheet"], "superseded_sheet": old["sheet"], "superseded_crop": old.get("path"),
+            "diff_boxes": {"superseded": diff_boxes(old, only_old), "current": diff_boxes(cur, only_cur)},
             "detail": f"{cur['sheet']} vs {old['sheet']}: -{sum(only_old.values())} +{sum(only_cur.values())} words"}
 
 
@@ -166,8 +182,22 @@ def _clean(out):
             "reason": str(out.get("reason") or ("unusable judge output" if not ok else ""))}
 
 
-def run_judge(model, purpose, ctx):
+def _emit(ctx, step, status, **info):
+    cb = ctx.get("progress")
+    if cb:
+        cb(step, status, **info)
+
+
+def run_judge(model, purpose, ctx, step=None):
     """-> (cleaned output, latency seconds). A gateway failure is an unclear verdict, never an exception."""
+    step = step or purpose
+    _emit(ctx, step, "start", model=model)
+    out, lat = _run_judge(model, purpose, ctx)
+    _emit(ctx, step, "done", model=model, verdict=out["verdict"])
+    return out, lat
+
+
+def _run_judge(model, purpose, ctx):
     t0 = time.monotonic()
     try:
         res = llm.call(model, ctx["parts"], schema=ctx["schema"], purpose=purpose, thinking=ctx["thinking"])
@@ -181,8 +211,8 @@ def run_judge(model, purpose, ctx):
 def verify(claim, ctx):
     """ctx: judge, second (model names), parts, schema, thinking, crops, rows, narrative."""
     with ThreadPoolExecutor(max_workers=2) as ex:   # independent calls: latency = the slower one
-        fa = ex.submit(run_judge, ctx["judge"], "judge", ctx)
-        fb = ex.submit(run_judge, ctx["second"], "judge_second", ctx)
+        fa = ex.submit(run_judge, ctx["judge"], "judge", ctx, "judge_a")
+        fb = ex.submit(run_judge, ctx["second"], "judge_second", ctx, "judge_b")
         (a, la), (b, lb) = fa.result(), fb.result()
     crops = ctx["crops"]
     checks = [_model_entry(ctx["judge"], a, la), _model_entry(ctx["second"], b, lb)]
@@ -194,11 +224,14 @@ def verify(claim, ctx):
         notes.append(f"judges disagree ({a['verdict']} vs {b['verdict']})")
         conf = min(conf, MODEL_CAP)
 
+    _emit(ctx, "grounding", "start")
     probs = [f"{n}: {p}" for n, o in ((ctx["judge"], a), (ctx["second"], b)) for p in grounding(o, crops)]
     checks.append({"by": "code", "check": "grounding", "pass": not probs,
                    "detail": "; ".join(probs) or "all boxes cover words and all quotes are inside boxes"})
     hard_fail |= bool(probs)
 
+    _emit(ctx, "grounding", "done", ok=not probs)
+    _emit(ctx, "revision", "start")
     probs2 = currency([crops["current"]["sheet"]], ctx["rows"])
     checks.append({"by": "code", "check": "currency", "pass": not probs2,
                    "detail": "; ".join(probs2) or "evidence sheet is current"})
@@ -207,6 +240,7 @@ def verify(claim, ctx):
     d = addendum_diff(crops, ctx.get("narrative", ()))
     if d:
         checks.append(d)
+    _emit(ctx, "revision", "done", ok=not probs2)
 
     dim = dimension_check(claim, a.get("quoted_words") or [])
     if dim:

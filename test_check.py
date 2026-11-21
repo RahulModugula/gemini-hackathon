@@ -165,3 +165,40 @@ def test_box_pt_round_trip():
         assert verify.pt_to_box(pt, rect) == box
     pt = verify.box_to_pt([500, 500, 1000, 1000], rect)
     assert pt == pytest.approx([1328.23, 900.68, 1588.23, 1160.68])
+
+
+def test_addendum_diff_boxes_land_on_the_changed_words(monkeypatch, world):
+    """diff_boxes: box_2d on the crop for words only on one version; the current WC-3s sit inside the crop's 0-1000 frame."""
+    card = run(monkeypatch, judge_json(world))
+    diff = next(c for c in card["checks"] if c.get("check") == "addendum_diff")
+    boxes = diff["diff_boxes"]
+    assert diff["current_sheet"] == "add1-p018" and diff["superseded_sheet"].startswith("dwg-")
+    assert diff["superseded_crop"].startswith("build/crops/") and (HERE / diff["superseded_crop"]).stat().st_size > 1000
+    assert len(boxes["current"]) == sum(diff["only_current"].values())
+    assert len(boxes["superseded"]) == sum(diff["only_superseded"].values())
+    assert boxes["current"] and boxes["superseded"]
+    for b in boxes["current"] + boxes["superseded"]:
+        assert 0 <= b[0] < b[2] <= 1000 and 0 <= b[1] < b[3] <= 1000
+    cur = world["cur"]
+    wc3 = [verify.pt_to_box(w["bbox"], cur["rect"]) for w in cur["words"] if w["text"] == "WC-3"]
+    assert wc3 and all(b in boxes["current"] for b in wc3)
+
+
+def test_diff_boxes_unit():
+    crop = {"rect": [0, 0, 100, 100], "words": [{"text": "A", "bbox": [10, 10, 20, 20]}, {"text": "B", "bbox": [30, 30, 40, 40]},
+                                                {"text": "B", "bbox": [50, 50, 60, 60]}]}
+    assert verify.diff_boxes(crop, {"B": 1}) == [[300, 300, 400, 400]]      # each text used at most n times
+    assert verify.diff_boxes(crop, {}) == []
+
+
+def test_progress_callback_order_and_judge_threads(monkeypatch, world):
+    events = []
+    monkeypatch.setattr(llm, "call", fake({ROLES["judge"]: judge_json(world), ROLES["second"]: judge_json(world)}))
+    card = check.check(CLAIM, progress=lambda step, status, **info: events.append((step, status)))
+    assert events[0] == ("search", "start") and events[1] == ("search", "done")
+    assert events[2:4] == [("crop", "start"), ("crop", "done")]
+    assert {("judge_a", "start"), ("judge_b", "start"), ("judge_a", "done"), ("judge_b", "done")} <= set(events)
+    g = events.index(("grounding", "start"))
+    assert events.index(("judge_a", "done")) < g and events.index(("judge_b", "done")) < g
+    assert events[-4:] == [("grounding", "start"), ("grounding", "done"), ("revision", "start"), ("revision", "done")]
+    assert card["verdict"] == "conflict"
