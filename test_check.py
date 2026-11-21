@@ -170,6 +170,14 @@ def test_dimension_math_mismatch_fails_and_match_passes(monkeypatch, world):
         res = verify.verify(f"The pipe is {claim_dim}", ctx_for(world, world["rows"], out, out))
         dim = next(c for c in res["checks"] if c.get("check") == "dimension")
         assert dim["pass"] is want_pass and (res["verdict"] == "consistent") is want_pass, (dim, res["verdict"])
+    # a conflict may quote the claim's own (contradicted) value next to the boxed real one: the dimension check must
+    # compare only boxed quotes, or the copied claim value makes it 'consistent' and vetoes a correct conflict
+    claim_dim = f'{size + 5:g}"'
+    out = judge_json(world, "conflict", quoted=(claim_dim, w["text"]), box=box)
+    monkeypatch.setattr(llm, "call", fake({"A": out, "B": out}))
+    res = verify.verify(f"The pipe is {claim_dim}", ctx_for(world, world["rows"], out, out))
+    dim = next(c for c in res["checks"] if c.get("check") == "dimension")
+    assert dim["code_verdict"] == "conflict" and dim["pass"] and res["verdict"] == "conflict", (dim, res["reason"])
 
 
 def test_box_pt_round_trip():
@@ -335,8 +343,10 @@ def test_find_dims_edge_cases(text, expect):
 
 def test_dimension_check_uses_both_judges_quotes(monkeypatch, world):
     a = judge_json(world, "consistent", quoted=("WC-2",), box=box_for(world, {"WC-2"}))
-    b = judge_json(world, "consistent", quoted=("WC-2",), box=box_for(world, {"WC-2"}))
-    b["quoted_words"] = ["WC-2", "34\""]       # only the second judge quotes a dimension
+    w = next(w for w in world["cur"]["words"] if w["text"].endswith('"') and verify.parse_dim(w["text"]) is not None)
+    bx = verify.pt_to_box(w["bbox"], world["cur"]["rect"])
+    bx = [max(0, bx[0] - 3), max(0, bx[1] - 3), min(1000, bx[2] + 3), min(1000, bx[3] + 3)]
+    b = judge_json(world, "consistent", quoted=(w["text"],), box=bx)   # only the second judge quotes a (boxed) dimension
     monkeypatch.setattr(llm, "call", fake({"A": a, "B": b}))
     ctx = {"judge": "A", "second": "B", "thinking": "LOW", "schema": {}, "parts": [], "rows": world["rows"],
            "crops": {"current": world["cur"]}, "narrative": []}

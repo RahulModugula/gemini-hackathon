@@ -314,7 +314,11 @@ def verify(claim, ctx):
         checks.append(d)
     _emit(ctx, "revision", "done", ok=not probs2)
 
-    dim = dimension_check(claim, (a.get("quoted_words") or []) + (b.get("quoted_words") or []))
+    # Compare dimensions only against quotes grounded in a box: a conflict may also quote the claim's own value.
+    boxed = [t for n, o in ((ctx["judge"], a), (ctx["second"], b))
+             for q in (o.get("quoted_words") or []) if isinstance(q, str)
+             for t in q.split() if acc.get(n, {}).get(t) in ("current_box", "any_box")]
+    dim = dimension_check(claim, boxed)
     if dim:
         dim["pass"] = verdict == "unclear" or dim["code_verdict"] == verdict
         dim["note"] = dim["detail"]
