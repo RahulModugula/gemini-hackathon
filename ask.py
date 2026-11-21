@@ -11,6 +11,7 @@
 
 The user's ORIGINAL text is what the judges see and what the card shows. The rewrite only improves retrieval.
 """
+import concurrent.futures as cf
 import datetime as dt
 import re
 
@@ -134,13 +135,43 @@ def _rfi_card(text, u):
             "rfi_draft": {k: draft.get(k) for k in ("status", "text", "answered_by", "quote")}}
 
 
+def addenda_answer(text):
+    """Run rfi's already-answered check on the user's text. -> {answered_by: "Addendum N Qk", quote, page?} or None.
+    Only a quote that rfi.already_answered verified as an exact substring of a Q&A response is ever returned."""
+    try:
+        qa = rfi.load_qa()
+        hit = rfi.already_answered(text, qa)
+        if not hit.get("answered") or not hit.get("quote"):
+            return None
+        row = next((q for q in qa if q["id"] == hit.get("qa_id")), None)
+        if row is None or not rfi.quote_ok(hit["quote"], row["response"]):
+            return None
+        tag, n = row["id"].split("-q")
+        label = f"Addendum {tag[3:] if tag.startswith('add') else tag} Q{n}"
+        out = {"answered_by": label, "quote": hit["quote"]}
+        if row.get("page") is not None:
+            out["page"] = row["page"]
+        return out
+    except Exception:       # noqa: BLE001 - the Q&A lookup is a bonus; the drawing check must still answer
+        return None
+
+
 def run(text, **kw):
     """text -> card. The card always carries the user's original text as `claim` and the validated rewrite as
-    `interpreted`."""
+    `interpreted`. A question is also checked against the addenda Q&A, in parallel with the drawing check."""
     u = understand(text)
     if u["mode"] == "rfi":
         card = _rfi_card(text, u)
+    elif u["mode"] == "question":
+        with cf.ThreadPoolExecutor(max_workers=2) as ex:
+            qa_f = ex.submit(addenda_answer, text)
+            card = checker.check(text, mode="answer", hints=hints_for(u), **kw)
+            ans = qa_f.result()
+        if ans:
+            card["addenda_answer"] = ans
+            if card.get("verdict") == "unclear":     # UI summary prefers the addenda answer over an unclear drawing check
+                card["summary"] = f'{ans["answered_by"]} answers this: "{ans["quote"]}"'
     else:
-        card = checker.check(text, mode="answer" if u["mode"] == "question" else "claim", hints=hints_for(u), **kw)
+        card = checker.check(text, mode="claim", hints=hints_for(u), **kw)
     card["interpreted"] = u
     return card

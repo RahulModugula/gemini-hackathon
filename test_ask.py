@@ -194,6 +194,55 @@ def test_rfi_mode_drafts_when_not_answered(monkeypatch):
     assert card["rfi_draft"]["status"] == "draft" and card["rfi_draft"]["text"].startswith("To: ")
 
 
+# ---- question mode also consults the addenda Q&A ----------------------------------------------------------
+GATE_Q = "Should the yard gates get padlock latches and standard hinges?"
+GOOD = {"answered": True, "qa_id": "add1-q6", "quote": "Provide padlock latches and standard hinges", "reason": "r"}
+
+
+def qa_run(monkeypatch, world, answer, verdict="consistent"):  # noqa: F811
+    monkeypatch.setattr(rfi, "load_qa", lambda build=None: test_rfi.QA)
+    j = answer_json(world) if verdict == "consistent" else judge_json(world, verdict="conflict")
+    seen = capture(monkeypatch, {"ask_rewrite": rewrite(mode="question", claim_text=GATE_Q, room="", sheet_hints=[],
+                                                        search_terms=[]),
+                                 "rfi_already_answered": answer, ROLES["judge"]: j, ROLES["second"]: j})
+    pin_crop(monkeypatch, world)
+    return seen
+
+
+def test_question_answered_by_addenda_gets_verified_quote(monkeypatch, world):  # noqa: F811
+    seen = qa_run(monkeypatch, world, GOOD)
+    card = ask.run(GATE_Q)
+    assert card["addenda_answer"] == {"answered_by": "Addendum 1 Q6", "quote": GOOD["quote"], "page": 2}
+    assert "rfi_already_answered" in {p for _, p, _ in seen} and ROLES["judge"] in {m for m, _, _ in seen}   # both ran
+    assert "summary" not in card          # drawing check was not unclear
+
+
+def test_summary_prefers_addenda_answer_when_drawing_unclear(monkeypatch, world):  # noqa: F811
+    qa_run(monkeypatch, world, GOOD, verdict="conflict")
+    card = ask.run(GATE_Q)
+    assert card["verdict"] == "unclear" and card["addenda_answer"]["answered_by"] == "Addendum 1 Q6"
+    assert card["summary"] == 'Addendum 1 Q6 answers this: "Provide padlock latches and standard hinges"'
+
+
+def test_question_not_answered_by_addenda_has_no_addenda_answer(monkeypatch, world):  # noqa: F811
+    qa_run(monkeypatch, world, {"answered": False, "qa_id": "", "quote": "", "reason": "different topic"})
+    card = ask.run(GATE_Q)
+    assert "addenda_answer" not in card and "summary" not in card and card["mode"] == "answer"
+
+
+def test_question_fabricated_addenda_quote_is_dropped(monkeypatch, world):  # noqa: F811
+    qa_run(monkeypatch, world, {**GOOD, "quote": "Provide maglocks and closers"})
+    card = ask.run(GATE_Q)
+    assert "addenda_answer" not in card
+
+
+def test_addenda_failure_does_not_break_drawing_answer(monkeypatch, world):  # noqa: F811
+    qa_run(monkeypatch, world, {})
+    monkeypatch.setattr(rfi, "already_answered", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    card = ask.run(GATE_Q)
+    assert card["mode"] == "answer" and "addenda_answer" not in card
+
+
 # ---- endpoint ----------------------------------------------------------------------------------------
 @pytest.fixture
 def api(tmp_path, monkeypatch):
