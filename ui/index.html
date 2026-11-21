@@ -272,6 +272,35 @@ main{padding:16px 24px 40px}
 #focus3d{position:absolute;right:10px;top:10px;max-width:320px;padding:8px 10px;background:var(--amber);color:var(--ink);font-weight:600;font-size:13px;z-index:5;border-radius:3px}
 .err{padding:12px;background:#48141a;border:1px solid var(--red-on-dark);color:#ffdadb;border-radius:4px}
 
+/* addendum digest: one long-context pass over every addendum, verified against the word diff */
+#digestView{max-width:1100px}
+.dgHead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 24px;padding:18px 22px;margin-bottom:18px;background:#fbfcfb;color:var(--ink);border:2px solid var(--ink);box-shadow:0 0 0 1px var(--line)}
+.dgHead h2{margin:0;font-size:28px;line-height:1.1;font-weight:700;font-stretch:88%}
+.dgHead p{margin:6px 0 0;font-size:14px;color:var(--ink-2);max-width:68ch}
+.dgMeta{margin-left:auto;display:grid;grid-template-columns:auto auto;gap:0;border:1.5px solid var(--ink);background:#fff;font-size:13px}
+.dgMeta span{padding:4px 10px;border-bottom:1px solid var(--ink)}
+.dgMeta span:nth-last-child(-n+2){border-bottom:0}
+.dgMeta .k{background:var(--paper-2);color:var(--ink-2);border-right:1px solid var(--ink);font-weight:600}
+.dgRefresh{align-self:flex-end}
+.dgGroup{margin:0 0 22px}
+.dgGroup>h3{display:flex;align-items:baseline;gap:10px;margin:0 0 8px;padding:6px 12px;background:var(--ink);color:var(--paper);font-size:16px;font-stretch:90%;font-weight:700}
+.dgGroup>h3 .mono{font-weight:400;font-size:12px;opacity:.85}
+.dgItem{margin:0 0 10px;background:#fbfcfb;color:var(--ink);border:2px solid var(--ink);border-left-width:6px;border-radius:2px}
+.dgItem.open{box-shadow:0 0 0 1px var(--ink)}
+.dgBtn{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:6px 14px;align-items:start;width:100%;padding:12px 14px;background:transparent;border:0;text-align:left;color:var(--ink)}
+.dgSheet{font-family:var(--mono);font-weight:500;font-size:16px;padding:2px 6px;border:1.5px solid var(--ink);background:#fff;text-align:center}
+.dgWhat{font-size:16px;font-weight:600;line-height:1.3}
+.digest-risk{display:block;margin-top:5px;padding:4px 8px;border-left:4px solid var(--amber);background:#fff6dd;color:#4a3000;font-size:14px;font-weight:400;line-height:1.4}
+.trade-chip{display:inline-block;margin:6px 6px 0 0;padding:1px 7px;border:1.5px solid var(--blue);border-radius:2px;color:#1f5fd6;font-size:12px;font-weight:600;line-height:1.5}
+.dgGo{font-size:12px;color:var(--ink-2);white-space:nowrap}
+.dgBody{padding:0 14px 14px;display:grid;gap:10px}
+.dgBody .qa{margin:0;padding:8px 10px;border-left:4px solid var(--ink);background:var(--paper-2);font-size:13px;line-height:1.45}
+.dgBody .qa b{font-family:var(--mono);font-weight:500;font-size:12px}
+.dgFlag{font-size:12px;color:var(--amber-ink);font-weight:600}
+.dgEmpty{padding:16px;background:#fff;border:2px dashed var(--ink-2);color:var(--ink);font-size:15px}
+.dgDropped{font-size:13px;color:var(--mute);margin-top:6px}
+@media (max-width:700px){.dgBtn{grid-template-columns:1fr}.dgMeta{margin-left:0}.dgHead h2{font-size:22px}}
+
 @keyframes pulse{50%{opacity:.35}}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes glow{from{box-shadow:0 0 0 6px rgba(255,176,0,.55)}to{box-shadow:0 0 0 0 rgba(255,176,0,0)}}
@@ -303,6 +332,7 @@ main{padding:16px 24px 40px}
   <button id="thmBtn" class="thm" type="button" aria-pressed="false">Dark</button>
   <nav aria-label="Views">
     <button id="tabCards" class="tab act" type="button">Cards</button>
+    <button id="tabDigest" class="tab" type="button">Addendum digest</button>
     <button id="tab3d" class="tab" type="button">3D</button>
   </nav>
 </header>
@@ -326,6 +356,7 @@ main{padding:16px 24px 40px}
     <div id="ledgerBox" class="ledger" role="list" aria-label="Claims ledger"></div>
     <div id="detail" aria-live="polite"></div>
   </section>
+  <section id="digestView" hidden aria-label="Addendum digest"></section>
   <section id="v3d">
     <div id="c3d"></div>
     <div id="tip3d"></div>
@@ -353,6 +384,7 @@ let threeInit=false,renderer,scene,camera,controls,raycaster,mouse,pins=[],pinGr
 
 $('tabCards').onclick=()=>{location.hash=selId?`#card=${encodeURIComponent(selId)}`:'#cards';};
 $('tab3d').onclick=()=>{location.hash='#3d';};
+$('tabDigest').onclick=()=>{location.hash='#digest';};
 function setTheme(t){document.documentElement.dataset.theme=t;const b=$('thmBtn');b.textContent=t==='dark'?'Light':'Dark';b.setAttribute('aria-pressed',String(t==='dark'));try{localStorage.setItem('theme',t);}catch(e){}}
 {let t='light';try{t=localStorage.getItem('theme')||'light';}catch(e){}setTheme(t);}
 $('thmBtn').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
@@ -649,6 +681,7 @@ fetch('/api/health').then(r=>r.json()).then(h=>{if(h&&h.cache_mode==='replay')$(
 function parseHash(){
   const h=location.hash.slice(1);
   if(h==='3d')return {tab:'3d'};
+  if(h==='digest')return {tab:'digest'};
   if(h.startsWith('card=')){try{return {tab:'cards',card:decodeURIComponent(h.slice(5))};}catch(e){return {tab:'cards'};}}
   return {tab:'cards'};
 }
@@ -657,18 +690,100 @@ function applyRoute(){
   const r=parseHash();
   if(r.card&&cards.some(c=>c.id===r.card))selId=r.card;
   if(!selId&&cards.length)selId=heroOf(cards);
-  const is3d=r.tab==='3d';
-  $('tabCards').classList.toggle('act',!is3d);
+  const is3d=r.tab==='3d',isDg=r.tab==='digest';
+  $('tabCards').classList.toggle('act',!is3d&&!isDg);
   $('tab3d').classList.toggle('act',is3d);
-  $('cardsView').style.display=is3d?'none':'';
+  $('tabDigest').classList.toggle('act',isDg);
+  $('digestView').hidden=!isDg;
+  $('cardsView').style.display=(is3d||isDg)?'none':'';
   $('v3d').style.display=is3d?'block':'none';
-  if(is3d){
+  if(isDg){loadDigest();}
+  else if(is3d){
     if(!threeInit)init3D();else rebuild3D();
     resize3D();
   }else{
     renderLedger();
     renderDetail(true);
   }
+}
+
+/* ---------- addendum digest ---------- */
+let digestData=null,digestLoading=false;
+async function loadDigest(force){
+  if(digestData&&!force){renderDigest();return;}
+  if(digestLoading)return;
+  digestLoading=true;
+  try{
+    const r=await fetch('/api/digest');
+    if(r.status===404)digestData={items:[],none:true};
+    else if(!r.ok)throw new Error('HTTP '+r.status);
+    else digestData=await r.json();
+  }catch(e){digestData={items:[],error:e.message};}
+  finally{digestLoading=false;}
+  renderDigest();
+}
+async function refreshDigest(btn){
+  btn.disabled=true;btn.textContent='Reading every addendum...';
+  try{digestData=await api('/api/digest/refresh',{method:'POST'});}
+  catch(e){setStatus('Digest failed: '+e.message,true);}
+  finally{btn.disabled=false;}
+  renderDigest();
+}
+function digestItem(it){
+  const wrap=el('article','dgItem');
+  const btn=el('button','dgBtn');btn.type='button';btn.setAttribute('aria-expanded','false');
+  const body=el('div','dgBody');body.hidden=true;
+  const mid=el('div');
+  mid.append(el('span','dgWhat',it.what_changed||''));
+  for(const t of it.trades_affected||[])mid.append(el('span','trade-chip',t));
+  mid.append(el('span','digest-risk',it.risk||''));
+  btn.append(el('span','dgSheet',it.sheet_number||'?'),mid,el('span','dgGo',(it.boxes||[]).length?'Show on sheet':'No box'));
+  let built=false;
+  const build=()=>{
+    built=true;
+    const bs=(it.boxes||[]).map(b=>b.box_2d_on_crop).filter(b=>Array.isArray(b)&&b.length===4);
+    if(it.crop&&bs.length){
+      body.append(zoomFig((it.sheet_number||'')+' '+(it.addendum_label||''),(it.evidence_tokens||[]).join(' '),false,it.crop,zoomWindow(bs),
+        (it.boxes||[]).filter(b=>Array.isArray(b.box_2d_on_crop)).map(b=>({b:b.box_2d_on_crop,cls:'dbox',tag:b.token}))));
+      const wrap2=el('div','cmpnote');wrap2.append(el('span','sw'),'Words this addendum added or changed on '+it.sheet+(it.sheet_is_current===false?' (a later addendum reissued this sheet)':''));
+      body.append(wrap2);
+    }
+    for(const q of it.qa||[]){const d=el('p','qa');d.append(el('b',null,q.id+' '),'Q: '+q.question+' A: '+q.response);body.append(d);}
+    for(const f of it.flags||[])body.append(el('div','dgFlag','Note: '+f));
+  };
+  const tg=()=>{const open=body.hidden;if(open&&!built)build();body.hidden=!open;btn.setAttribute('aria-expanded',String(open));wrap.classList.toggle('open',open);};
+  btn.onclick=tg;
+  wrap.append(btn,body);return wrap;
+}
+function renderDigest(){
+  const v=$('digestView');v.textContent='';
+  const d=digestData||{items:[]};
+  const head=el('div','dgHead');
+  const t=el('div');
+  t.append(el('h2',null,'Addendum digest'),el('p',null,'What every addendum changed, who it hits and why it matters. One Gemini 4 Neon pass read all addenda, the bidder Q&A and the word-level diff of each changed sheet. Code then dropped anything the diff does not support.'));
+  head.append(t);
+  if(d.generated_at){
+    const m=el('div','dgMeta');
+    const row=(k,val)=>{m.append(el('span','k',k),el('span','mono',val));};
+    row('Model',String(d.model||'').replace(/^gemini-4-/,'')+' / '+String(d.thinking||'').toLowerCase());
+    row('Context','~'+Math.round((d.est_tokens||0)/1000)+'K tokens');
+    row('Sheets diffed',String(d.changed_sheets??''));
+    row('Kept / dropped',(d.items||[]).length+' / '+(d.dropped||[]).length);
+    row('Generated',String(d.generated_at).slice(0,10));
+    head.append(m);
+  }
+  const rf=el('button','btn ghost dgRefresh','Refresh digest');rf.type='button';rf.onclick=()=>refreshDigest(rf);
+  head.append(rf);v.append(head);
+  if(d.error){v.append(el('div','dgEmpty','Could not load the digest: '+d.error));return;}
+  if(!(d.items||[]).length){v.append(el('div','dgEmpty',d.none?'No digest has been generated yet. Press Refresh digest to run it.':'The digest has no items.'));return;}
+  const groups=new Map();
+  for(const it of d.items){const k=it.addendum||'?';if(!groups.has(k))groups.set(k,[]);groups.get(k).push(it);}
+  for(const [k,list] of [...groups].sort((a,b)=>a[0]<b[0]?-1:1)){
+    const g=el('section','dgGroup');
+    const h=el('h3',null,list[0].addendum_label||k);h.append(el('span','mono',list.length+' item'+(list.length>1?'s':'')));
+    g.append(h);for(const it of list)g.append(digestItem(it));v.append(g);
+  }
+  if((d.dropped||[]).length)v.append(el('div','dgDropped',(d.dropped.length)+' model item'+(d.dropped.length>1?'s were':' was')+' dropped because the diff did not support them.'));
 }
 
 function renderLedger(){

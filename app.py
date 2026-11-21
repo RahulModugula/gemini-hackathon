@@ -19,6 +19,7 @@ from starlette.middleware.gzip import GZipMiddleware
 
 import audio_claims
 import check as checker
+import digest
 import llm
 import rfi
 import video_claims
@@ -489,6 +490,33 @@ async def api_rfi(request: Request):
         return _bad("unknown card_id", 404)
     r = await run_in_threadpool(rfi.draft_rfi, card)   # drafts only; nothing is ever sent
     return {k: r.get(k) for k in ("status", "text", "answered_by", "quote")}
+
+
+_digest_lock = threading.Lock()
+
+
+@app.get("/api/digest")
+async def api_digest():
+    """The cached addendum impact digest (build/digest.json); 404 until one has been run."""
+    try:
+        d = json.loads((Path(BUILD) / "digest.json").read_text())
+    except (OSError, ValueError):
+        return _bad("no digest yet: POST /api/digest/refresh", 404)
+    return JSONResponse(d, headers={"Cache-Control": "no-cache"})
+
+
+@app.post("/api/digest/refresh")
+async def api_digest_refresh(request: Request):
+    if (xs := _cross_site(request)) is not None:
+        return xs
+    if not _digest_lock.acquire(blocking=False):
+        return _bad("a digest run is already in progress", 409)
+    try:
+        return await run_in_threadpool(digest.run, Path(BUILD))
+    except digest.DigestError:
+        return _bad("digest failed", 503)
+    finally:
+        _digest_lock.release()
 
 
 @app.get("/api/health")
