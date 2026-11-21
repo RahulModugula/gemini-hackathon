@@ -332,10 +332,23 @@ REPLAY_STEPS = ("search", "crop", "judge_a", "judge_b", "grounding", "revision")
 
 
 def _replay_events(card):
-    """The same event shapes as a live run, each step flagged replay=True with t=0: nothing was re-run."""
-    for st in REPLAY_STEPS:
-        for status in ("start", "done"):
-            yield _sse("step", {"step": st, "status": status, "t": 0.0, "replay": True})
+    """The same event shapes and order as a live run (both judges start before either finishes), each step flagged
+    replay=True with t=0: nothing was re-run. Judge events carry the recorded card's model and verdict when known."""
+    js = [k for k in card.get("checks") or [] if k.get("by") and k.get("by") != "code" and k.get("verdict")]
+    judge = {st: ({"model": js[i]["by"], "verdict": js[i]["verdict"]} if i < len(js) else {})
+             for i, st in enumerate(("judge_a", "judge_b"))}
+    order = [("search", "start"), ("search", "done"), ("crop", "start"), ("crop", "done"),
+             ("judge_a", "start"), ("judge_b", "start"), ("judge_a", "done"), ("judge_b", "done"),
+             ("grounding", "start"), ("grounding", "done"), ("revision", "start"), ("revision", "done")]
+    code = {k.get("check"): k for k in card.get("checks") or [] if k.get("by") == "code"}
+    gate = {"grounding": code.get("grounding"), "revision": code.get("currency")}
+    for st, status in order:
+        extra = {"model": judge[st]["model"]} if st in judge and judge[st] else {}
+        if st in gate and status == "done" and gate[st] is not None:
+            extra["ok"] = bool(gate[st].get("pass"))     # the recorded result, never assumed
+        if status == "done" and st in judge and judge[st]:
+            extra["verdict"] = judge[st]["verdict"]
+        yield _sse("step", {"step": st, "status": status, "t": 0.0, "replay": True, **extra})
     yield _sse("step", {"step": "sealed", "status": "done", "t": 0.0, "replay": True, "seal": card.get("seal")})
     yield _sse("card", card)
 
@@ -349,6 +362,13 @@ async def api_samples():
         rec = _recorded(s["claim"])
         out.append({**s, "card_id": rec["id"] if rec else None})
     return out
+
+
+@app.get("/api/card/{card_id}")
+async def api_card(card_id: str):
+    """One recorded card (ledger, then UI fixtures) by id; 404 when unknown. Read-only, never runs a check."""
+    card = _find_card(card_id) if re.fullmatch(r"[A-Za-z0-9_\-]{1,80}", card_id or "") else None
+    return card if card is not None else _bad("unknown card", 404)
 
 
 @app.get("/api/metrics")
@@ -511,6 +531,164 @@ async def api_rfi(request: Request):
         return _bad("unknown card_id", 404)
     r = await run_in_threadpool(rfi.draft_rfi, card)   # drafts only; nothing is ever sent
     return {k: r.get(k) for k in ("status", "text", "answered_by", "quote")}
+
+
+# ---- sheet stage: full-sheet render + room outlines ------------------------------------------------------
+_SHEET_RE = re.compile(r"^(dwg|add\d{1,2})-p\d{3}$")
+SHEET_PX = 3600                # long edge of the full-sheet render the UI zooms across
+_render_lock = threading.Lock()
+_rooms_memo = {}
+
+
+def _sheet_row(sheet):
+    """(sheets.json row, source pdf path) for a known sheet id, else (None, None)."""
+    if not _SHEET_RE.match(sheet or ""):
+        return None, None
+    try:
+        idx = json.loads((Path(BUILD) / "sheets.json").read_text())
+    except (OSError, ValueError):
+        return None, None
+    row = next((s for s in idx.get("sheets", []) if s.get("sheet") == sheet), None)
+    if row is None:
+        return None, None
+    path = next((x.get("path") for x in idx.get("sources", []) if x.get("source") == row.get("source")), None)
+    return row, path
+
+
+def _room_edges(runs):
+    """Boundary of a room mask given as runs [[y, x0, x1), ...] at 1 pt per px -> merged axis-aligned segments
+    [[x0, y0, x1, y1], ...] in sheet pt. Pure numpy; the outline is exact to the mask, nothing is smoothed or guessed."""
+    import numpy as np
+    if not runs:
+        return []
+    ys = [r[0] for r in runs]
+    xs0, xs1 = [r[1] for r in runs], [r[2] for r in runs]
+    y0, x0 = min(ys), min(xs0)
+    m = np.zeros((max(ys) - y0 + 3, max(xs1) - x0 + 3), bool)
+    for y, a, b in runs:
+        m[y - y0 + 1, a - x0 + 1:b - x0 + 1] = True
+    out = []
+    h = m[1:, :] != m[:-1, :]           # horizontal edges between row i and i+1
+    for i in range(h.shape[0]):
+        row = np.flatnonzero(np.diff(np.concatenate(([0], h[i].astype(np.int8), [0]))))
+        for a, b in zip(row[::2], row[1::2]):
+            yy = y0 + i
+            out.append([int(x0 + a - 1), int(yy), int(x0 + b - 1), int(yy)])
+    v = m[:, 1:] != m[:, :-1]           # vertical edges between column j and j+1
+    for j in range(v.shape[1]):
+        col = np.flatnonzero(np.diff(np.concatenate(([0], v[:, j].astype(np.int8), [0]))))
+        for a, b in zip(col[::2], col[1::2]):
+            xx = x0 + j
+            out.append([int(xx), int(y0 + a - 1), int(xx), int(y0 + b - 1)])
+    return out
+
+
+def _sheet_rooms(sheet):
+    """Rooms already extracted by rooms.py (build/rooms/<sheet>.json); [] when the sheet has none. Never extracts here."""
+    p = Path(BUILD) / "rooms" / f"{sheet}.json"
+    try:
+        st = p.stat()
+    except OSError:
+        return []
+    key = (str(p), st.st_mtime_ns)
+    if key not in _rooms_memo:
+        try:
+            d = json.loads(p.read_text())
+        except (OSError, ValueError):
+            return []
+        import rooms as roomgeo
+        if d.get("v") != roomgeo.CACHE_VERSION:      # stale extraction: rooms.py would discard it too
+            return []
+        _rooms_memo[key] = [{"number": r.get("number"), "name": r.get("name"), "bbox": r.get("bbox"),
+                             "label_bbox": r.get("label_bbox"), "tags": r.get("tags") or {},
+                             "edges": _room_edges(r.get("runs") or [])}
+                            for r in d.get("rooms", []) if isinstance(r, dict)]
+    return _rooms_memo[key]
+
+
+@app.get("/api/sheet/{sheet}")
+async def api_sheet(sheet: str):
+    """Geometry the sheet stage needs: page size in pt, the full-sheet image URL and the room outlines."""
+    row, _ = _sheet_row(sheet)
+    if row is None:
+        return _bad("unknown sheet", 404)
+    rooms_ = await run_in_threadpool(_sheet_rooms, sheet)
+    return {"sheet": sheet, "width": row.get("width"), "height": row.get("height"),
+            "image": f"/sheets/{sheet}.jpg", "rooms": rooms_}
+
+
+THUMB_PX = 360
+HELDOUT_RUNS = ("metrics_heldout_v1_final.json", "metrics_heldout_v2.json")
+
+
+@app.get("/api/heldout")
+async def api_heldout():
+    """Totals over the frozen held-out eval runs (build/metrics_heldout_*.json), for the present-mode trust slide.
+    Only counts already in those files are summed; answered = round(coverage * n) per run. null when none exist."""
+    runs = []
+    for name in HELDOUT_RUNS:
+        try:
+            m = json.loads((Path(BUILD) / name).read_text())
+        except (OSError, ValueError):
+            continue
+        n, cov = int(m.get("n") or 0), float(m.get("coverage") or 0)
+        answered = round(cov * n)
+        runs.append({"label": m.get("label"), "date": m.get("date"), "n": n, "false_alarms": m.get("false_alarms"),
+                     "answered": answered, "answered_right": round(float(m.get("selective_accuracy") or 0) * answered)})
+    if not runs:
+        return None
+    tot = {k: sum(r[k] or 0 for r in runs) for k in ("n", "false_alarms", "answered", "answered_right")}
+    return {**tot, "runs": runs}
+
+
+@app.get("/api/sheetset")
+async def api_sheetset():
+    """The drawing set as the sheet index sees it: every sheet with its number, issue, date and whether a later
+    addendum superseded it. Read-only facts from build/sheet_index.json; 404 when the index is missing."""
+    try:
+        d = json.loads((Path(BUILD) / "sheet_index.json").read_text())
+    except (OSError, ValueError):
+        return _bad("no sheet index", 404)
+    keep = ("sheet", "source", "sheet_number", "title", "issue_date", "current", "superseded_by", "discipline")
+    rows = [{k: r.get(k) for k in keep} for r in d.get("rows", []) if isinstance(r, dict)]
+    s = d.get("summary") or {}
+    return {"rows": rows, "by_source": s.get("by_source"), "superseded": s.get("superseded"),
+            "revised_twice": s.get("revised_twice")}
+
+
+def _render_sheet(sheet, row, src, px=None):
+    import pymupdf
+    import pdflock
+    import rooms as roomgeo
+    px = px or SHEET_PX
+    out = Path(BUILD) / "sheet_renders" / f"{sheet}_{px}.jpg"
+    if out.is_file():
+        return out
+    with _render_lock, pdflock.LOCK:
+        if out.is_file():
+            return out
+        page = pymupdf.open(roomgeo._pdf(src))[int(row["page"]) - 1]
+        z = px / max(page.rect.width, page.rect.height)
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(z, z), alpha=False)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_name(f"{out.stem}.{threading.get_ident()}.part.jpg")
+        pix.save(str(tmp), jpg_quality=82)
+        os.replace(tmp, out)
+    return out
+
+
+@app.get("/sheets/{name}")
+async def sheet_image(name: str):
+    thumb = name.endswith("_t.jpg")
+    sheet = name[:-6] if thumb else name[:-4] if name.endswith(".jpg") else ""
+    row, src = _sheet_row(sheet)
+    if row is None or not src:
+        return _bad("not found", 404)
+    try:
+        p = await run_in_threadpool(_render_sheet, sheet, row, src, THUMB_PX if thumb else SHEET_PX)
+    except (OSError, RuntimeError, ValueError, IndexError, KeyError):
+        return _bad("not found", 404)
+    return FileResponse(p, media_type="image/jpeg", headers=SHORT)
 
 
 _digest_lock = threading.Lock()

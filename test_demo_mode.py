@@ -153,3 +153,15 @@ def test_gzip_on_page_but_not_on_sse(env):
     assert gzip.compress(raw.content)                                          # sanity: body is compressible
     s = c.get("/api/check/stream", params={"claim": "q" * 50}, headers={"Accept-Encoding": "gzip"})
     assert s.headers.get("content-encoding") is None and s.text.startswith("event: ")
+
+
+def test_replay_stream_runs_both_judges_in_parallel_like_a_live_run(env, monkeypatch):
+    c, _, _ = env
+    monkeypatch.setenv("LLM_CACHE", "replay")
+    fx = FIXTURES[0]
+    ev = [d for k, d in _sse(c.get("/api/check/stream", params={"claim": fx["claim"]}).text) if k == "step"]
+    seq = [(d["step"], d["status"]) for d in ev]
+    assert seq.index(("judge_b", "start")) < seq.index(("judge_a", "done"))     # both lanes open before either closes
+    judge = [k for k in fx["checks"] if k.get("by") and k["by"] != "code"]
+    done_a = next(d for d in ev if d["step"] == "judge_a" and d["status"] == "done")
+    assert done_a["model"] == judge[0]["by"] and done_a["verdict"] == judge[0]["verdict"]
