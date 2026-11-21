@@ -31,7 +31,26 @@ final class API: NSObject, URLSessionTaskDelegate {
         return u
     }
 
+    /// Backend-relative asset path ("/crops/x.png", "crops/x.png", "/frames/y.jpg") -> absolute URL.
     func cropURL(_ crop: String) -> URL? { try? url(crop.hasPrefix("/") ? crop : "/" + crop) }
+
+    /// Deep link to the card in the web UI.
+    func webURL(cardID: String) -> URL? {
+        guard let enc = cardID.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return nil }
+        return URL(string: base + "/#card=" + enc)
+    }
+
+    func ask(_ text: String) async throws -> Card {
+        if mock { return Self.sample().cards[0] }
+        var req = URLRequest(url: try url("/api/ask"))
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONEncoder().encode(["text": text])
+        req.timeoutInterval = 180
+        let (d, r) = try await URLSession.shared.data(for: req)
+        try check(d, r)
+        return try JSONDecoder().decode(Card.self, from: d)
+    }
 
     private func check(_ data: Data, _ resp: URLResponse) throws {
         if let h = resp as? HTTPURLResponse, !(200..<300).contains(h.statusCode) {
@@ -70,7 +89,8 @@ final class API: NSObject, URLSessionTaskDelegate {
         let q = sheet.isEmpty ? [] : [URLQueryItem(name: "sheet", value: sheet)]
         var req = URLRequest(url: try url("/api/video", query: q))
         req.httpMethod = "POST"
-        req.setValue("video/quicktime", forHTTPHeaderField: "Content-Type")
+        // Backend accepts only video/mp4 and video/quicktime; a picked file may be either.
+        req.setValue(file.pathExtension.lowercased() == "mp4" ? "video/mp4" : "video/quicktime", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 300
         progress = onProgress
         let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)

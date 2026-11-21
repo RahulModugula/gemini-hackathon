@@ -10,19 +10,20 @@ struct RootView: View {
             CaptureView().tabItem { Label("Capture", systemImage: "video.fill") }.tag(0)
             ResultsView().tabItem { Label("Results", systemImage: "checklist") }.tag(1)
                 .badge(state.cards.filter { $0.verdict == .conflict }.count)
+            AskView().tabItem { Label("Ask", systemImage: "questionmark.bubble") }.tag(3)
             SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(2)
         }
         .onAppear {
             let a = UITabBarAppearance()
             a.configureWithOpaqueBackground()
-            a.backgroundColor = UIColor(Theme.navyDeep)
+            a.backgroundColor = UIColor(Theme.paper)
             UITabBar.appearance().standardAppearance = a
             UITabBar.appearance().scrollEdgeAppearance = a
             let n = UINavigationBarAppearance()
             n.configureWithOpaqueBackground()
-            n.backgroundColor = UIColor(Theme.navyDeep)
-            n.titleTextAttributes = [.foregroundColor: UIColor.white]
-            n.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+            n.backgroundColor = UIColor(Theme.paper)
+            n.titleTextAttributes = [.foregroundColor: UIColor(Theme.ink)]
+            n.largeTitleTextAttributes = [.foregroundColor: UIColor(Theme.ink)]
             UINavigationBar.appearance().standardAppearance = n
             UINavigationBar.appearance().scrollEdgeAppearance = n
             state.loadMockIfNeeded()
@@ -46,7 +47,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Backend") {
-                    TextField("http://192.168.x.x:8000", text: $baseURL)
+                    TextField("http://127.0.0.1:8000 (simulator) or http://<mac-lan-ip>:8000", text: $baseURL)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
                         .keyboardType(.URL)
                     Button {

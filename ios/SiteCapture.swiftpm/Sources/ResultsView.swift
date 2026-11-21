@@ -9,17 +9,17 @@ struct ResultsView: View {
                 BlueprintGrid().ignoresSafeArea()
                 if state.cards.isEmpty {
                     VStack(spacing: 8) {
-                        Image(systemName: "doc.text.magnifyingglass").font(.system(size: 44)).foregroundStyle(Theme.blueprint)
-                        Text("No results yet").font(.headline)
-                        Text("Record a clip or type a claim on the Capture tab.")
-                            .font(.callout).foregroundStyle(.white.opacity(0.75))
+                        Image(systemName: "doc.text.magnifyingglass").font(.system(size: 44)).foregroundStyle(Theme.blue)
+                        Text("No results yet").font(.headline).foregroundStyle(Theme.ink)
+                        Text("Pick or record a clip on the Capture tab.")
+                            .font(.callout).foregroundStyle(Theme.ink2)
                     }
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             if let s = state.videoSeconds {
-                                Text("Clip length \(String(format: "%.1f", s)) s  -  \(state.cards.count) claims checked")
-                                    .font(.footnote).foregroundStyle(.white.opacity(0.7))
+                                Text("Clip \(String(format: "%.1f", s)) s  |  \(state.cards.count) claims  |  \(state.cards.filter { $0.verdict == .conflict }.count) conflict")
+                                    .font(Theme.mono).foregroundStyle(Theme.ink2)
                             }
                             ForEach(state.cards) { card in
                                 NavigationLink(value: card) { CardRow(card: card) }.buttonStyle(.plain)
@@ -48,76 +48,36 @@ func clock(_ s: Double) -> String {
 struct CardRow: View {
     let card: Card
     var body: some View {
-        HStack(spacing: 0) {
-            Rectangle().fill(Theme.color(card.verdict)).frame(width: 6)
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    VerdictChip(verdict: card.verdict)
-                    if let c = card.confidence {
-                        Text("\(Int(c * 100))%").font(.caption.weight(.semibold)).foregroundStyle(Theme.grey)
-                    }
+        PaperSheet {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top) {
+                    VerdictStamp(verdict: card.verdict, confidence: card.confidence, size: 15)
                     Spacer()
-                    if let t = card.t_start_s {
-                        Label(clock(t), systemImage: "play.circle").font(.caption.monospacedDigit()).foregroundStyle(Theme.grey)
+                    if let t = card.t_start_s ?? card.video_evidence?.t_s {
+                        Text(clock(t)).font(Theme.mono).foregroundStyle(Theme.ink2)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .overlay(Rectangle().stroke(Theme.ink, lineWidth: 1.5))
                     }
                 }
-                Text(card.claim).font(.headline).foregroundStyle(Theme.navy).multilineTextAlignment(.leading)
+                .padding(.top, 4)
+                Text(card.claim).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.leading)
                 if let r = card.reason {
-                    Text(r).font(.subheadline).foregroundStyle(Theme.navy.opacity(0.75))
+                    Text(r).font(.subheadline).foregroundStyle(Theme.ink2)
                         .lineLimit(3).multilineTextAlignment(.leading)
                 }
             }
-            .padding(14)
-            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.paper, in: RoundedRectangle(cornerRadius: 14))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
 
 struct CardDetail: View {
-    @EnvironmentObject var state: AppState
     let card: Card
-
     var body: some View {
         ZStack {
-            Theme.navy.ignoresSafeArea()
+            BlueprintGrid().ignoresSafeArea()
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack { VerdictChip(verdict: card.verdict)
-                        if let c = card.confidence { Text("confidence \(Int(c * 100))%").font(.footnote).foregroundStyle(.white.opacity(0.7)) }
-                        Spacer()
-                        if let t = card.t_start_s { Text("at \(clock(t))").font(.footnote.monospacedDigit()).foregroundStyle(.white.opacity(0.7)) }
-                    }
-                    Text(card.claim).font(.title3.weight(.bold))
-                    if let r = card.reason { Text(r).font(.body).foregroundStyle(.white.opacity(0.9)) }
-
-                    ForEach(Array((card.evidence ?? []).enumerated()), id: \.offset) { _, ev in
-                        EvidenceView(ev: ev)
-                    }
-
-                    if let checks = card.checks, !checks.isEmpty {
-                        Text("CHECKS").font(.caption.weight(.heavy)).tracking(1).foregroundStyle(Theme.blueprint)
-                        VStack(alignment: .leading, spacing: 10) {
-                            ForEach(Array(checks.enumerated()), id: \.offset) { _, c in
-                                HStack(alignment: .top, spacing: 10) {
-                                    switch c.passed {
-                                    case .some(true): Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.green)
-                                    case .some(false): Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.red)
-                                    case .none: Image(systemName: "questionmark.circle.fill").foregroundStyle(Theme.grey)
-                                    }
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(c.check ?? c.by ?? "check").font(.subheadline.weight(.semibold))
-                                        if c.check != nil, let by = c.by { Text(by).font(.caption).foregroundStyle(.white.opacity(0.6)) }
-                                        if let n = c.note { Text(n).font(.footnote).foregroundStyle(.white.opacity(0.8)) }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(16)
+                CardSheet(card: card).padding(16)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -125,54 +85,156 @@ struct CardDetail: View {
     }
 }
 
-struct EvidenceView: View {
+/// The full paper sheet for one card. Used by Results detail and by the Ask tab.
+struct CardSheet: View {
     @EnvironmentObject var state: AppState
-    let ev: Evidence
+    @Environment(\.openURL) private var openURL
+    let card: Card
+
+    /// Evidence grouped by crop image, each box numbered by its position in `evidence`.
+    private var groups: [(crop: String?, items: [(n: Int, ev: Evidence)])] {
+        var order: [String?] = []
+        var map: [String?: [(Int, Evidence)]] = [:]
+        for (i, ev) in (card.evidence ?? []).enumerated() {
+            if map[ev.crop] == nil { order.append(ev.crop) }
+            map[ev.crop, default: []].append((i + 1, ev))
+        }
+        return order.map { (crop: $0, items: (map[$0] ?? []).map { (n: $0.0, ev: $0.1) }) }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("SHEET \(ev.sheet ?? "?")" + (ev.revision.map { "  REV \($0)" } ?? ""))
-                .font(.caption.weight(.heavy)).tracking(1).foregroundStyle(Theme.blueprint)
-            if state.mock {
-                MockCrop().overlay(BoxOverlay(box: ev.box_2d_on_crop, label: ev.label))
-                    .aspectRatio(1.4, contentMode: .fit)
-            } else if let crop = ev.crop, let url = state.api.cropURL(crop) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img):
-                        // The overlay is attached to the image itself, so boxes track the displayed crop size.
-                        img.resizable().scaledToFit().overlay(BoxOverlay(box: ev.box_2d_on_crop, label: ev.label))
-                    case .failure:
-                        Label("Crop failed to load", systemImage: "exclamationmark.triangle").foregroundStyle(Theme.red)
-                    default:
-                        ProgressView().frame(maxWidth: .infinity, minHeight: 160)
+        PaperSheet {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top, spacing: 14) {
+                    VerdictStamp(verdict: card.verdict, confidence: card.confidence, size: 22)
+                    Spacer(minLength: 0)
+                    if let t = card.t_start_s ?? card.video_evidence?.t_s {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            BlockLabel("Clip time")
+                            Text(clock(t)).font(Theme.mono).foregroundStyle(Theme.ink)
+                        }
+                    }
+                }
+                .padding(.top, 6)
+
+                Text(card.claim).font(.system(size: 22, weight: .bold)).foregroundStyle(Theme.ink)
+                if let r = card.reason {
+                    Text(r).font(.body).foregroundStyle(Theme.ink2)
+                }
+
+                if let ve = card.video_evidence, let frame = ve.frame {
+                    VStack(alignment: .leading, spacing: 6) {
+                        BlockLabel("Site video" + (ve.t_s.map { " - " + clock($0) } ?? ""))
+                        EvidenceImage(path: frame, boxes: ve.box_2d.map { [(label: "V", box: $0)] } ?? [], tint: Theme.color(card.verdict))
+                        if let t = ve.text_read, !t.isEmpty {
+                            Text("read: " + t).font(Theme.mono).foregroundStyle(Theme.ink2)
+                        }
+                    }
+                }
+
+                ForEach(Array(groups.enumerated()), id: \.offset) { _, g in
+                    VStack(alignment: .leading, spacing: 6) {
+                        let first = g.items[0].ev
+                        BlockLabel("Sheet " + (first.sheet_number ?? first.sheet ?? "?") + (first.revision.map { "  rev " + $0 } ?? ""))
+                        if state.mock {
+                            MockCrop().overlay(BoxLayer(boxes: g.items.compactMap { i in i.ev.box_2d_on_crop.map { (label: "\(i.n)", box: $0) } }, tint: Theme.red))
+                                .aspectRatio(1.4, contentMode: .fit)
+                        } else if let crop = g.crop {
+                            EvidenceImage(path: crop, boxes: g.items.compactMap { i in i.ev.box_2d_on_crop.map { (label: "\(i.n)", box: $0) } }, tint: Theme.red)
+                        }
+                        ForEach(g.items, id: \.n) { it in
+                            if let l = it.ev.label {
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text("\(it.n)").font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(.white).frame(width: 18, height: 18).background(Theme.red)
+                                    Text(l).font(.footnote).foregroundStyle(Theme.ink)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let checks = card.checks, !checks.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        BlockLabel("Checks")
+                        ForEach(Array(checks.enumerated()), id: \.offset) { _, c in
+                            HStack(alignment: .top, spacing: 8) {
+                                switch c.passed {
+                                case .some(true): Image(systemName: "checkmark.square.fill").foregroundStyle(Theme.green)
+                                case .some(false): Image(systemName: "xmark.square.fill").foregroundStyle(Theme.red)
+                                case .none: Image(systemName: "questionmark.square.fill").foregroundStyle(Theme.grey)
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(c.check ?? c.by ?? "check").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.ink)
+                                    if let n = c.note { Text(n).font(.footnote).foregroundStyle(Theme.ink2) }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle().fill(Theme.line).frame(height: 1)
+                HStack {
+                    Text(card.id).font(Theme.mono).foregroundStyle(Theme.ink2).lineLimit(1)
+                    Spacer()
+                    if !state.mock, let u = state.api.webURL(cardID: card.id) {
+                        Button { openURL(u) } label: {
+                            Label("Open in web", systemImage: "arrow.up.right.square").font(.footnote.weight(.bold))
+                        }
+                        .accessibilityLabel("Open in web")
                     }
                 }
             }
-            if let l = ev.label { Text(l).font(.footnote).foregroundStyle(.white.opacity(0.8)) }
         }
-        .padding(10)
-        .background(Theme.navyDeep, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.blueprint.opacity(0.4)))
     }
 }
 
-/// Draws box_2d_on_crop = [ymin, xmin, ymax, xmax] (0-1000) over whatever view it is attached to.
-struct BoxOverlay: View {
-    let box: [Double]?
-    let label: String?
+/// A backend image (crop or frame) with numbered boxes drawn on the image itself, so they track its displayed size.
+struct EvidenceImage: View {
+    @EnvironmentObject var state: AppState
+    let path: String
+    let boxes: [(label: String, box: [Double])]
+    let tint: Color
+
+    var body: some View {
+        if let url = state.api.cropURL(path) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let img):
+                    img.resizable().scaledToFit().overlay(BoxLayer(boxes: boxes, tint: tint))
+                        .overlay(Rectangle().stroke(Theme.line, lineWidth: 1))
+                case .failure:
+                    Label("Image failed to load", systemImage: "exclamationmark.triangle").foregroundStyle(Theme.red)
+                default:
+                    ProgressView().frame(maxWidth: .infinity, minHeight: 160)
+                }
+            }
+        }
+    }
+}
+
+/// Draws boxes given as [ymin, xmin, ymax, xmax] on a 0-1000 scale over whatever view it is attached to.
+struct BoxLayer: View {
+    let boxes: [(label: String, box: [Double])]
+    let tint: Color
     var body: some View {
         GeometryReader { geo in
-            if let b = box, b.count == 4 {
-                let ymin = b[0] / 1000 * geo.size.height
-                let xmin = b[1] / 1000 * geo.size.width
-                let ymax = b[2] / 1000 * geo.size.height
-                let xmax = b[3] / 1000 * geo.size.width
-                Rectangle()
-                    .stroke(Theme.red, lineWidth: 3)
-                    .background(Theme.red.opacity(0.12))
-                    .frame(width: max(xmax - xmin, 1), height: max(ymax - ymin, 1))
-                    .position(x: (xmin + xmax) / 2, y: (ymin + ymax) / 2)
+            ForEach(Array(boxes.enumerated()), id: \.offset) { _, b in
+                if b.box.count == 4 {
+                    let ymin = b.box[0] / 1000 * geo.size.height
+                    let xmin = b.box[1] / 1000 * geo.size.width
+                    let ymax = b.box[2] / 1000 * geo.size.height
+                    let xmax = b.box[3] / 1000 * geo.size.width
+                    Rectangle().stroke(tint, lineWidth: 2.5)
+                        .background(tint.opacity(0.10))
+                        .frame(width: max(xmax - xmin, 2), height: max(ymax - ymin, 2))
+                        .overlay(alignment: .topLeading) {
+                            Text(b.label).font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white).padding(.horizontal, 4).background(tint)
+                                .offset(x: -1.25, y: -17)
+                        }
+                        .position(x: (xmin + xmax) / 2, y: (ymin + ymax) / 2)
+                }
             }
         }
     }
@@ -182,7 +244,7 @@ struct BoxOverlay: View {
 struct MockCrop: View {
     var body: some View {
         ZStack {
-            Color(red: 0.93, green: 0.95, blue: 0.99)
+            Theme.board2
             Canvas { ctx, size in
                 var p = Path()
                 for i in 1..<10 {
@@ -190,9 +252,9 @@ struct MockCrop: View {
                     p.move(to: CGPoint(x: x, y: 0)); p.addLine(to: CGPoint(x: x, y: size.height))
                     p.move(to: CGPoint(x: 0, y: y)); p.addLine(to: CGPoint(x: size.width, y: y))
                 }
-                ctx.stroke(p, with: .color(Theme.blueprint.opacity(0.25)), lineWidth: 0.5)
+                ctx.stroke(p, with: .color(Theme.blue.opacity(0.25)), lineWidth: 0.5)
             }
-            Text("sample crop").font(.caption).foregroundStyle(Theme.navy.opacity(0.4))
+            Text("sample crop").font(.caption).foregroundStyle(Theme.ink2)
         }
     }
 }

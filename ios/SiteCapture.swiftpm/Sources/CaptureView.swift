@@ -7,7 +7,8 @@ struct PickedMovie: Transferable {
     let url: URL
     static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(contentType: .movie) { m in SentTransferredFile(m.url) } importing: { received in
-            let dest = FileManager.default.temporaryDirectory.appendingPathComponent("picked-\(UUID().uuidString).mov")
+            let ext = received.file.pathExtension.isEmpty ? "mov" : received.file.pathExtension
+            let dest = FileManager.default.temporaryDirectory.appendingPathComponent("picked-\(UUID().uuidString).\(ext)")
             try FileManager.default.copyItem(at: received.file, to: dest)
             return PickedMovie(url: dest)
         }
@@ -20,8 +21,7 @@ struct CaptureView: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var clip: URL?
     @State private var player: AVPlayer?
-    @State private var claimText = ""
-    @State private var goResults = false
+    @AppStorage("sheet") private var sheet = ""
     @AppStorage("selectedTab") private var tab = 0
 
     var body: some View {
@@ -31,7 +31,7 @@ struct CaptureView: View {
                 VStack(spacing: 16) {
                     viewfinder
                     if let clip { reviewControls(clip) } else { recordControls }
-                    claimField
+                    sheetField
                     if let e = state.error ?? cam.error {
                         Text(e).font(.footnote).foregroundStyle(Theme.red).multilineTextAlignment(.center)
                     }
@@ -42,7 +42,17 @@ struct CaptureView: View {
             .navigationTitle("Capture")
             .navigationBarTitleDisplayMode(.inline)
         }
-        .task { await cam.start() }
+        .task {
+            // Demo/test hook for the simulator: `-clipPath /abs/file.mp4 [-autoCheck YES]` loads a clip as if picked.
+            if let p = UserDefaults.standard.string(forKey: "clipPath"), clip == nil, FileManager.default.fileExists(atPath: p) {
+                let u = URL(fileURLWithPath: p)
+                setClip(u)
+                if UserDefaults.standard.bool(forKey: "autoCheck") {
+                    if await state.upload(u) { discard(); tab = 1 }
+                }
+            }
+            await cam.start()
+        }
         .onDisappear { cam.stopSession() }
         .onChange(of: cam.recorded) { _, new in if let new { setClip(new) } }
         .onChange(of: pickerItem) { _, item in
@@ -67,7 +77,7 @@ struct CaptureView: View {
 
     @ViewBuilder private var viewfinder: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20).fill(Theme.navyDeep)
+            RoundedRectangle(cornerRadius: 20).fill(Color.black)
             if let player {
                 VideoPlayer(player: player).clipShape(RoundedRectangle(cornerRadius: 20))
             } else if cam.available {
@@ -75,7 +85,7 @@ struct CaptureView: View {
             } else {
                 VStack(spacing: 10) {
                     Image(systemName: cam.denied ? "video.slash" : "camera.metering.unknown")
-                        .font(.system(size: 40)).foregroundStyle(Theme.blueprint)
+                        .font(.system(size: 40)).foregroundStyle(Theme.blue)
                     Text(cam.denied ? "Camera or microphone access denied. Enable it in Settings > SiteCapture."
                                     : "No camera available (simulator?). Pick a video from Photos instead.")
                         .font(.callout).multilineTextAlignment(.center).foregroundStyle(.white.opacity(0.85))
@@ -93,13 +103,13 @@ struct CaptureView: View {
             if state.busy && clip != nil {
                 Color.black.opacity(0.55).clipShape(RoundedRectangle(cornerRadius: 20))
                 VStack(spacing: 10) {
-                    ProgressView(value: state.uploadProgress < 1 ? state.uploadProgress : nil).tint(Theme.blueprint).frame(width: 180)
+                    ProgressView(value: state.uploadProgress < 1 ? state.uploadProgress : nil).tint(Theme.blue).frame(width: 180)
                     Text(state.uploadProgress < 1 ? "Uploading \(Int(state.uploadProgress * 100))%" : "Analysing clip...")
                         .font(.callout.weight(.semibold))
                 }
             }
         }
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.blueprint.opacity(0.6), lineWidth: 1.5))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.blue.opacity(0.6), lineWidth: 1.5))
         .aspectRatio(3.0 / 4.0, contentMode: .fit)
         .frame(maxHeight: 460)
     }
@@ -120,7 +130,7 @@ struct CaptureView: View {
     private var recordButton: some View {
         Button { cam.toggle() } label: {
             ZStack {
-                Circle().stroke(Theme.blueprint.opacity(0.3), lineWidth: 6)
+                Circle().stroke(Theme.blue.opacity(0.3), lineWidth: 6)
                 Circle().trim(from: 0, to: cam.elapsed / CameraModel.maxSeconds)
                     .stroke(Theme.red, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
@@ -144,9 +154,10 @@ struct CaptureView: View {
     private func reviewControls(_ url: URL) -> some View {
         HStack(spacing: 12) {
             Button("Retake", role: .cancel) { discard() }
+                .foregroundStyle(Theme.ink)
                 .padding(.vertical, 14).frame(maxWidth: .infinity)
-                .background(Theme.navyDeep, in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.blueprint))
+                .background(Theme.paper)
+                .overlay(Rectangle().stroke(Theme.ink, lineWidth: 1.5))
                 .disabled(state.busy)
             PrimaryButton(title: state.busy ? "Checking..." : "Check", systemImage: "checkmark.seal.fill", disabled: state.busy) {
                 Task {
@@ -156,22 +167,15 @@ struct CaptureView: View {
         }
     }
 
-    private var claimField: some View {
+    private var sheetField: some View {
         HStack {
-            TextField("Or type a claim to check", text: $claimText, axis: .vertical)
-                .lineLimit(1...3)
-                .padding(12)
-                .background(Theme.navyDeep, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.blueprint.opacity(0.5)))
-                .submitLabel(.send)
-            Button {
-                let t = claimText.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !t.isEmpty else { return }
-                Task { if await state.checkClaim(t) { claimText = ""; tab = 1 } }
-            } label: {
-                Image(systemName: "arrow.up.circle.fill").font(.system(size: 36))
-            }
-            .disabled(state.busy || claimText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Text("SHEET").font(.system(size: 11, weight: .bold)).tracking(1).foregroundStyle(Theme.ink2)
+            TextField("hint, e.g. P101 (optional)", text: $sheet)
+                .textInputAutocapitalization(.characters).autocorrectionDisabled()
+                .foregroundStyle(Theme.ink)
         }
+        .padding(12)
+        .background(Theme.paper)
+        .overlay(Rectangle().stroke(Theme.line, lineWidth: 1))
     }
 }

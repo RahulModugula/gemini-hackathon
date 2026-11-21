@@ -23,6 +23,16 @@ struct Evidence: Codable, Hashable {
     /// [ymin, xmin, ymax, xmax], normalised 0-1000 on the crop image.
     var box_2d_on_crop: [Double]?
     var label: String?
+    var sheet_number: String?
+}
+
+/// Frame from the site video the claim was made against (video cards only). box_2d = [ymin, xmin, ymax, xmax], 0-1000.
+struct VideoEvidence: Codable, Hashable {
+    var frame: String?
+    var t_s: Double?
+    var box_2d: [Double]?
+    var kind: String?
+    var text_read: String?
 }
 
 struct Check: Codable, Hashable {
@@ -50,6 +60,8 @@ struct Card: Codable, Hashable, Identifiable {
     var confidence: Double?
     var reason: String?
     var evidence: [Evidence]?
+    var video_evidence: VideoEvidence?
+    var video_url: String?
     var checks: [Check]?
     /// Not in the backend contract; filled client-side from the matching claim.
     var t_start_s: Double?

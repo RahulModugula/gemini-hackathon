@@ -7,8 +7,8 @@ struct SiteCaptureApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(state)
-                .preferredColorScheme(.dark)
-                .tint(Theme.blueprint)
+                .preferredColorScheme(.light)
+                .tint(Theme.blue)
         }
     }
 }
@@ -22,7 +22,9 @@ final class AppState: ObservableObject {
     @Published var error: String?
 
     // Edited in SettingsView via @AppStorage; read from UserDefaults here.
-    static let defaultBase = "http://192.168.1.10:8000"
+    /// Simulator reaches the Mac at 127.0.0.1. On a real phone set the Mac's LAN IP in Settings.
+    static let defaultBase = "http://127.0.0.1:8000"
+    @Published var asked: [Card] = []
     var baseURL: String { UserDefaults.standard.string(forKey: "baseURL") ?? Self.defaultBase }
     var sheet: String { (UserDefaults.standard.string(forKey: "sheet") ?? "").trimmingCharacters(in: .whitespaces) }
     var mock: Bool { UserDefaults.standard.bool(forKey: "mock") }
@@ -51,6 +53,18 @@ final class AppState: ObservableObject {
         do {
             let c = try await api.checkClaim(text)
             cards.insert(c, at: 0)
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
+    func ask(_ text: String) async -> Bool {
+        busy = true; error = nil
+        defer { busy = false }
+        do {
+            asked.insert(try await api.ask(text), at: 0)
             return true
         } catch {
             self.error = error.localizedDescription
