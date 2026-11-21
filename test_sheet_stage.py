@@ -73,3 +73,34 @@ def test_sheet_render_is_a_cached_jpeg(env):
     pix = pymupdf.Pixmap(str(out))
     assert max(pix.width, pix.height) == appmod.SHEET_PX
     assert c.get("/sheets/add1-p001.png").status_code == 404
+    t = c.get("/sheets/add1-p001_t.jpg")
+    assert t.status_code == 200 and t.content[:3] == b"\xff\xd8\xff"
+    assert max(pymupdf.Pixmap(t.content).width, pymupdf.Pixmap(t.content).height) == appmod.THUMB_PX
+
+
+def test_card_by_id_reads_fixtures_and_rejects_unknown(env):
+    c, _ = env
+    fx = json.loads((appmod.UI / "cards.json").read_text())[0]
+    assert c.get(f"/api/card/{fx['id']}").json()["id"] == fx["id"]
+    assert c.get("/api/card/nope").status_code == 404
+    assert c.get("/api/card/..%2Fx").status_code == 404
+
+
+def test_heldout_totals_sum_the_frozen_runs(env):
+    c, tmp = env
+    assert c.get("/api/heldout").json() is None
+    (tmp / "metrics_heldout_v1_final.json").write_text(json.dumps({"label": "a", "n": 17, "false_alarms": 0, "coverage": 0.471, "selective_accuracy": 1.0}))
+    (tmp / "metrics_heldout_v2.json").write_text(json.dumps({"label": "b", "n": 43, "false_alarms": 0, "coverage": 0.326, "selective_accuracy": 1.0}))
+    j = c.get("/api/heldout").json()
+    assert (j["n"], j["false_alarms"], j["answered"], j["answered_right"]) == (60, 0, 22, 22)
+
+
+def test_sheetset_lists_rows_and_supersession(env):
+    c, tmp = env
+    assert c.get("/api/sheetset").status_code == 404
+    (tmp / "sheet_index.json").write_text(json.dumps({"summary": {"by_source": {"dwg": 1, "add1": 1}, "superseded": ["P101"]},
+        "rows": [{"sheet": "dwg-p034", "source": "dwg", "sheet_number": "P101", "current": False, "superseded_by": "add1-p018",
+                  "word_count": 9}, {"sheet": "add1-p018", "source": "add1", "sheet_number": "P101", "current": True}]}))
+    j = c.get("/api/sheetset").json()
+    assert j["by_source"] == {"dwg": 1, "add1": 1} and j["superseded"] == ["P101"]
+    assert j["rows"][0]["superseded_by"] == "add1-p018" and "word_count" not in j["rows"][0]

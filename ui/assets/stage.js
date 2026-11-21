@@ -127,6 +127,8 @@ export function createStage(card, opts = {}) {
   const bEv = mkBtn('Evidence', () => sheet(true));
   const bAll = mkBtn('Whole sheet', () => whole());
   const bWipe = mkBtn('Before / after', () => wipe(true), hasWipe ? null : 'No earlier issue of this region to compare');
+  const can3d = typeof opts.on3d === 'function' && (!opts.can3d || opts.can3d(first));
+  const b3d = can3d ? mkBtn('3D', () => tilt()) : null;
   const roomChip = el('div', 'hud roomchip'); roomChip.hidden = true;
   const legend = el('div', 'hud legend2'); legend.hidden = true;
   mat.append(cap, ctl, roomChip, legend);
@@ -134,7 +136,7 @@ export function createStage(card, opts = {}) {
 
   let W = 0, H = 0, ox = 0, oy = 0, target = null, mode = 'sheet', timers = [], wipeApi = null, landed = false, played = false;
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-  const setSeg = m => { root.classList.toggle('mode-wipe', m === 'wipe'); for (const [b, k] of [[bEv, 'sheet'], [bAll, 'whole'], [bWipe, 'wipe']]) { b.classList.toggle('on', m === k); b.setAttribute('aria-pressed', String(m === k)); } };
+  const setSeg = m => { root.classList.toggle('mode-wipe', m === 'wipe'); for (const [b, k] of [[bEv, 'sheet'], [bAll, 'whole'], [bWipe, 'wipe'], [b3d, '3d']]) { if (!b) continue; b.classList.toggle('on', m === k); b.setAttribute('aria-pressed', String(m === k)); } };
 
   function look(r, ms) {
     const mw = mat.clientWidth || 800, mh = mat.clientHeight || 450;
@@ -234,18 +236,48 @@ export function createStage(card, opts = {}) {
     landed = true;
     root.classList.add('landed');
   }
+  /* stage 4: the flat sheet tilts back and the 3D plan (walls from the vector geometry) fades in over it */
+  let host3d = null, api3d = null, tiltT = 0;
+  const tiltWrap = el('div', 'tiltwrap');
+  mat.insertBefore(tiltWrap, cam); tiltWrap.append(cam);
+  function flat() {
+    clearTimeout(tiltT);
+    root.classList.remove('in3d', 'tilting');
+    tiltWrap.style.transform = '';
+  }
+  async function tilt() {
+    if (!can3d) return;
+    mode = '3d'; setSeg(mode);
+    if (wipeApi) wipeApi.hide();
+    if (target) look(target, 0);
+    root.classList.add('tilting');
+    tiltWrap.style.transform = reduced() ? '' : 'rotateX(52deg) scale(.92)';
+    if (!host3d) {
+      host3d = el('div', 'host3d'); mat.insertBefore(host3d, cap);
+      try { api3d = await opts.on3d(host3d, card); } catch (e) { api3d = null; }
+      if (!api3d) {
+        host3d.remove(); host3d = null; flat(); mode = 'sheet'; setSeg('sheet');
+        if (b3d) { b3d.disabled = true; b3d.title = '3D needs WebGL; showing the flat sheet'; }
+        return;
+      }
+    } else if (api3d.focus) api3d.focus(card.id);
+    tiltT = setTimeout(() => root.classList.add('in3d'), reduced() ? 0 : 650);
+  }
   function sheet(anim) {
+    flat();
     mode = 'sheet'; setSeg(mode);
     if (wipeApi) wipeApi.hide();
     if (target) look(target, anim ? 700 : 0);
   }
   function whole() {
+    flat();
     mode = 'whole'; setSeg(mode);
     if (wipeApi) wipeApi.hide();
     look([ox, oy, ox + W, oy + H], 700);
   }
   function wipe(auto, pos) {
     if (!hasWipe) return;
+    flat();
     mode = 'wipe'; setSeg(mode);
     if (!wipeApi) { wipeApi = createWipe(card, first, dx); mat.append(wipeApi.node); }
     wipeApi.show(auto);
@@ -275,9 +307,9 @@ export function createStage(card, opts = {}) {
   const onResize = () => { if (!target) return; if (mode === 'whole') look([ox, oy, ox + W, oy + H], 0); else look(target, 0); };
   window.addEventListener('resize', onResize);
   return {
-    node: root, play, wipe, whole, sheet: () => sheet(true), hasWipe, ready,
+    node: root, play, wipe, whole, tilt, sheet: () => sheet(true), hasWipe, can3d, ready,
     get landed() { return landed; },
-    destroy() { timers.forEach(clearTimeout); window.removeEventListener('resize', onResize); if (wipeApi) wipeApi.destroy(); }
+    destroy() { timers.forEach(clearTimeout); clearTimeout(tiltT); window.removeEventListener('resize', onResize); if (wipeApi) wipeApi.destroy(); if (api3d && api3d.destroy) api3d.destroy(); }
   };
 }
 
@@ -302,6 +334,8 @@ function createWipe(card, first, dx) {
     const L = el('div', 'wl ' + cls);
     const img = el('img'); img.src = src; img.alt = cls === 'now' ? 'Current issue of the region' : 'Superseded issue of the region';
     Object.assign(img.style, { width: (1000 / win.w * 100) + '%', height: (1000 / win.h * 100) + '%', left: (-win.x / win.w * 100) + '%', top: (-win.y / win.h * 100) + '%' });
+    /* crops clamped at a sheet edge are not square: size the frame from the real pixels so nothing stretches */
+    if (cls === 'now') img.onload = () => { const ar = (win.w * img.naturalWidth) / (win.h * img.naturalHeight); if (ar > 0 && isFinite(ar)) fr.style.aspectRatio = String(ar); };
     L.append(img);
     for (const b of boxes) {
       const [a, bb, c, d] = clampBox(b);
@@ -313,8 +347,12 @@ function createWipe(card, first, dx) {
     }
     return L;
   };
-  const before = layer(dx.crop, 'was', dx.sup.filter(isBox), '−');
-  const now = layer(first.crop, 'now', dx.cur.filter(isBox), '+');
+  /* only diff marks that touch a grounded evidence box: the change this card is about, never a stray diff */
+  const supEvB = (card.evidence || []).filter(e => e.revision === 'dwg').map(e => e.box_2d_on_crop).filter(isBox);
+  const touches = (b, set) => { const [a, bb, c, d] = clampBox(b); return set.some(e => { const [p, q, r, s] = clampBox(e);
+    return a < r + 15 && c > p - 15 && bb < s + 15 && d > q - 15; }); };
+  const before = layer(dx.crop, 'was', dx.sup.filter(isBox).filter(b => touches(b, supEvB.length ? supEvB : evb)), '−');
+  const now = layer(first.crop, 'now', dx.cur.filter(isBox).filter(b => touches(b, evb)), '+');
   const handle = el('div', 'whandle');
   handle.tabIndex = 0; handle.setAttribute('role', 'slider'); handle.setAttribute('aria-label', 'Before and after divider');
   handle.setAttribute('aria-valuemin', '0'); handle.setAttribute('aria-valuemax', '100');

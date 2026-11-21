@@ -6,7 +6,8 @@
 <title>Drawing Claim Checker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script defer src="/assets/plan3d.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <style>
 :root{
@@ -450,6 +451,66 @@ body.present .rfiBtn{font-size:20px}
 .ph-k{margin-left:auto;font-weight:700;color:var(--amber)}
 .ph-x{padding:6px 14px;background:transparent;border:1.5px solid #fff;border-radius:3px;color:#fff;font-weight:700;font-size:16px}
 
+/* ===== answer cards (POST /api/ask) ===== */
+.answer{display:grid;gap:12px;margin:0 0 16px}
+.ansval{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;padding:14px 18px;background:#fff;border:3px solid var(--green);border-radius:2px}
+.ansk{font-size:15px;color:var(--ink-2);font-weight:600}
+.ansv{font-size:44px;line-height:1;font-weight:800;font-stretch:85%;color:var(--ink);padding:2px 10px;border:3px solid var(--green);background:rgba(18,121,74,.08)}
+.anssrc{flex-basis:100%;font-size:13px;color:var(--ink-2)}
+.anstext{margin:0;font-size:17px;line-height:1.45;max-width:80ch}
+.addqa{margin:0;padding:14px 18px;background:#eef3fb;border-left:8px solid var(--add);color:var(--ink)}
+.addqa figcaption{display:flex;gap:12px;align-items:baseline;margin-bottom:6px}
+.addqa figcaption b{font-size:20px;font-stretch:90%;color:var(--add)}
+.addqa figcaption span{font-size:13px;color:var(--ink-2)}
+.addqa blockquote{margin:0 0 6px;font-size:21px;line-height:1.4;font-weight:600;max-width:70ch}
+.rfipre{margin:0;white-space:pre-wrap;background:#fff;border:1.5px solid var(--ink);padding:12px;font-size:13px}
+.stamp.v-addenda{color:var(--add)}
+body.present .ansv{font-size:72px}body.present .addqa blockquote{font-size:28px}body.present .anstext{font-size:22px}
+
+/* ===== present-mode opening slides (assets/story.js) ===== */
+.slideHost{display:none}
+body.slideOn .slideHost{display:block;position:fixed;left:0;right:0;top:52px;bottom:58px;z-index:30;overflow:hidden;background:var(--mat);color:#eef3f0;
+  background-image:linear-gradient(var(--mat-line) 1px,transparent 1px),linear-gradient(90deg,var(--mat-line) 1px,transparent 1px);background-size:36px 36px}
+body.slideOn main,body.slideOn .ask,body.slideOn .strip{visibility:hidden}
+.slide{height:100%;display:flex;flex-direction:column;gap:14px;padding:28px 40px 20px;animation:fadein .4s ease-out}
+.sl-t{margin:0;font-size:60px;line-height:1.02;font-weight:800;font-stretch:84%;letter-spacing:-.01em}
+.sl-k{margin:0;font-size:24px;color:#c9d6cf;max-width:60ch}
+.counter{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+.counter b{font-size:72px;line-height:1;font-weight:800;color:var(--amber);font-variant-numeric:tabular-nums}
+.counter span{font-size:24px}
+.counter .dates{flex-basis:100%;font-size:16px;color:#b9c8c0}
+.wkey2{display:flex;gap:22px;font-size:17px;flex-basis:100%}
+.wkey2 .k{display:flex;align-items:center;gap:8px}.wkey2 i{width:22px;height:14px;border:3px solid}
+.wkey2 .sup i{border-color:var(--rem);background:rgba(0,0,0,.4)}.wkey2 .new i{border-color:#6ea8ff}
+.wall{flex:1;min-height:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));grid-auto-rows:min-content;gap:8px;align-content:start;overflow:hidden}
+.wall.changed{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}
+.wt{margin:0;position:relative;background:#fff;line-height:0;border:2px solid transparent;animation:fadein .5s ease-out both;animation-delay:calc(var(--i)*18ms)}
+.wt img{width:100%;aspect-ratio:3024/2160;object-fit:cover;display:block}
+.wt figcaption{position:absolute;left:0;bottom:0;padding:1px 4px;background:rgba(20,25,30,.8);color:#fff;font-size:11px;line-height:1.4}
+.wt.sup{border-color:var(--rem)}.wt.sup img{opacity:.35;filter:grayscale(1)}
+.wt.sup::after{content:"superseded";position:absolute;right:0;top:0;padding:1px 4px;background:var(--rem);color:#fff;font:700 10px/1.4 var(--sans)}
+.wt.new{border-color:#6ea8ff;box-shadow:0 0 0 2px #6ea8ff}
+.sdpair{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:center}
+.sd{margin:0;min-width:0}
+.sd figcaption{display:flex;gap:10px;align-items:baseline;margin-bottom:6px}.sd figcaption b{font-size:26px}.sd figcaption span{font:14px var(--mono);color:#b9c8c0}
+.sdz{position:relative;overflow:hidden;background:#fff;height:calc(100vh - 430px);max-width:100%;margin:0 auto}
+.sd figcaption{justify-content:center}
+.sdz img{position:absolute;max-width:none}
+.sd .dmark{opacity:0;transition:opacity .5s}
+.slide.lit .sd .dmark{opacity:1}
+.sdafter{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:baseline;margin:0;font-size:26px;font-weight:800;opacity:0;transition:opacity .5s .2s}
+.slide.lit .sdafter{opacity:1}
+.sdafter .was{color:#ffb070}.sdafter .now{color:#8dbbff}.sdafter .src{font-size:15px;font-weight:400;color:#b9c8c0}
+.bigline{display:flex;flex-direction:column;gap:18px;margin-top:12px}
+.bigline p{margin:0;font-size:40px;font-weight:700;font-stretch:88%;max-width:28ch;line-height:1.15}
+.bigline .num{font-size:64px;color:var(--amber)}
+.foot2{margin-top:auto;font-size:15px;color:#b9c8c0}
+.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:20px}
+.trust .st{display:flex;flex-direction:column;gap:8px;padding:20px;border-top:6px solid var(--amber);background:rgba(0,0,0,.18)}
+.trust b{font-size:84px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.trust span{font-size:24px}
+@media (max-width:700px){.sl-t{font-size:34px}.sl-k,.counter span{font-size:17px}.counter b{font-size:44px}.slide{padding:16px}.sdpair,.trust{grid-template-columns:1fr}.bigline p{font-size:26px}.bigline .num{font-size:36px}.trust b{font-size:48px}}
+
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 @keyframes litup{from{box-shadow:0 0 0 8px rgba(255,255,255,.35)}to{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
 #off3d{top:auto;bottom:10px}
@@ -524,6 +585,209 @@ body.present .rfiBtn{font-size:20px}
   .samples{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity}.samples .sl{display:none}.smp{flex:0 0 auto;scroll-snap-align:start}
   .lede .how{display:none}
 }
+/* =====================================================================================================
+   Premium skin: quiet neutral chrome, one ink-blue accent, hairlines, 8px grid. The drawing is the hero.
+   (Overrides the rules above; kept as one block so it can be tuned or merged in one place.)
+   ===================================================================================================== */
+:root,:root[data-theme="light"]{
+  --board:#FAFAF7;--board-2:#F3F2EE;--chrome:#ffffff;--line:rgba(27,27,25,.10);--line-2:rgba(27,27,25,.16);--mute:#6B6A64;--text:#1B1B19;--on-text:#ffffff;
+  --paper:#ffffff;--paper-2:#F3F2EE;--ink:#1B1B19;--ink-2:#4a4944;--grid:transparent;--badge:#8a5a00;
+  --accent:#1F5FD6;--blue:#1F5FD6;--add:#1F5FD6;--rem:#c2620a;--red:#b4362b;--red-on-dark:#b4362b;--green:#1d7a4f;--green-on-dark:#1d7a4f;--amber:#b7791f;--amber-ink:#7a4f0e;--grey:#6b7280;
+  --mat:#e9ebef;--mat-2:#dfe2e7;--mat-line:rgba(16,24,40,.05);--redline:#c7372b;--hl:#f2c94c;--paperw:#ffffff;
+  --sans:'Inter','IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--r:6px;
+}
+:root[data-theme="dark"]{--board:#111113;--board-2:#18181B;--chrome:#18181B;--line:rgba(255,255,255,.08);--line-2:rgba(255,255,255,.14);--mute:#8B8B93;--text:#EDEDEF;--on-text:#111113;
+  --mat:#141416;--mat-2:#1c1c20;--mat-line:rgba(255,255,255,.035);--red-on-dark:#e0675c;--green-on-dark:#4fb487;--blue:#5B8DEF;--accent:#5B8DEF}
+:focus-visible{outline:none;box-shadow:0 0 0 2px var(--board),0 0 0 4px var(--accent)!important}
+body{font:14px/1.5 var(--sans);background:var(--board);background-image:none;font-feature-settings:"tnum" 1;letter-spacing:0}
+.brand{font-size:15px;font-weight:600;font-stretch:normal;letter-spacing:-.005em}
+.brand i{width:10px;height:10px;border:2px solid var(--accent)}.brand i::after{background:var(--accent);height:16px;top:-5px;left:2px}
+.top{height:52px;padding:0 16px;gap:12px;border-bottom:1px solid var(--line)}
+.replay{border-radius:4px;border-color:var(--line-2);color:var(--mute);font-weight:500;font-size:12px}
+nav{background:transparent;padding:0;gap:4px}
+.tab{padding:6px 10px;border-radius:var(--r);font-weight:500;font-size:13px;color:var(--mute)}
+.tab:hover{background:var(--board-2);color:var(--text)}
+.tab.act{background:var(--board-2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.thm{border:1px solid var(--line);border-radius:var(--r);font-weight:500;font-size:13px;padding:5px 10px;color:var(--mute);background:var(--chrome)}
+.thm:hover{color:var(--text);border-color:var(--line-2)}
+.present-btn[aria-pressed="true"]{background:var(--text);color:var(--on-text);border-color:var(--text)}
+.present-btn kbd{border-color:var(--line-2);color:var(--mute);font-size:10px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* toolbar: the ask field */
+.ask{padding:12px 16px 0;max-width:none}
+.lede{display:none}
+.bar{max-width:none;gap:8px;position:relative}
+#claimIn{height:40px;padding:0 64px 0 14px;border:1px solid var(--line-2);border-radius:var(--r);font-size:14px;background:var(--chrome);box-shadow:0 1px 0 rgba(16,24,40,.03)}
+#claimIn:focus-visible{border-color:var(--accent);outline:3px solid rgba(47,91,211,.18);outline-offset:0}
+.askwrap{flex:1;min-width:0;position:relative;display:flex}.askwrap #claimIn{flex:1;width:100%}
+.kbdhint{position:absolute;right:10px;top:10px;pointer-events:none;font:500 11px var(--mono);color:var(--mute);border:1px solid var(--line-2);border-radius:4px;padding:1px 5px;background:var(--board)}
+.btn{height:40px;padding:0 16px;border-radius:var(--r);font-weight:600;font-size:14px;background:var(--text);color:var(--on-text)}
+.btn.ghost{border:1px solid var(--line-2);background:var(--chrome);color:var(--text);font-weight:500}
+#micBtn .dot{width:8px;height:8px}
+.samples{margin:8px 0 0;gap:6px;max-width:none}
+.samples .sl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:500}
+.smp{flex-direction:row;align-items:baseline;gap:6px;padding:4px 10px;border:1px solid var(--line);border-left:1px solid var(--line);border-radius:999px;background:var(--chrome);font-size:13px}
+.smp b{font-size:13px;font-weight:500;font-stretch:normal}.smp span{display:none}
+.smp.q{border-left-color:var(--line)}.smp:hover{border-color:var(--line-2);background:var(--board-2)}
+.status{border-left:2px solid var(--accent);border-radius:4px;max-width:none}
+.strip{padding:6px 16px;font-size:12px;background:var(--board);border-bottom:1px solid var(--line);gap:4px 24px}
+.strip .gl{font-weight:500;text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--mute)}
+.strip .cnt b{font-size:13px;font-weight:600}
+/* three panes */
+main{padding:12px 16px 32px}
+#cardsView{grid-template-columns:264px minmax(0,1fr);gap:16px}
+.ledger{gap:4px;top:8px}
+.lh{padding:0 4px 6px;font-size:12px}.lh b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-stretch:normal;color:var(--mute)}
+.row{gap:4px;padding:10px 12px;background:transparent;border:1px solid transparent;border-left:1px solid transparent;border-radius:var(--r);transition:background .15s ease-out}
+.row:hover{background:var(--board-2);border-color:transparent}
+.row.sel{background:var(--chrome);color:var(--text);border-color:var(--line);box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.row.v-conflict,.row.v-consistent{border-left-color:transparent}
+.row.sel.v-conflict,.row.sel.v-consistent{border-left-color:var(--line)}
+.vw{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;font-stretch:normal}
+.vw::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--grey)}
+.row.v-conflict .vw::before{background:var(--red)}.row.v-consistent .vw::before{background:var(--green)}
+.cbar{display:none}
+.claimTxt{font-size:13px;line-height:1.4}
+.chip{border:1px solid var(--line-2);border-radius:4px;font-weight:500;font-size:11px;padding:0 6px}
+.chip.amber{color:var(--amber-ink);border-color:rgba(183,121,31,.35);background:rgba(183,121,31,.08)}
+.paper{display:grid;grid-template-columns:minmax(0,1fr) 336px;column-gap:16px;align-items:start;background:transparent;border:0;box-shadow:none;padding:0;color:var(--text)}
+.paper>*{grid-column:1;min-width:0}
+.paper>.cols{display:contents}
+.paper>.cols>div:first-child{grid-column:1}
+.paper>.cols>.aside{grid-column:2;grid-row:1 / span 8;position:sticky;top:8px;display:flex;flex-direction:column;gap:12px}
+.paper>.foot{grid-column:1 / -1}
+/* verdict: one precise pill + headline */
+.shead{align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap}
+.stamp{transform:none;border:1px solid currentColor;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:none;font-stretch:normal;line-height:1.4;margin:0;display:inline-flex;gap:6px;align-items:baseline;background:color-mix(in srgb,currentColor 7%,transparent)}
+.stamp small{display:inline;font-size:12px;font-weight:500;letter-spacing:0}
+.stamp small::before{content:"· "}
+.dclaim{font-size:22px;line-height:1.25;font-weight:600;font-stretch:normal;letter-spacing:-.01em;max-width:60ch}
+.htext{flex:1 1 400px}
+.shead{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"pill act" "head act";gap:8px 16px;align-items:start}
+.shead .stamp{grid-area:pill;justify-self:start}.shead .htext{grid-area:head}.shead .hact{grid-area:act;align-self:center}
+.meta{margin-top:6px;font-size:12px}
+.meta .chip{color:var(--accent)}
+.rfiBtn{height:32px;padding:0 12px;border-radius:var(--r);font-size:13px;font-weight:600;background:var(--text);color:var(--on-text)}
+.rfiBtn.sub{background:var(--chrome);color:var(--text);border:1px solid var(--line-2)}
+.hact{padding-top:0}
+/* canvas */
+.stage{margin:0 0 12px}
+.mat{border-radius:8px;box-shadow:inset 0 0 0 1px var(--line);background-color:var(--mat);background-image:radial-gradient(var(--mat-line) 1px,transparent 1px);background-size:16px 16px;max-height:max(420px,calc(100vh - 250px))}
+.sheetimg{box-shadow:0 0 0 1px rgba(16,24,40,.12),0 12px 32px rgba(16,24,40,.10)}
+.hud.cap{border:1px solid var(--line);border-radius:var(--r);padding:4px 10px;gap:8px;font-size:12px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.hud.cap b{font-size:14px;font-weight:600;font-stretch:normal}
+.hud.ctl{background:var(--chrome);border:1px solid var(--line);border-radius:var(--r);padding:2px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.seg{color:var(--mute);font-weight:500;font-size:12px;padding:5px 10px;border-radius:4px}
+.seg:hover{background:var(--board-2);color:var(--text)}
+.seg.on{background:var(--text);color:var(--on-text)}
+.hud.roomchip{border:1px solid var(--line);border-left:3px solid var(--hl);border-radius:var(--r);padding:8px 12px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.roomchip b{font-size:12px;font-weight:600;font-stretch:normal;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.roomchip .tags{font-size:15px;font-weight:600}.roomchip .by{font-size:12px}
+.hud.legend2{background:var(--chrome);color:var(--text);border:1px solid var(--line);border-radius:var(--r);font-size:12px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.stage-load{color:var(--mute);font-size:13px}
+.wipe{background:var(--mat)}
+.wframe{box-shadow:0 0 0 1px var(--line-2),0 12px 32px rgba(16,24,40,.10);border-radius:4px}
+.wtag{border-radius:4px;font-size:12px}.wtag b{font-size:14px}
+.wkey{color:var(--text);font-size:13px}.wk .glyph{border-radius:4px;width:20px;height:20px}.wsrc{color:var(--mute)}
+.whandle .knob{width:36px;height:36px;left:-19px;font-size:13px;border:1px solid var(--line-2);box-shadow:0 2px 6px rgba(16,24,40,.15)}
+/* inspector */
+.seal{border:1px solid var(--line);border-radius:8px;background:var(--chrome);overflow:hidden}
+.sealh{border-bottom:1px solid var(--line);background:transparent;padding:10px 12px}
+.sealh .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;font-stretch:normal;color:var(--mute)}
+.hash{border:1px solid var(--line);border-radius:4px;font-size:12px;background:var(--board)}
+.sealrows li{grid-template-columns:28px 1fr;border-bottom:1px solid var(--line);font-size:13px}
+.sealrows .mk{border-right:0;font-size:12px}
+.sealrows .ok .mk{background:transparent;color:var(--green)}.sealrows .bad .mk{background:transparent;color:var(--red)}.sealrows .na .mk{background:transparent}
+.sealrows .tx{padding:8px 12px 8px 0}.sealrows .why{font-size:12px}
+.sealrows .arrow{background:rgba(47,91,211,.08);border-radius:3px}
+.unclear{border:1px solid rgba(180,54,43,.3);background:rgba(180,54,43,.05);border-radius:var(--r);font-weight:500;font-size:13px;color:var(--red)}
+.lbtn.wide{border-radius:var(--r);background:var(--chrome);color:var(--text);border:1px solid var(--line-2);font-weight:500;height:36px}
+.reason{border-left:2px solid var(--line-2);background:transparent;padding:4px 0 4px 12px;margin:0 0 12px;font-size:14px;color:var(--ink-2)}
+.legend{border-top:1px solid var(--line);margin:0}
+.legend li{border-bottom:1px solid var(--line);font-size:13px;padding:6px 2px}
+.ctx summary{font-size:12px;color:var(--mute);font-weight:500}
+.foot{border-top:1px solid var(--line);font-size:11px;color:var(--mute)}
+.blocked{border:1px solid rgba(183,121,31,.35);background:rgba(183,121,31,.06);border-radius:8px}
+.blocked .stamp2{transform:none;border:1px solid var(--red);border-radius:999px;font-size:12px;padding:3px 10px;letter-spacing:.02em}
+.blocked .stamp2 small{display:inline;margin-left:6px;font-size:12px}
+.blocked .bh{font-size:16px;font-weight:600;font-stretch:normal;color:var(--text)}.blocked .bh span{background:transparent;color:var(--amber-ink);padding:0;margin-right:8px}
+.blocked blockquote{font-style:normal;font-size:15px;border-left:2px solid var(--amber);color:var(--text)}
+.missbox{border:1px dashed var(--line-2);background:var(--board-2);border-radius:var(--r);font-size:13px}
+/* pipeline on the canvas */
+.pipe{background:var(--mat);color:var(--text);border-radius:8px;box-shadow:inset 0 0 0 1px var(--line);background-image:radial-gradient(var(--mat-line) 1px,transparent 1px);background-size:16px 16px}
+.pipe-q{font-size:20px;font-weight:600;font-stretch:normal}
+.pipe-mode{border:1px solid var(--line-2);border-radius:999px;font-size:12px;font-weight:500;padding:2px 10px}
+.pipe.recorded .pipe-mode{border-color:rgba(183,121,31,.4);color:var(--amber-ink);background:rgba(183,121,31,.07)}
+.pipe-clock{font-size:14px;color:var(--mute)}
+.pipe-note{color:var(--mute);font-size:13px}
+.col:not(:last-child)::after,.c-judges::before{background:var(--line-2)}
+.c-judges>ol{border-left-color:var(--line-2)}.c-judges>ol::before{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.pipe.judging .c-judges>ol{border-left-color:var(--accent)}
+.pn{background:var(--chrome);border:1px solid var(--line);border-radius:8px;min-height:72px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.pn-name{font-size:14px;font-weight:600;font-stretch:normal}.pn-sub{font-size:12px;color:var(--mute)}.pn-t{color:var(--mute)}
+.pn-dot{border-color:var(--line-2)}
+.pn.run{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,91,211,.12)}
+.pn.run .pn-dot{background:var(--accent);border-color:var(--accent)}
+.pn.done{background:var(--chrome);border-color:var(--line-2);color:var(--text)}
+.pn.done .pn-sub{color:var(--mute)}
+.pn.done{animation:none}
+.tk{border-bottom:1px solid var(--line);font-size:13px}
+.tk-m{background:var(--board-2);border-radius:4px}.tk.ok .tk-m{background:var(--green)}.tk.run .tk-m{background:var(--accent)}.tk.info{color:var(--mute)}
+.vslot{border:1px dashed var(--line-2);border-radius:8px}.vwait{color:var(--mute);font-size:13px}
+.vstamp{transform:none;animation:vin .22s ease-out;border:1px solid currentColor;border-radius:8px;background:var(--chrome);font-size:28px;font-weight:600;letter-spacing:-.01em;text-transform:none;font-stretch:normal;padding:12px 18px}
+.vstamp small{font-size:12px;color:var(--mute)}
+@keyframes vin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* answer cards */
+.ansval{border:1px solid var(--line);border-radius:8px;background:var(--chrome)}
+.ansv{font-size:36px;font-weight:600;font-stretch:normal;border:2px solid var(--green);border-radius:4px;background:rgba(29,122,79,.06)}
+.ansk{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.addqa{border-left:2px solid var(--accent);background:rgba(47,91,211,.05);border-radius:0 8px 8px 0}
+.addqa figcaption b{font-size:14px;font-stretch:normal}.addqa blockquote{font-size:17px;font-weight:500}
+/* digest restyle */
+.dgHead,.dgItem{background:var(--chrome);color:var(--text);border:1px solid var(--line);border-radius:8px;box-shadow:none}
+.dgItem{border-left-width:1px}.dgItem.open{box-shadow:0 1px 2px rgba(16,24,40,.06)}
+.dgHead h2{font-size:22px;font-weight:600;font-stretch:normal}
+.dgMeta{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}.dgMeta span{border-color:var(--line)}.dgMeta .k{border-color:var(--line);background:var(--board);font-weight:500}
+.dgGroup>h3{background:transparent;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:0 2px;font-stretch:normal}
+.dgSheet{border:1px solid var(--line-2);border-radius:4px;font-size:13px}
+.dgWhat{font-size:14px;font-weight:500}
+.digest-risk{border-left:2px solid var(--amber);background:rgba(183,121,31,.06);font-size:13px;border-radius:0 4px 4px 0}
+.trade-chip{border:1px solid var(--line-2);border-radius:4px;color:var(--ink-2);font-weight:500}
+/* 3D, focus card */
+#v3d{border:1px solid var(--line);border-radius:8px}
+.focus3d{border:1px solid var(--line);border-left:3px solid var(--grey);border-radius:var(--r);font-size:13px}.focus3d b{font-size:15px;font-stretch:normal}
+/* present mode keeps the skin; type scales up */
+.presentHud{background:var(--chrome);color:var(--text);border-top:1px solid var(--line);font-size:15px;padding:10px 24px}
+.ph-n{color:var(--mute);font-size:13px}.ph-l{font-size:16px;font-weight:600;font-stretch:normal}.ph-k{color:var(--accent);font-weight:600}
+.ph-x{border:1px solid var(--line-2);color:var(--text);border-radius:var(--r);font-size:13px}
+body.present .stamp{font-size:20px;padding:6px 16px;border-width:1px}
+body.present .stamp small{font-size:20px}
+body.present .dclaim{font-size:44px;line-height:1.1}
+body.present .shead .stamp{order:-1}
+body.present .vstamp{font-size:72px}
+body.present .pipe-q{font-size:34px}
+body.slideOn .slideHost{background:#13161b;background-image:none;color:#f2f4f7;bottom:49px}
+.sl-t{font-weight:600;font-stretch:normal;letter-spacing:-.02em;font-size:64px}
+.sl-k{color:#aab2bd;font-size:22px}
+.counter b{color:#8fb0ff;font-weight:600}
+.trust .st{border-top:2px solid #8fb0ff;border-radius:0 0 8px 8px;background:rgba(255,255,255,.04)}.trust b{font-weight:600}
+.bigline p{font-weight:500;font-stretch:normal}.bigline .num{color:#8fb0ff;font-weight:600}
+.wt{border-radius:3px;overflow:hidden}
+.sdafter{font-weight:600}
+.mat{perspective:1600px;perspective-origin:50% 30%}
+.tiltwrap{position:absolute;inset:0;transform-origin:50% 62%;transition:transform .9s cubic-bezier(.2,0,0,1),opacity .45s ease-out .35s}
+.host3d{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity .5s cubic-bezier(.2,0,0,1)}
+.host3d canvas{display:block;width:100%;height:100%}
+.stage.in3d .host3d{opacity:1;pointer-events:auto}
+.stage.in3d .tiltwrap{opacity:0}
+.stage.in3d .legend2{display:none}
+.host3d .flat3d{display:none}
+@media (max-width:1180px){.paper{grid-template-columns:minmax(0,1fr)}.paper>.cols>.aside{grid-column:1;grid-row:auto;position:static}}
+@media (max-width:900px){#cardsView{grid-template-columns:1fr}.kbdhint{display:none}}
+@media (max-width:700px){.shead{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.shead .htext{flex:none}.shead .hact{align-self:flex-start}
+  .tab{white-space:nowrap}.brand{font-size:0;gap:0}.brand i{margin-right:4px}.askwrap{flex:1 1 100%}.bar .btn{flex:1}
+  .tab{padding:6px 8px;font-size:12px}#thmBtn{display:none}.strip .grp{gap:2px 12px}}
+@media (max-width:700px){.dclaim{font-size:18px}.ask{padding:8px 12px 0}main{padding:8px 12px 24px}.top{padding:0 12px}.samples{flex-wrap:nowrap}#claimIn{padding-right:14px}}
 </style>
 </head>
 <body>
@@ -541,11 +805,11 @@ body.present .rfiBtn{font-size:20px}
 </header>
 <div id="strip" class="strip" aria-label="Scoreboard"></div>
 <section class="ask">
-  <div class="lede"><p>Check a question or statement against the current drawing set, after every addendum, before you send an RFI or price the work.</p>
+  <div class="lede"><p>Ask the current drawing set anything, after every addendum, before you send an RFI or price the work.</p>
   <span class="how">Each answer is boxed on the sheet, judged by two Gemini models and verified by code. Disagreement means unclear.</span></div>
   <div class="bar">
-    <input id="claimIn" type="text" maxlength="500" placeholder="Say or type a claim, e.g. All the water closets in Toilet 105A are type WC-2." aria-label="Say or type a claim">
-    <button id="goBtn" class="btn" type="button">Check claim</button>
+    <span class="askwrap"><input id="claimIn" type="text" maxlength="500" placeholder="Ask anything about the drawings, e.g. What is the sink height in Toddlers 102?" aria-label="Ask anything about the drawings" aria-keyshortcuts="Meta+K Control+K"><kbd class="kbdhint" aria-hidden="true">⌘K</kbd></span>
+    <button id="goBtn" class="btn" type="button">Ask</button>
     <button id="micBtn" class="btn ghost" type="button" title="Record a claim"><span class="dot" aria-hidden="true"></span><span id="micTxt">Mic</span></button>
     <button id="vidBtn" class="btn ghost" type="button" title="Check a site video">Video</button>
     <input id="vidIn" type="file" accept="video/mp4,video/quicktime" hidden aria-label="Site video file">
@@ -570,8 +834,9 @@ body.present .rfiBtn{font-size:20px}
 <script type="module">
 /* three.js is imported lazily by assets/view3d.js, so the cards still work offline or without WebGL. */
 import {createStage} from './assets/stage.js';
-import {createPipeline} from './assets/pipeline.js';
+import {createPipeline,stampWord} from './assets/pipeline.js';
 import {mount3D,FLOOR_SHEET} from './assets/view3d.js';
+import {sheetWall,spotDiff,rfiCost,askInstead,trust,sheetset} from './assets/story.js';
 
 /* All data reaches the DOM through textContent / attributes set by property. No HTML-string sinks anywhere. */
 const $=id=>document.getElementById(id);
@@ -585,7 +850,8 @@ if(Q.get('state'))document.documentElement.classList.add('still');   // screensh
 let cards=[],selId=null,heard=null,samples=[],cacheMode=null,stage=null,stageCard=null;
 const TRACE=document.getElementById('trace');
 const rfiState=new Map();   // card id -> {status:'pending'|'draft'|'blocked'|'na', ...}
-let metrics=null;
+let metrics=null,plan3dMounted=false;
+const focus3d=()=>{if(plan3dMounted&&window.Plan3D&&window.Plan3D.focus){try{window.Plan3D.focus(selId);}catch(e){}}};
 
 $('tabCards').onclick=()=>{location.hash=selId?`#card=${encodeURIComponent(selId)}`:'#cards';};
 $('tab3d').onclick=()=>{location.hash='#3d';};
@@ -706,7 +972,7 @@ function streamCheck(claim,o={}){
         timer=null;
         if(o.hold!=null&&applied>=o.hold)return;       // test hook: freeze mid-run for a screenshot
         if(q.length){const ev=q.shift();
-          if(ev.replay&&applied===0)pl.setRecorded('Replayed from the recorded ledger. No model calls, nothing re-run: the events below are the recorded run’s steps.');
+          if(ev.replay&&applied===0)pl.setRecorded('Replayed from the recorded ledger. No model calls, nothing re-run: the steps below are reconstructed from the recorded card.');
           pl.apply(ev);applied++;last=Date.now();timer=setTimeout(tick,gapFor(q[0]));return;}
         if(finished)finished();
       };
@@ -733,16 +999,36 @@ function addCards(list){
   cards=list.concat(cards.filter(c=>!ids.has(c.id)));
   if(list.length)selId=list[0].id;
   if(location.hash&&location.hash!=='#cards'&&location.hash!=='#3d')location.hash='#cards';
-  view3d.update();applyRoute();renderStrip();
+  view3d.update();focus3d();applyRoute();renderStrip();
+}
+/* Free text goes to /api/ask (claims, questions, RFI requests). It is one request with no step events, so the
+   pipeline nodes fill in from the finished card; the note says so. Falls back to the streamed claim check. */
+async function askCheck(text){
+  if(stage){stage.destroy();stage=null;stageCard=null;}
+  const d=$('detail');d.textContent='';
+  const pl=createPipeline(text,{recorded:false});
+  d.append(pl.node);
+  pl.setNote('Reading your question, finding the sheet and asking both judges. A question is one request, so the steps fill in when the answer returns.');
+  let r;
+  try{r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});}
+  catch(e){pl.fail('The server did not answer.');throw new Error('network error');}
+  if(r.status===404||r.status===405)return streamCheck(text);
+  let j=null;try{j=await r.json();}catch(e){}
+  if(!r.ok){const m=(j&&j.error)||('HTTP '+r.status);pl.fail('Ask failed: '+m);throw new Error(m);}
+  if(j.replayed)pl.setRecorded('Replayed from the recorded ledger. No model calls, nothing re-run.');
+  else if(cacheMode==='replay')pl.setRecorded('Model answers are replayed from recorded calls; everything else ran now.');
+  await pl.finish(j);
+  return j;
 }
 let running=false;
-async function runClaim(claim,o){
+async function runClaim(claim,o={}){
   running=true;
   $('goBtn').disabled=$('claimIn').disabled=true;
   document.querySelectorAll('.smp').forEach(b=>b.disabled=true);
   setStatus('');
   try{
-    const card=await streamCheck(claim,o);
+    await healthReady;      // so a replay-mode run is labelled "recorded" from its first frame
+    const card=o.ask?await askCheck(claim):await streamCheck(claim,o);
     $('claimIn').value='';
     addCards([card]);
     if(!P.on&&stage){const r=stage.node.getBoundingClientRect();if(r.top<0||r.bottom>innerHeight)stage.node.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
@@ -753,7 +1039,9 @@ async function runClaim(claim,o){
 function submitClaim(){
   const claim=$('claimIn').value.trim();
   if(!claim||running)return;
-  runClaim(claim);
+  /* a sample claim keeps the streamed check (live step events); anything typed is asked in plain English */
+  const smp=samples.find(s=>s.claim===claim&&s.kind==='claim');
+  runClaim(claim,smp?{}:{ask:true});
 }
 $('goBtn').onclick=submitClaim;
 function renderSamples(list){
@@ -772,10 +1060,13 @@ function renderSamples(list){
 const samplesReady=fetch('/api/samples').then(r=>r.ok?r.json():[]).then(renderSamples).catch(()=>{});
 const typing=()=>{const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable);};
 document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();if(P.on)presentStop();$('claimIn').focus();$('claimIn').select();return;}
   if(document.querySelector('.modalBg')||e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.key==='/'&&!typing()){e.preventDefault();$('claimIn').focus();return;}
   if((e.key==='p'||e.key==='P')&&!typing()){e.preventDefault();P.on?presentStop():presentStart();return;}
-  if(!P.on)return;
+  if(!P.on||typing())return;
+  const tg=e.target&&e.target.closest?e.target.closest('button,[role=button],a,summary'):null;
+  if(tg&&(e.key==='Enter'||e.key===' '))return;      // let focused controls (Exit, segments, RFI) do their own thing
   if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'||e.key==='Enter'){if(e.target&&e.target.getAttribute&&e.target.getAttribute('role')==='slider'&&e.key!==' ')return;e.preventDefault();presentNext();}
   else if(e.key==='ArrowLeft'||e.key==='PageUp'){if(e.target&&e.target.getAttribute&&e.target.getAttribute('role')==='slider')return;e.preventDefault();presentPrev();}
   else if(e.key==='Escape'){e.preventDefault();presentStop();}
@@ -887,7 +1178,12 @@ function applyRoute(){
   if(isDg){if(stage){stage.destroy();stage=null;stageCard=null;}loadDigest();}
   else if(is3d){
     if(stage){stage.destroy();stage=null;stageCard=null;}
-    view3d.start().then(()=>{view3d.update();view3d.resize();});
+    /* a standalone 3D module (assets/plan3d.js) wins when it is present; otherwise the built-in view */
+    if(window.Plan3D&&typeof window.Plan3D.mount==='function'){
+      try{if(!plan3dMounted){window.Plan3D.mount($('c3d'),{sheet:FLOOR_SHEET,cards,activeCardId:selId});plan3dMounted=true;}
+        else if(window.Plan3D.focus)window.Plan3D.focus(selId);}
+      catch(e){plan3dMounted=false;view3d.start().then(()=>{view3d.update();view3d.resize();});}
+    }else view3d.start().then(()=>{view3d.update();view3d.resize();});
   }else{
     renderLedger();
     renderDetail(true);
@@ -1120,6 +1416,45 @@ function paintRfi(c){
   }
 }
 
+/* answer cards: the value read off the sheet (only words grounding accepted inside a current box), and any
+   addenda Q&A answer (a quote verified as an exact substring of the addendum response), shown first and large */
+function answerBlock(c){
+  const a=c.answer,q=c.addenda_answer,rd=c.mode==='rfi'?c.rfi_draft:null;
+  if(!(a&&a.value)&&!(q&&q.quote)&&!(rd&&rd.text)&&!c.summary)return null;
+  const box=el('section','answer');box.setAttribute('aria-label','Answer');
+  if(a&&a.value){
+    const v=el('div','ansval');
+    v.append(el('span','ansk','The current sheet says'),el('b','ansv',a.value));
+    const ev=curEv(c)[0];
+    if(ev)v.append(el('span','anssrc','Boxed on '+(ev.sheet_number||ev.sheet)+', '+revLabel(ev.revision)+'. Only words that sit inside the box count.'));
+    box.append(v);
+    if(a.text)box.append(el('p','anstext',a.text));
+  }
+  if(q&&q.quote){
+    const qa=el('figure','addqa');
+    const cap=el('figcaption');cap.append(el('b',null,q.answered_by||'Addendum'),el('span',null,q.page!=null?'Q&A, page '+q.page:'Addendum Q&A'));
+    qa.append(cap,el('blockquote',null,'“'+q.quote+'”'),el('span','anssrc','Quoted word for word from the addendum; checked by code as an exact match.'));
+    box.append(qa);
+  }else if(c.summary)box.append(el('p','anstext',c.summary));
+  if(rd&&rd.text){box.append(el('pre','rfipre mono',rd.text),el('span','anssrc','Draft only. Nothing is sent.'));}
+  return box;
+}
+
+/* stage 4 of the canvas sequence: the 3D plan inside the stage. The standalone Plan3D module wins when loaded;
+   otherwise the built-in three.js view (rooms from rooms.py). null = no WebGL, the stage stays flat. */
+async function mountStage3d(host,card){
+  const ev=curEv(card)[0]||(card.evidence||[])[0]||{};
+  if(window.Plan3D&&typeof window.Plan3D.mount==='function'){
+    window.Plan3D.mount(host,{sheet:ev.sheet||FLOOR_SHEET,cards,activeCardId:card.id});
+    return {focus:id=>window.Plan3D.focus&&window.Plan3D.focus(id),destroy(){}};
+  }
+  const v=mount3D({container:host,tip:$('tip3d'),off:el('div'),focus:el('div'),getCards:()=>cards,getSelId:()=>card.id,
+    onPick:id=>{selId=id;location.hash='#card='+encodeURIComponent(id);}});
+  await v.start();
+  if(v.failed)return null;
+  return {focus(){v.update();},destroy(){}};
+}
+
 function renderDetail(animate){
   const d=$('detail');
   const c=cards.find(x=>x.id===selId)||cards[0];
@@ -1139,7 +1474,7 @@ function renderDetail(animate){
   lastDetailId=c.id;
 
   const head=el('div','shead');
-  const st=el('div','stamp '+vCls(c.verdict));st.append(vWord(c.verdict));
+  const st=el('div','stamp '+(c.mode==='answer'&&!c.answer&&c.addenda_answer?'v-addenda':vCls(c.verdict)));st.append(stampWord(c));
   st.append(el('small',null,Math.round((Number(c.confidence)||0)*100)+'% confidence'));
   const ht=el('div','htext');
   ht.append(el('h2','dclaim',c.claim||''));
@@ -1153,6 +1488,7 @@ function renderDetail(animate){
   head.append(st,ht,act);paper.append(head);
   const blk=el('div','blkslot');paper.append(blk);
   paintRfi.act=act;paintRfi.blk=blk;
+  const ans=answerBlock(c);if(ans)paper.append(ans);
 
   if(c.replay_miss){
     const mb=el('div','missbox');mb.setAttribute('role','note');
@@ -1161,7 +1497,7 @@ function renderDetail(animate){
   }
 
   /* the hero: the sheet, the camera move, the boxes, the room, the cloud, the wipe */
-  stage=createStage(c);stageCard=c.id;
+  stage=createStage(c,{on3d:mountStage3d,can3d:ev=>!!window.Plan3D||ev.sheet===FLOOR_SHEET});stageCard=c.id;
   paper.append(stage.node);
 
   const cols=el('div','cols');
@@ -1213,7 +1549,7 @@ function renderDetail(animate){
   if(c.verdict==='unclear')aside.append(el('div','unclear','Unclear because: '+(bad.length?bad.map(b=>(b.w||b.t)).join(' '):(c.reason||'the evidence does not settle the claim.'))));
   if((c.evidence||[]).some(e=>e.sheet===FLOOR_SHEET)){
     const vb=el('button','lbtn wide','See it in 3D');vb.type='button';
-    vb.onclick=()=>{location.hash='#3d';};
+    vb.onclick=()=>{if(stage&&stage.can3d){stage.tilt();stage.node.scrollIntoView({block:'nearest'});}else location.hash='#3d';};
     aside.append(vb);
   }
   cols.append(left,aside);paper.append(cols);
@@ -1225,7 +1561,7 @@ function renderDetail(animate){
   if((c.verdict==='conflict'||c.verdict==='unclear')&&!rfiState.get(c.id))fetchRfi(c);   // pre-check the addenda Q&A
   const s=Q.get('state');
   if(s==='zoom0')return;
-  if(s==='landed'||s==='wipe'||s==='whole'){stage.play({instant:true}).then(()=>{if(s==='wipe')stage.wipe(false,Number(Q.get('wipe')??35));if(s==='whole')stage.whole&&stage.whole();});return;}
+  if(s==='landed'||s==='wipe'||s==='whole'||s==='3d'){stage.play({instant:true}).then(()=>{if(s==='wipe')stage.wipe(false,Number(Q.get('wipe')??35));if(s==='whole')stage.whole&&stage.whole();if(s==='3d')stage.tilt();});return;}
   stage.play({instant:!(animate&&fresh)});
 }
 
@@ -1235,58 +1571,81 @@ const view3d=mount3D({container:$('c3d'),tip:$('tip3d'),off:$('off3d'),focus:$('
 window.addEventListener('resize',()=>{if($('v3d').style.display!=='none')view3d.resize();});
 window.addEventListener('hashchange',applyRoute);
 
-/* ---------- present mode: the scripted demo, stepped with → / space, out with Esc ---------- */
-const P={on:false,i:0,beat:0,busy:false};
+/* ---------- present mode: problem opening, then the product on recorded samples; → / space, ←, Esc ---------- */
+const P={on:false,k:0,beat:0,busy:false,steps:[],gen:0};
+function presentSteps(){
+  const hero=samples.find(s=>s.card_id&&/105A/.test(s.claim))||samples[0];
+  return [{k:'wall1',l:'The drawing set'},{k:'wall2',l:'Addenda'},{k:'spot',l:'Spot the difference',id:hero&&hero.card_id},
+    {k:'rfi',l:'RFIs'},{k:'ask',l:'Ask instead'},
+    ...samples.map(s=>({k:'sample',s,l:s.label})),{k:'digest',l:'Addendum digest'},{k:'trust',l:'Trust'}];
+}
+function slideHost(){let h=$('slideHost');if(!h){h=el('div','slideHost');h.id='slideHost';h.setAttribute('aria-live','polite');document.body.append(h);}return h;}
 function presentHud(){
   let h=$('presentHud');
   if(!h){h=el('div','presentHud');h.id='presentHud';h.setAttribute('role','status');document.body.append(h);}
   h.textContent='';
-  const s=samples[P.i];
-  h.append(el('span','ph-n mono',`${P.i+1} of ${samples.length}`),el('b','ph-l',s?s.label:''),
-    el('span','ph-k',P.busy?'checking…':(P.beat===0&&stage&&stage.hasWipe?'→ before / after':P.i<samples.length-1?'→ next claim':'→ finish')));
+  const st=P.steps[P.k]||{};
+  const nxt=P.steps[P.k+1];
+  const hint=P.busy?'checking…':st.k==='sample'&&P.beat===0&&stage&&stage.hasWipe?'→ before / after':st.k==='sample'&&P.beat<2&&stage&&stage.can3d?'→ 3D':nxt?'→ '+nxt.l:'→ finish';
+  h.append(el('span','ph-n mono',`${P.k+1} of ${P.steps.length}`),el('b','ph-l',st.l||''),el('span','ph-k',hint));
   const x=el('button','ph-x','Exit');x.type='button';x.onclick=presentStop;h.append(x);
 }
 async function presentStart(){
   await samplesReady;
-  if(!samples.length){setStatus('Present mode needs the sample claims, and none loaded.',true);return;}
-  P.on=true;P.i=0;P.beat=0;
+  P.steps=presentSteps();P.on=true;P.beat=0;
+  P.k=Math.max(0,Math.min(P.steps.length-1,Number(Q.get('step'))||0));   // ?step= test hook
   document.body.classList.add('present');
   $('presentBtn').setAttribute('aria-pressed','true');
-  if(location.hash==='#3d')location.hash='#cards';
-  presentRun();
+  sheetset();   // warm the index; the thumbnails start loading with the first slide
+  presentGo();
 }
 function presentStop(){
-  P.on=false;document.body.classList.remove('present');
+  P.on=false;P.gen++;document.body.classList.remove('present','slideOn');
   $('presentBtn').setAttribute('aria-pressed','false');
-  const h=$('presentHud');if(h)h.remove();
+  for(const id of ['presentHud','slideHost']){const n=$(id);if(n)n.remove();}
+  if(location.hash==='#digest')location.hash='#cards';
   if(stage)window.dispatchEvent(new Event('resize'));
 }
-async function presentRun(){
-  const s=samples[P.i];if(!s)return;
-  P.busy=true;P.beat=0;presentHud();
-  window.scrollTo({top:0});
-  await runClaim(s.claim);
+async function presentGo(){
+  const st=P.steps[P.k];if(!st)return;
+  const gen=++P.gen;P.beat=0;
+  const host=slideHost();
+  const scene={wall1:()=>sheetWall(1),wall2:()=>sheetWall(2),spot:()=>spotDiff(st.id,'Order three WC-2 toilets from the old sheet and two get ripped out.'),
+    rfi:()=>rfiCost(),ask:()=>askInstead(),trust:()=>trust()}[st.k];
+  if(scene){
+    document.body.classList.add('slideOn');
+    presentHud();
+    const node=await scene();
+    if(gen!==P.gen)return;
+    host.textContent='';host.append(node);
+    return;
+  }
+  document.body.classList.remove('slideOn');host.textContent='';
+  if(st.k==='digest'){location.hash='#digest';presentHud();return;}
+  if(location.hash==='#digest'||location.hash==='#3d')location.hash='#cards';
+  const prev=cards.find(c=>(c.claim||'').trim().toLowerCase()===st.s.claim.trim().toLowerCase());
+  if(prev&&st.seen){selId=prev.id;stageCard=null;lastDetailId=null;location.hash='#card='+encodeURIComponent(prev.id);applyRoute();presentHud();return;}
+  P.busy=true;presentHud();window.scrollTo({top:0});
+  await runClaim(st.s.claim);
+  st.seen=true;
+  if(gen!==P.gen)return;
   P.busy=false;presentHud();
 }
-function presentShow(i){
-  const s=samples[i];if(!s)return;
-  const c=cards.find(k=>(k.claim||'').trim().toLowerCase()===s.claim.trim().toLowerCase());
-  if(!c){presentRun();return;}
-  P.beat=0;selId=c.id;stageCard=null;lastDetailId=null;
-  location.hash='#card='+encodeURIComponent(c.id);
-  presentHud();
-}
 function presentNext(){
-  if(P.busy)return;
-  if(P.beat===0&&stage&&stage.hasWipe){P.beat=1;stage.wipe(true);presentHud();return;}
-  if(P.i>=samples.length-1){presentStop();return;}
-  P.i++;presentRun();
+  if(P.busy||running)return;
+  const st=P.steps[P.k];
+  if(st&&st.k==='sample'&&P.beat===0&&stage&&stage.hasWipe){P.beat=1;stage.wipe(true);presentHud();return;}
+  if(st&&st.k==='sample'&&P.beat<2&&stage&&stage.can3d){P.beat=2;stage.tilt();presentHud();return;}
+  if(P.k>=P.steps.length-1){presentStop();return;}
+  P.k++;presentGo();
 }
 function presentPrev(){
-  if(P.busy)return;
-  if(P.beat===1&&stage){P.beat=0;stage.sheet();presentHud();return;}
-  if(P.i===0)return;
-  P.i--;presentShow(P.i);
+  if(P.busy||running)return;
+  const st=P.steps[P.k];
+  if(st&&st.k==='sample'&&P.beat===2&&stage&&stage.hasWipe){P.beat=1;stage.wipe(false,50);presentHud();return;}
+  if(st&&st.k==='sample'&&P.beat>=1&&stage){P.beat=0;stage.sheet();presentHud();return;}
+  if(P.k===0)return;
+  P.k--;presentGo();
 }
 $('presentBtn').onclick=()=>P.on?presentStop():presentStart();
 

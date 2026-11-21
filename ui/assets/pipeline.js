@@ -5,6 +5,9 @@ const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.classN
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const modelName = m => { const n = String(m || '').replace(/^gemini-\d+-/, ''); return n ? n[0].toUpperCase() + n.slice(1) : ''; };
 const vWord = v => v === 'conflict' ? 'Conflict' : v === 'consistent' ? 'Consistent' : 'Unclear';
+/* answer cards (mode "answer") say whether the question was answered, not conflict/consistent */
+export const stampWord = c => c && c.mode === 'answer' ? (c.answer ? 'Answered' : c.addenda_answer ? 'In the addenda' : 'Unclear')
+  : c && c.mode === 'rfi' ? 'RFI drafted' : vWord(c && c.verdict);
 const vCls = v => v === 'conflict' ? 'v-conflict' : v === 'consistent' ? 'v-consistent' : 'v-other';
 
 const CODE_LABEL = {
@@ -75,7 +78,7 @@ export function createPipeline(claim, opts = {}) {
     if (ev.step === 'grounding' || ev.step === 'revision') {
       setState({ li: checksHead }, ev.status === 'start' ? 'run' : 'run');
       const label = ev.step === 'grounding' ? 'Boxes land on PDF words' : 'Sheet is the current issue';
-      addTick(ev.step === 'grounding' ? 'grounding' : 'currency', label, ev.status === 'start' ? 'run' : ev.ok === false ? 'bad' : 'ok');
+      addTick(ev.step === 'grounding' ? 'grounding' : 'currency', label, ev.status === 'start' ? 'run' : ev.ok === false ? 'bad' : ev.ok === true ? 'ok' : 'info');
       return;
     }
     if (ev.step === 'sealed') { if (ev.seal) checksHead.querySelector('.pn-sub').textContent = 'sealed ' + ev.seal; return; }
@@ -119,7 +122,7 @@ export function createPipeline(claim, opts = {}) {
         setState({ li: checksHead }, code.some(k => !k.info && k.pass === false) ? 'bad' : 'done');
         vbox.textContent = '';
         const st = el('div', 'vstamp ' + vCls(card.verdict));
-        st.append(el('span', null, vWord(card.verdict)), el('small', null, Math.round((Number(card.confidence) || 0) * 100) + '% confidence'));
+        st.append(el('span', null, stampWord(card)),el('small', null, Math.round((Number(card.confidence) || 0) * 100) + '% confidence'));
         vbox.append(st);
         root.classList.add('done');
         setTimeout(res, reduced() ? 200 : 900);
@@ -133,6 +136,7 @@ export function createPipeline(claim, opts = {}) {
     vbox.append(el('div', 'vfail', msg));
     for (const n of Object.values(nodes)) if (n.li.classList.contains('run')) setState(n, 'bad');
   }
+  function setNote(text) { note.textContent = text; }
   function setRecorded(text) { opts.recorded = true; mode.textContent = 'Recorded run'; root.classList.add('recorded'); note.textContent = text; }
-  return { node: root, apply, finish, fail, setRecorded };
+  return { node: root, apply, finish, fail, setRecorded, setNote };
 }

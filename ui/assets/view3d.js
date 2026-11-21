@@ -31,7 +31,7 @@ export function mount3D(o) {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       container.append(renderer.domElement);
       scene = new T.Scene();
-      scene.background = new T.Color(0x22302b);
+      scene.background = new T.Color(0xe9ebef);
       camera = new T.PerspectiveCamera(42, 1, 1, 3000);
       camera.position.set(0, 230, 190);
       controls = new OrbitControls(camera, renderer.domElement);
@@ -98,7 +98,7 @@ export function mount3D(o) {
   }
 
   function update() {
-    if (!started) return;
+    if (!started || (!failed && !scene)) return;      // start() calls update() again once three.js is ready
     const cards = getCards(), sel = cards.find(c => c.id === getSelId()) || null;
     const room = activeRoom(sel);
     const offList = [];
