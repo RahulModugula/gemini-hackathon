@@ -212,10 +212,14 @@
       scene.add(m);
       return m;
     }
-    var texs = [tex(data.texture_url).then(function (t) { self.sheetMesh = plane(W, D, t, 0, 0, 0); })];
+    var texs = [tex(data.texture_url).then(function (t) {
+      if (self.dead) { t.dispose(); return; }        // unmounted while loading
+      self.sheetMesh = plane(W, D, t, 0, 0, 0);
+    })];
     if (data.detail) {
       var dr = data.detail.rect_pt;
       texs.push(tex(data.detail.url).then(function (t) {
+        if (self.dead) { t.dispose(); return; }
         plane((dr[2] - dr[0]) * self.k, (dr[3] - dr[1]) * self.k, t, self.wx((dr[0] + dr[2]) / 2), self.wz((dr[1] + dr[3]) / 2), 0.004);
       }));
     }

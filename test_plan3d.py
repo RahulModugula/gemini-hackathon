@@ -135,3 +135,24 @@ def test_demo_page_served(env):
     c, _ = env
     r = c.get("/plan3d.html")
     assert r.status_code == 200 and "/assets/plan3d.js" in r.text
+
+
+def test_concurrent_cold_requests_all_succeed(env, monkeypatch):
+    """Several first requests at once (empty build/plan3d/): each gets the data, none a spurious 404. The extractions
+    are held at a barrier so they overlap (a per-sheet lock lets the barrier time out and the rest hit the cache)."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+    c, _ = env
+    gate, real = threading.Barrier(4, timeout=2), plan3d.extract
+
+    def slow(*a, **k):
+        d = real(*a, **k)
+        try:
+            gate.wait()
+        except threading.BrokenBarrierError:
+            pass
+        return d
+    monkeypatch.setattr(plan3d, "extract", slow)
+    with ThreadPoolExecutor(4) as ex:
+        codes = list(ex.map(lambda _: c.get(f"/api/plan3d/{SHEET}").status_code, range(4)))
+    assert codes == [200] * 4

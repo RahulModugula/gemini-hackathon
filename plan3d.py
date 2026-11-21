@@ -10,8 +10,10 @@ consistent factor). Doors: none are drawn as swings on the plumbing plans, so op
 leaves in the walls (no door objects are invented)."""
 import json
 import math
+import os
 import re
 import sys
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -192,14 +194,14 @@ def extract(sheet, build=None):
     words = json.loads((build / "words" / f"{sheet}.json").read_text())["words"]
     out_dir = build / "plan3d"
     out_dir.mkdir(parents=True, exist_ok=True)
-    with pdflock.LOCK:
-        page = pymupdf.open(rooms._pdf(rel))[s["page"] - 1]
+    with pdflock.LOCK, pymupdf.open(rooms._pdf(rel)) as doc:
+        page = doc[s["page"] - 1]
         W, H = float(page.rect.width), float(page.rect.height)
         if page.rotation % 180:
             W, H = H, W
         wall, n = rooms.wall_mask(page)
         z = TEX_PX / max(W, H)
-        page.get_pixmap(matrix=pymupdf.Matrix(z, z), alpha=False).save(str(out_dir / f"{sheet}.png"))
+        _atomic(out_dir / f"{sheet}.png", lambda t: page.get_pixmap(matrix=pymupdf.Matrix(z, z), alpha=False).save(t))
     walls, bounds, detail = [], None, None
     if n:
         solid = rooms._close(wall, WALL_CLOSE) | wall
@@ -210,10 +212,10 @@ def extract(sheet, build=None):
         pad = 40
         rect = [max(0, x0 - pad), max(0, y0 - pad), min(W, x1 + pad), min(H, y1 + pad)]
         dz = DETAIL_PX / max(rect[2] - rect[0], rect[3] - rect[1])
-        with pdflock.LOCK:
-            page = pymupdf.open(rooms._pdf(rel))[s["page"] - 1]
-            page.get_pixmap(matrix=pymupdf.Matrix(dz, dz), clip=pymupdf.Rect(*rect), alpha=False).save(
-                str(out_dir / f"{sheet}.detail.png"))
+        with pdflock.LOCK, pymupdf.open(rooms._pdf(rel)) as doc:
+            page = doc[s["page"] - 1]
+            _atomic(out_dir / f"{sheet}.detail.png", lambda t: page.get_pixmap(
+                matrix=pymupdf.Matrix(dz, dz), clip=pymupdf.Rect(*rect), alpha=False).save(t))
         detail = {"url": f"/api/plan3d/{sheet}/detail.png", "rect_pt": rect}
     geo = rooms.sheet_rooms(sheet, build)
     rms = [{"number": r.number, "name": r.name, "polygon_pt": _ring_of(r), "bbox_pt": r.bbox,
@@ -227,25 +229,53 @@ def extract(sheet, build=None):
                 WALL_CLOSE, SIMPLIFY)}
 
 
-def get(sheet, build=None, use_cache=True):
-    """Cached plan data (build/plan3d/<sheet>.json). Raises UnknownSheet for ids not in the index."""
-    build = Path(build) if build else BUILD
-    sheet_entry(sheet, build)
+def _atomic(path, write):
+    """write(tmp_path_str) to a unique temp file next to `path`, then os.replace: readers never see a partial file
+    and concurrent writers never collide on the temp name."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{threading.get_ident()}.part{path.suffix}")
+    try:
+        write(str(tmp))
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+_locks_guard = threading.Lock()
+_locks = {}
+
+
+def _sheet_lock(key):
+    with _locks_guard:
+        return _locks.setdefault(key, threading.Lock())
+
+
+def _cached(build, sheet):
     cache = build / "plan3d" / f"{sheet}.json"
-    if use_cache and cache.exists() and (build / "plan3d" / f"{sheet}.png").exists():
+    if cache.exists() and (build / "plan3d" / f"{sheet}.png").exists():
         try:
             d = json.loads(cache.read_text())
             if d.get("v") == VERSION:
                 return d
         except ValueError:
             pass
-    d = extract(sheet, build)
-    cache.parent.mkdir(parents=True, exist_ok=True)
-    tmp = cache.with_suffix(".json.part")
-    tmp.write_text(json.dumps(d, separators=(",", ":")))
-    tmp.replace(cache)
-    return d
+    return None
 
+
+def get(sheet, build=None, use_cache=True):
+    """Cached plan data (build/plan3d/<sheet>.json). Raises UnknownSheet for ids not in the index. One extraction
+    per sheet at a time: concurrent cold requests wait for it and then read the cache."""
+    build = Path(build) if build else BUILD
+    sheet_entry(sheet, build)
+    if use_cache and (d := _cached(build, sheet)) is not None:
+        return d
+    with _sheet_lock((str(build.resolve()), sheet)):
+        if use_cache and (d := _cached(build, sheet)) is not None:
+            return d
+        d = extract(sheet, build)
+        cache = build / "plan3d" / f"{sheet}.json"
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        _atomic(cache, lambda t: Path(t).write_text(json.dumps(d, separators=(",", ":"))))
+        return d
 
 
 def texture_path(sheet, kind, build=None):
