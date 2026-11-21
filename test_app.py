@@ -97,6 +97,17 @@ def test_audio(env, monkeypatch):
     assert len((tmp / "cards.jsonl").read_text().splitlines()) == 2
 
 
+@pytest.mark.parametrize("sent,passed", [("audio/mp4", "audio/mp4"), ("audio/x-m4a", "audio/m4a"),
+                                         ("audio/aac", "audio/aac"), ("audio/mpeg", "audio/mpeg")])
+def test_audio_safari_and_compressed_types_accepted(env, monkeypatch, sent, passed):
+    """Safari's MediaRecorder sends audio/mp4; it used to get a 415."""
+    c, _, _ = env
+    seen = {}
+    monkeypatch.setattr(appmod.audio_claims, "extract_claims", lambda d, m: seen.update(mime=m) or [])
+    r = c.post("/api/audio", content=b"abc", headers={"Content-Type": sent})
+    assert r.status_code == 200 and seen["mime"] == passed
+
+
 def test_audio_webm_codec_param_and_limits(env, monkeypatch):
     c, _, _ = env
     monkeypatch.setattr(appmod.audio_claims, "extract_claims", lambda d, m: [])

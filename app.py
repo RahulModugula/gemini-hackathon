@@ -27,7 +27,10 @@ BUILD = HERE / "build"          # tests monkeypatch
 UI = HERE / "ui"
 MAX_CLAIM = 500
 MAX_AUDIO = 10 * 1024 * 1024
-AUDIO_MIMES = {"audio/wav", "audio/x-wav", "audio/webm", "audio/ogg"}
+# Safari's MediaRecorder produces audio/mp4 (AAC); Chrome/Firefox produce webm/ogg. Gemini accepts all of these.
+AUDIO_MIMES = {"audio/wav", "audio/x-wav", "audio/wave", "audio/webm", "audio/ogg",
+               "audio/mp4", "audio/m4a", "audio/x-m4a", "audio/aac", "audio/mpeg", "audio/mp3"}
+AUDIO_MIME_ALIASES = {"audio/x-m4a": "audio/m4a", "audio/mp3": "audio/mpeg", "audio/wave": "audio/wav"}
 AUDIO_CONCURRENCY = 3
 
 app = FastAPI(title="Drawing Claim Checker")
@@ -144,7 +147,8 @@ async def api_cards():
 async def api_audio(request: Request):
     mime = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
     if mime not in AUDIO_MIMES:
-        return _bad("Content-Type must be audio/wav, audio/webm or audio/ogg", 415)
+        return _bad("Unsupported audio type: use wav, webm, ogg, mp4/m4a, aac or mp3", 415)
+    mime = AUDIO_MIME_ALIASES.get(mime, mime)
     try:
         if int(request.headers.get("content-length") or 0) > MAX_AUDIO:
             return _bad("audio larger than 10 MB", 413)
