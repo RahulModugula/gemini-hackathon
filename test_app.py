@@ -150,7 +150,7 @@ def test_health(env, monkeypatch):
 
 def test_static(env):
     c, tmp, _ = env
-    assert "Drawing Claim Checker" in c.get("/").text
+    assert "SheetSight" in c.get("/").text
     assert c.get("/assets/p101_current.png").status_code == 200
     fx = next((HERE / "ui" / "crops").iterdir()).name
     assert c.get(f"/crops/{fx}").status_code == 200           # ui fixture crop

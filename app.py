@@ -46,7 +46,7 @@ MAX_VIDEO = 50 * 1024 * 1024
 VIDEO_MIMES = {"video/mp4", "video/quicktime"}
 VIDEO_CONCURRENCY = 3
 
-app = FastAPI(title="Drawing Claim Checker")
+app = FastAPI(title="SheetSight")
 # JSON and the UI page compress well; Starlette already skips text/event-stream (SSE stays unbuffered) and images/video.
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 _lock = threading.Lock()

@@ -1,4 +1,6 @@
-# Drawing Claim Checker
+# SheetSight
+
+*See what changed on the drawings, before you build or send the RFI.*
 
 **Ask the current drawings anything. Get the answer boxed on the actual sheet, verified by code.**
 Built entirely on Gemini 4, on a real public construction bid set.
@@ -11,19 +13,47 @@ Built entirely on Gemini 4, on a real public construction bid set.
 
 ## The problem
 
-A single building passes through dozens of hands: owner, architect, engineers, the general contractor and every
-subcontractor. Over a multi-year project they all work from the same drawings, and **the drawings keep changing
-after they're issued.** Every change goes out as an *addendum*: replacement sheets and answers to bidders'
-questions. The old sheets don't disappear. Both versions sit in everyone's inbox.
+### Everyone builds from the drawings. The drawings keep changing.
 
-When someone is unsure, they send the architect an **RFI** (Request for Information). RFIs are reported at about
-**$1,080 and 8 hours each**, and roughly **1 in 10 asks something the documents already answer** (Navigant RFI
-study, via [Procore](https://www.procore.com/jobsite/lower-the-cost-of-your-rfis); secondary source). Worse,
-someone builds from the superseded sheet and the work gets torn out.
+A building is designed on paper long before it exists: hundreds of pages of plans, details and schedules. Then
+it passes through dozens of hands. The owner, the architect, structural, mechanical and electrical engineers, the
+general contractor, and every subcontractor who prices, orders and installs a piece of it, across a project that
+runs for years.
 
-**One building, for real.** This YMCA childcare centre's public bid set has **54 drawing sheets**; two addenda
-replaced **20** of them. On sheet P101, Addendum 1 quietly changed two of the three water closets in Toilet 105A
-from WC-2 to WC-3. Order from the old sheet and two get ripped out.
+And the drawings **never stop changing.** Every revision goes out as an *addendum*: a bundle of replacement sheets
+and answers to questions. The old sheets don't disappear. They sit in inboxes, on tablets, printed and pinned to
+a wall in the site trailer. Somebody, somewhere, is always holding the wrong version.
+
+### That gap costs real money, every single day
+
+- **Rework.** A crew installs what the old sheet said. Weeks later someone notices. It gets torn out, re-ordered
+  and re-installed, and the schedule slips while it happens.
+- **RFIs.** When people aren't sure, they send the architect a formal question, a **Request for Information**,
+  and wait. Each one is reported to cost about **$1,080 and 8 hours** to answer, and roughly **1 in 10 asks
+  something the documents already answer** (Navigant RFI study, via
+  [Procore](https://www.procore.com/jobsite/lower-the-cost-of-your-rfis); secondary source). Work stalls while
+  the answer travels back through every party.
+- **Delays compound.** A blocked question holds up a trade; that trade holds up the next. Each lost day is paid
+  for in labour, equipment and penalties, in an industry where **margins are already razor thin.** One missed
+  change can erase the profit on a scope of work.
+- **Nobody is careless.** The information exists. It's buried in a 54-sheet set and two addenda that look almost
+  identical, and nobody has time to diff them by eye.
+
+### One building, for real
+
+This YMCA childcare centre's **public bid set has 54 drawing sheets. Two addenda replaced 20 of them.**
+
+On sheet P101, Addendum 1 quietly changed **two of the three toilets** in Toilet 105A from type WC-2 to WC-3. The
+two versions are nearly impossible to tell apart. A plumber who orders from the bid set installs two wrong
+toilets, and they get ripped out.
+
+Multiply that by every sheet, every addendum, every trade, for the life of a project. **That is the problem.**
+
+### What teams actually need
+
+Not another chatbot that sounds confident. They need to ask *"is this still right?"* and get an answer they can
+**check in five seconds**: the exact words, boxed on the current sheet, with what changed and why. And when the
+answer can't be proven, the honest reply is *"unclear, look here"*, not a guess.
 
 ## What it does
 

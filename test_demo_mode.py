@@ -147,7 +147,7 @@ def test_cache_headers(env):
 def test_gzip_on_page_but_not_on_sse(env):
     c, _, _ = env
     r = c.get("/", headers={"Accept-Encoding": "gzip"})
-    assert r.headers.get("content-encoding") == "gzip" and "Drawing Claim Checker" in r.text
+    assert r.headers.get("content-encoding") == "gzip" and "SheetSight" in r.text
     raw = c.get("/", headers={"Accept-Encoding": "identity"})
     assert raw.headers.get("content-encoding") is None
     assert gzip.compress(raw.content)                                          # sanity: body is compressible
