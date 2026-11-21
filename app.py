@@ -491,6 +491,120 @@ async def api_rfi(request: Request):
     return {k: r.get(k) for k in ("status", "text", "answered_by", "quote")}
 
 
+# ---- sheet stage: full-sheet render + room outlines ------------------------------------------------------
+_SHEET_RE = re.compile(r"^(dwg|add\d{1,2})-p\d{3}$")
+SHEET_PX = 2400                 # long edge of the full-sheet render the UI zooms across
+_render_lock = threading.Lock()
+_rooms_memo = {}
+
+
+def _sheet_row(sheet):
+    """(sheets.json row, source pdf path) for a known sheet id, else (None, None)."""
+    if not _SHEET_RE.match(sheet or ""):
+        return None, None
+    try:
+        idx = json.loads((Path(BUILD) / "sheets.json").read_text())
+    except (OSError, ValueError):
+        return None, None
+    row = next((s for s in idx.get("sheets", []) if s.get("sheet") == sheet), None)
+    if row is None:
+        return None, None
+    path = next((x.get("path") for x in idx.get("sources", []) if x.get("source") == row.get("source")), None)
+    return row, path
+
+
+def _room_edges(runs):
+    """Boundary of a room mask given as runs [[y, x0, x1), ...] at 1 pt per px -> merged axis-aligned segments
+    [[x0, y0, x1, y1], ...] in sheet pt. Pure numpy; the outline is exact to the mask, nothing is smoothed or guessed."""
+    import numpy as np
+    if not runs:
+        return []
+    ys = [r[0] for r in runs]
+    xs0, xs1 = [r[1] for r in runs], [r[2] for r in runs]
+    y0, x0 = min(ys), min(xs0)
+    m = np.zeros((max(ys) - y0 + 3, max(xs1) - x0 + 3), bool)
+    for y, a, b in runs:
+        m[y - y0 + 1, a - x0 + 1:b - x0 + 1] = True
+    out = []
+    h = m[1:, :] != m[:-1, :]           # horizontal edges between row i and i+1
+    for i in range(h.shape[0]):
+        row = np.flatnonzero(np.diff(np.concatenate(([0], h[i].astype(np.int8), [0]))))
+        for a, b in zip(row[::2], row[1::2]):
+            yy = y0 + i
+            out.append([int(x0 + a - 1), int(yy), int(x0 + b - 1), int(yy)])
+    v = m[:, 1:] != m[:, :-1]           # vertical edges between column j and j+1
+    for j in range(v.shape[1]):
+        col = np.flatnonzero(np.diff(np.concatenate(([0], v[:, j].astype(np.int8), [0]))))
+        for a, b in zip(col[::2], col[1::2]):
+            xx = x0 + j
+            out.append([int(xx), int(y0 + a - 1), int(xx), int(y0 + b - 1)])
+    return out
+
+
+def _sheet_rooms(sheet):
+    """Rooms already extracted by rooms.py (build/rooms/<sheet>.json); [] when the sheet has none. Never extracts here."""
+    p = Path(BUILD) / "rooms" / f"{sheet}.json"
+    try:
+        st = p.stat()
+    except OSError:
+        return []
+    key = (str(p), st.st_mtime_ns)
+    if key not in _rooms_memo:
+        try:
+            d = json.loads(p.read_text())
+        except (OSError, ValueError):
+            return []
+        _rooms_memo[key] = [{"number": r.get("number"), "name": r.get("name"), "bbox": r.get("bbox"),
+                             "label_bbox": r.get("label_bbox"), "tags": r.get("tags") or {},
+                             "edges": _room_edges(r.get("runs") or [])}
+                            for r in d.get("rooms", []) if isinstance(r, dict)]
+    return _rooms_memo[key]
+
+
+@app.get("/api/sheet/{sheet}")
+async def api_sheet(sheet: str):
+    """Geometry the sheet stage needs: page size in pt, the full-sheet image URL and the room outlines."""
+    row, _ = _sheet_row(sheet)
+    if row is None:
+        return _bad("unknown sheet", 404)
+    rooms_ = await run_in_threadpool(_sheet_rooms, sheet)
+    return {"sheet": sheet, "width": row.get("width"), "height": row.get("height"),
+            "image": f"/sheets/{sheet}.jpg", "rooms": rooms_}
+
+
+def _render_sheet(sheet, row, src):
+    import pymupdf
+    import pdflock
+    import rooms as roomgeo
+    out = Path(BUILD) / "sheet_renders" / f"{sheet}_{SHEET_PX}.jpg"
+    if out.is_file():
+        return out
+    with _render_lock, pdflock.LOCK:
+        if out.is_file():
+            return out
+        page = pymupdf.open(roomgeo._pdf(src))[int(row["page"]) - 1]
+        z = SHEET_PX / max(page.rect.width, page.rect.height)
+        pix = page.get_pixmap(matrix=pymupdf.Matrix(z, z), alpha=False)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_name(f"{out.stem}.{threading.get_ident()}.part.jpg")
+        pix.save(str(tmp), jpg_quality=82)
+        os.replace(tmp, out)
+    return out
+
+
+@app.get("/sheets/{name}")
+async def sheet_image(name: str):
+    sheet = name[:-4] if name.endswith(".jpg") else ""
+    row, src = _sheet_row(sheet)
+    if row is None or not src:
+        return _bad("not found", 404)
+    try:
+        p = await run_in_threadpool(_render_sheet, sheet, row, src)
+    except (OSError, RuntimeError, ValueError, IndexError, KeyError):
+        return _bad("not found", 404)
+    return FileResponse(p, media_type="image/jpeg", headers=SHORT)
+
+
 @app.get("/api/health")
 async def api_health():
     return {"ok": True, "cache_mode": os.environ.get("LLM_CACHE", "readwrite"), "run_spend": llm.run_spend()}
