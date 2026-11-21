@@ -155,8 +155,12 @@ def _image_tokens(data):
     return max(258, math.ceil(w / 768) * math.ceil(h / 768) * 258)  # ~258 tokens per 768x768 tile
 
 
+UNKNOWN_VIDEO_S = 3600
+
+
 def _video_tokens(p, nbytes):
-    """~300 tokens/s from the duration in video_metadata; without it, assume a low 20 KB/s bitrate (over-estimates)."""
+    """~300 tokens/s from the duration in video_metadata. Without it: inline bytes assume a low 20 KB/s bitrate
+    (over-estimates); an uploaded file's length is unknown, so reserve for an hour of video."""
     vm = getattr(p, "video_metadata", None)
     end = str(getattr(vm, "end_offset", "") or "")
     if end.endswith("s"):
@@ -164,7 +168,9 @@ def _video_tokens(p, nbytes):
             return float(end[:-1]) * VIDEO_TOKENS_PER_S
         except ValueError:
             pass
-    return max(2000, (nbytes or 0) / 20000 * VIDEO_TOKENS_PER_S)
+    if nbytes is None:
+        return UNKNOWN_VIDEO_S * VIDEO_TOKENS_PER_S
+    return max(2000, nbytes / 20000 * VIDEO_TOKENS_PER_S)
 
 
 def _est_input_tokens(parts):
@@ -222,8 +228,12 @@ def run_id():
 def _append(row):
     BUILD.mkdir(parents=True, exist_ok=True)
     row = {"ts": dt.datetime.now(dt.timezone.utc).isoformat(), "run_id": run_id(), **row}
-    with open(BUILD / "calls.jsonl", "a") as f:
-        f.write(json.dumps(row) + "\n")
+    line = json.dumps(row) + "\n"
+    with open(BUILD / "calls.jsonl", "a+b") as f:
+        f.seek(0, 2)
+        if f.tell() and (f.seek(-1, 2), f.read(1))[1] != b"\n":
+            line = "\n" + line      # a crash left a partial last line: don't glue this row onto it
+        f.write(line.encode())
 
 
 def _log(**row):
@@ -242,10 +252,10 @@ def run_spend(rid=None):
             r = json.loads(ln)
         except ValueError:
             continue
-        if r.get("run_id") != rid:
+        if not isinstance(r, dict) or r.get("run_id") != rid:
             continue
         if r.get("kind") == "reserve":
-            held[r["reservation_id"]] = r.get("reserved_usd") or 0.0
+            held[r.get("reservation_id")] = r.get("reserved_usd") or 0.0
         else:
             cost += r.get("cost_usd") or 0.0
             if r.get("reservation_id"):
@@ -360,7 +370,7 @@ def _scrub(msg):
 
 def call(model, parts, *, schema=None, purpose, thinking=None):
     t0 = time.monotonic()
-    base, resv, logged = {"model": model, "purpose": purpose}, None, False
+    base, resv, logged, billed = {"model": model, "purpose": purpose}, None, False, None
     zero = {"prompt_tokens": 0, "output_tokens": 0, "thinking_tokens": 0, "cached_tokens": 0}
     try:
         key = cache_key(model, parts, schema, thinking)
@@ -392,6 +402,7 @@ def call(model, parts, *, schema=None, purpose, thinking=None):
         lat = round(time.monotonic() - t0, 3)
         row = dict(**base, **usage, latency_s=lat, cost_usd=cost, cache_hit=False, finish_reason=fr,
                    reservation_id=resv)
+        billed = row
         try:
             res = _finish(text, usage, schema, cost, False, lat)
         except LLMError as e:
@@ -404,7 +415,9 @@ def call(model, parts, *, schema=None, purpose, thinking=None):
             _cache_write(path, {"text": text, "usage": usage})
         return res
     except Exception as e:
-        if not logged:
+        if not logged and billed is not None:    # the call was billed: keep its real cost in the run cap
+            _log(**billed, error=_scrub(f"{type(e).__name__}: {getattr(e, 'code', '') or e}"))
+        elif not logged:
             _log(**base, **zero, latency_s=round(time.monotonic() - t0, 3), cost_usd=0.0, cache_hit=False,
                  finish_reason=None, reservation_id=resv,
                  error=_scrub(f"{type(e).__name__}: {getattr(e, 'code', '') or e}"))
