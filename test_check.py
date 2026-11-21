@@ -81,9 +81,23 @@ def test_judges_disagree_is_unclear(monkeypatch, world):
 
 
 def test_judges_run_concurrently(monkeypatch, world):
-    t0 = time.monotonic()
-    run(monkeypatch, judge_json(world), delay=0.4)
-    assert time.monotonic() - t0 < 0.75      # two 0.4 s calls overlap; serial would be >= 0.8 s plus rendering
+    """Measure overlap, not wall time: with the judge pair (x2 candidates) the calls must be in flight together."""
+    import threading
+    lock, st = threading.Lock(), {"now": 0, "max": 0}
+    out = judge_json(world)
+
+    def call(model, parts, *, schema=None, purpose, thinking=None):
+        with lock:
+            st["now"] += 1
+            st["max"] = max(st["max"], st["now"])
+        time.sleep(0.2)
+        with lock:
+            st["now"] -= 1
+        return llm.Result(text=json.dumps(out), json=out)
+
+    monkeypatch.setattr(llm, "call", call)
+    check.check(CLAIM)
+    assert st["max"] >= 2
 
 
 def empty_box(world):
@@ -229,3 +243,152 @@ def test_concurrency_bounded_and_thread_safe(monkeypatch, world):
     with ThreadPoolExecutor(8) as ex:            # 8 concurrent whole checks (mocked calls) all return full cards
         cards = list(ex.map(lambda _: check.check(CLAIM), range(8)))
     assert all(c["verdict"] == "conflict" and c["evidence"] for c in cards)
+
+
+# ---- review round: judge failures, current-only grounding, geometry, dimensions, twin offset ------------
+def test_one_judge_raising_an_sdk_error_gives_unclear(monkeypatch, world):
+    from google.genai import errors
+    ok = judge_json(world)
+
+    def call(model, parts, *, schema=None, purpose, thinking=None):
+        if model == ROLES["second"]:
+            raise errors.APIError(503, {"error": {"message": "overloaded", "status": "UNAVAILABLE"}})
+        return llm.Result(text=json.dumps(ok), json=ok)
+
+    monkeypatch.setattr(llm, "call", call)
+    card = check.check(CLAIM)
+    assert card["verdict"] == "unclear" and card["confidence"] <= 0.5
+    failed = next(c for c in card["checks"] if c["by"] == ROLES["second"])
+    assert "APIError" in failed["note"] and failed["verdict"] == "unclear"
+
+
+def test_both_judges_raising_gives_unclear_zero(monkeypatch, world):
+    from google.genai import errors
+
+    def call(model, parts, *, schema=None, purpose, thinking=None):
+        raise errors.APIError(500, {"error": {"message": "boom"}})
+
+    monkeypatch.setattr(llm, "call", call)
+    card = check.check(CLAIM)
+    assert card["verdict"] == "unclear" and card["confidence"] == 0.0 and card["evidence"] == []
+
+
+def test_malformed_judge_output_does_not_crash(monkeypatch, world):
+    bad = judge_json(world)
+    bad["evidence"] = ["junk", 5, None, {"image": "current", "box_2d": "no", "label": "x"}]
+    bad["quoted_words"] = ["WC-2", 7, None]
+    card = run(monkeypatch, bad)
+    g = next(c for c in card["checks"] if c.get("check") == "grounding")
+    assert g["pass"] is False and card["verdict"] == "unclear"
+
+
+def two_crops(world):
+    cur = world["cur"]
+    old = check.superseded_twin(cur, world["sheets"], world["src"], world["rows"])
+    return {"current": cur, "superseded": old}, old
+
+
+def test_confident_verdict_needs_grounding_on_the_current_image(world):
+    crops, old = two_crops(world)
+    w = next(w for w in old["words"] if w["text"] == "WC-2" and w["bbox"][0] > 1360)
+    sup_box = verify.pt_to_box(w["bbox"], old["rect"])
+    only_sup = {"verdict": "consistent", "confidence": 0.9, "reason": "r", "quoted_words": ["WC-2"],
+                "evidence": [{"image": "superseded", "box_2d": sup_box, "label": "old"}]}
+    probs = verify.grounding(only_sup, crops)
+    assert probs and any("current" in p for p in probs)              # no current box, quote not in a current box
+    both = {**only_sup, "evidence": only_sup["evidence"] + [{"image": "current", "box_2d": box_for(world, {"WC-2"}),
+                                                              "label": "now"}]}
+    assert verify.grounding(both, crops) == []
+    # an unclear verdict may still point at the superseded image
+    assert verify.grounding({**only_sup, "verdict": "unclear"}, crops) == []
+
+
+def test_superseded_only_evidence_ships_unclear_not_confident(monkeypatch, world):
+    crops, old = two_crops(world)
+    w = next(w for w in old["words"] if w["text"] == "WC-2" and w["bbox"][0] > 1360)
+    out = {"verdict": "consistent", "confidence": 0.95, "reason": "r", "quoted_words": ["WC-2"],
+           "changed_by_addendum": False, "needs_code": "",
+           "evidence": [{"image": "superseded", "box_2d": verify.pt_to_box(w["bbox"], old["rect"]), "label": "old"}]}
+    monkeypatch.setattr(llm, "call", fake({"A": out, "B": out}))
+    ctx = {"judge": "A", "second": "B", "thinking": "LOW", "schema": {}, "parts": [], "rows": world["rows"],
+           "crops": crops, "narrative": []}
+    res = verify.verify(CLAIM, ctx)
+    assert res["verdict"] == "unclear" and res["confidence"] <= 0.5
+
+
+def test_box_pt_asymmetric_literal():
+    """Non-square rect, hand-computed: an x/y or xmin/ymin swap in either direction changes every number."""
+    rect = [100.0, 200.0, 500.0, 1000.0]               # w = 400, h = 800
+    box = [100, 250, 600, 750]                          # [ymin, xmin, ymax, xmax]
+    # x0 = 100 + 0.25*400 = 200; y0 = 200 + 0.10*800 = 280; x1 = 100 + 0.75*400 = 400; y1 = 200 + 0.60*800 = 680
+    assert verify.box_to_pt(box, rect) == pytest.approx([200.0, 280.0, 400.0, 680.0])
+    assert verify.pt_to_box([200.0, 280.0, 400.0, 680.0], rect) == box
+
+
+@pytest.mark.parametrize("text,expect", [
+    ("Room 105's", []), ("WC-2's", []), ("3' 4 bars", [36.0]), ("3'-0\" and 4' 6\"", [36.0, 54.0]),
+    ("36 in", [36.0]), ("3 feet", [36.0]), ("1/2 in", [0.5]), ("3'-6", [42.0]), ("WC-36\"", []),
+])
+def test_find_dims_edge_cases(text, expect):
+    assert [v for _, v in verify.find_dims(text)] == pytest.approx(expect)
+
+
+def test_dimension_check_uses_both_judges_quotes(monkeypatch, world):
+    a = judge_json(world, "consistent", quoted=("WC-2",), box=box_for(world, {"WC-2"}))
+    b = judge_json(world, "consistent", quoted=("WC-2",), box=box_for(world, {"WC-2"}))
+    b["quoted_words"] = ["WC-2", "34\""]       # only the second judge quotes a dimension
+    monkeypatch.setattr(llm, "call", fake({"A": a, "B": b}))
+    ctx = {"judge": "A", "second": "B", "thinking": "LOW", "schema": {}, "parts": [], "rows": world["rows"],
+           "crops": {"current": world["cur"]}, "narrative": []}
+    res = verify.verify('The grab bar is 36" AFF', ctx)
+    assert any(c.get("check") == "dimension" for c in res["checks"])
+
+
+def test_page_offset_follows_the_local_shift():
+    def ws(items):
+        return [{"text": t, "bbox": [x, y, x + 20, y + 8]} for t, x, y in items]
+    old = ws([("AAA", 100, 100), ("BBB", 200, 100), ("CCC", 300, 100), ("DDD", 1000, 100), ("EEE", 1100, 100),
+              ("FFF", 1200, 100)])
+    cur = ws([("AAA", 100, 190), ("BBB", 200, 190), ("CCC", 300, 190), ("DDD", 1000, 100), ("EEE", 1100, 100),
+              ("FFF", 1200, 100)])
+    assert check.page_offset(old, cur, rect=[0, 100, 500, 300], k=3)[:2] == (0.0, 90.0)       # shifted region
+    assert check.page_offset(old, cur, rect=[900, 0, 1400, 200], k=3)[:2] == (0.0, 0.0)       # unmoved region
+    assert check.page_offset(old[:2], cur[:2], rect=[0, 0, 500, 300]) == (0.0, 0.0, 2)  # too few matches
+
+
+def test_page_offset_on_real_reissue_ed200():
+    """dwg-p046 -> add2-p009 moves content 50-90 pt in y; a crop there must follow it (words by uniqueness)."""
+    import collections
+    a, b = check._words("dwg-p046"), check._words("add2-p009")
+
+    def once(ws):
+        d = collections.defaultdict(list)
+        for w in ws:
+            d[w["text"]].append(w["bbox"])
+        return {t: v[0] for t, v in d.items() if len(v) == 1 and len(t) >= 3}
+    A, B = once(a), once(b)
+    for target in (50, 70, 90):
+        t = next(t for t in A if t in B and round(B[t][1] - A[t][1]) == target)
+        dx, dy, _ = check.page_offset(a, b, rect=check.crop_rect(B[t], 3024, 2160))
+        assert (dx, dy) == (0.0, float(target))
+
+
+def test_superseded_twin_rect_follows_the_reissue_shift(world):
+    """ED200: the add2 sheet moved content 90 pt down vs the bid set. With add1-p020 out of play the twin is
+    dwg-p046, and its crop must be offset so the same words are in it."""
+    import collections
+    sheets = {k: v for k, v in world["sheets"].items() if k != "add1-p020"}
+    a, b = check._words("dwg-p046"), check._words("add2-p009")
+
+    def once(ws):
+        d = collections.defaultdict(list)
+        for w in ws:
+            d[w["text"]].append(w["bbox"])
+        return {t: v[0] for t, v in d.items() if len(v) == 1 and len(t) >= 3}
+    A, B = once(a), once(b)
+    t = next(t for t in A if t in B and round(B[t][1] - A[t][1]) == 90)
+    cur = check._crop("add2-p009", check.crop_rect(B[t], 3024, 2160), sheets, world["src"], world["rows"])
+    twin = check.superseded_twin(cur, sheets, world["src"], world["rows"])
+    assert twin["sheet"] == "dwg-p046" and twin["offset"] == (0.0, 90.0)
+    assert twin["rect"][1] == pytest.approx(cur["rect"][1] - 90) and twin["rect"][0] == pytest.approx(cur["rect"][0])
+    assert t in {w["text"] for w in twin["words"]}

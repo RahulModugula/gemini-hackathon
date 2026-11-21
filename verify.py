@@ -47,32 +47,43 @@ def _valid_box(b):
 
 # ---- dimension math ------------------------------------------------------------------------------
 _Q = "\"”″"
+_UIN = r"(?:\s*[" + _Q + r"]|\s*(?:inches|inch|in)\b)"          # closing inch mark or unit word
 _DIM = re.compile(
-    r"(?:(?P<ft>\d+)\s*['′’](?:\s*-?\s*(?P<n2>\d+)/(?P<d2>\d+)\s*[" + _Q + r"]"
-    r"|\s*-?\s*(?P<w1>\d+)(?:[\s-]+(?P<n1>\d+)/(?P<d1>\d+))?\s*[" + _Q + r"]?)?"
-    r"|(?:(?P<w3>\d+)[\s-]+)?(?P<n3>\d+)/(?P<d3>\d+)\s*[" + _Q + r"]"
-    r"|(?P<w4>\d+(?:\.\d+)?)\s*[" + _Q + r"])")
+    r"(?<![\w-])(?:"
+    # feet with a tick (not "105's"): then a fraction, or a hyphen + inches (quote optional), or a space + inches
+    # (closing quote required, so "3' 4 bars" is 3 ft)
+    r"(?P<ft>\d+)\s*['′’](?![A-Za-z])(?:"
+    r"\s*-?\s*(?P<n2>\d+)/(?P<d2>\d+)" + _UIN +
+    r"|\s*-\s*(?P<w1>\d+)(?:[\s-]+(?P<n1>\d+)/(?P<d1>\d+))?(?:\s*[" + _Q + r"])?"
+    r"|\s+(?P<w1b>\d+)(?:\s+(?P<n1b>\d+)/(?P<d1b>\d+))?\s*[" + _Q + r"]"
+    r")?"
+    r"|(?P<ft2>\d+(?:\.\d+)?)\s*(?:feet|foot|ft)\b"
+    r"|(?:(?P<w3>\d+)[\s-]+)?(?P<n3>\d+)/(?P<d3>\d+)" + _UIN +
+    r"|(?P<w4>\d+(?:\.\d+)?)" + _UIN + r")")
 
 
 def _f(x):
     return float(x) if x else 0.0
 
 
+def _frac(n, d):
+    return _f(n) / _f(d) if d and _f(d) else 0.0
+
+
 def find_dims(text):
-    """-> [(matched_text, inches)] for 3'-0", 3'-0 1/2", 3', 36", 1/2", 1 1/2"."""
+    """-> [(matched_text, inches)] for 3'-0", 3'-0 1/2", 3', 36", 36 in, 3 feet, 1/2", 1 1/2". Not "105's", "WC-2's"."""
     out = []
     for m in _DIM.finditer(text):
         g = m.groupdict()
         if g["ft"] is not None:
-            v = _f(g["ft"]) * 12 + _f(g["w1"])
-            if g["d1"] and _f(g["d1"]):
-                v += _f(g["n1"]) / _f(g["d1"])
-            if g["d2"] and _f(g["d2"]):
-                v += _f(g["n2"]) / _f(g["d2"])
+            v = _f(g["ft"]) * 12 + _f(g["w1"]) + _f(g["w1b"]) + _frac(g["n1"], g["d1"]) + _frac(g["n1b"], g["d1b"]) \
+                + _frac(g["n2"], g["d2"])
+        elif g["ft2"] is not None:
+            v = _f(g["ft2"]) * 12
         elif g["n3"] is not None:
             if not _f(g["d3"]):
                 continue
-            v = _f(g["w3"]) + _f(g["n3"]) / _f(g["d3"])
+            v = _f(g["w3"]) + _frac(g["n3"], g["d3"])
         else:
             v = _f(g["w4"])
         out.append((m.group(0).strip(), v))
@@ -101,9 +112,14 @@ def dimension_check(claim, quoted_words):
 
 # ---- code checks ---------------------------------------------------------------------------------
 def grounding(out, crops):
-    """Every evidence box covers PDF words; every quoted word sits inside some evidence box."""
+    """Every evidence box covers PDF words; every quoted word sits inside some evidence box. A conflict/consistent
+    verdict must be grounded on the CURRENT image: at least one current box, and every quote inside a current box
+    (the superseded image only explains what changed)."""
     problems, boxes = [], []
     for i, ev in enumerate(out.get("evidence") or []):
+        if not isinstance(ev, dict):
+            problems.append(f"evidence[{i}] is not an object")
+            continue
         b, crop = ev.get("box_2d"), crops.get(ev.get("image"))
         if crop is None or not _valid_box(b):
             problems.append(f"evidence[{i}] has a bad box or an unknown image ({ev.get('image')!r}, {b!r})")
@@ -113,14 +129,20 @@ def grounding(out, crops):
         if not any(_share_inside(w["bbox"], pt) >= OVERLAP_MIN for w in crop["words"]):
             problems.append(f"evidence[{i}] box on the {ev['image']} crop covers no PDF words")
     quoted = [q for q in (out.get("quoted_words") or []) if isinstance(q, str) and q.strip()]
-    if out.get("verdict") != "unclear" and (not quoted or not boxes):
-        problems.append("a conflict/consistent verdict needs at least one quoted word and one evidence box")
+    strict = out.get("verdict") != "unclear"
+    if strict:
+        boxes_for_quotes = [(img, pt) for img, pt in boxes if img == "current"]
+        if not quoted or not boxes_for_quotes:
+            problems.append("a conflict/consistent verdict needs at least one quoted word and one evidence box "
+                            "on the current sheet")
+    else:
+        boxes_for_quotes = boxes
     for q in quoted:
         for tok in q.split():
             hit = any(_norm(w["text"]) == _norm(tok) and _share_inside(w["bbox"], pt) >= OVERLAP_MIN
-                      for img, pt in boxes for w in crops[img]["words"])
+                      for img, pt in boxes_for_quotes for w in crops[img]["words"])
             if not hit:
-                problems.append(f"quoted word {tok!r} is not inside any evidence box")
+                problems.append(f"quoted word {tok!r} is not inside any {'current ' if strict else ''}evidence box")
     return problems
 
 
@@ -162,6 +184,11 @@ def _clean(out):
         conf = min(1.0, max(0.0, float(out.get("confidence"))))
     except (TypeError, ValueError):
         conf, ok = 0.0, False
+    ev = out.get("evidence")
+    ev = [e if isinstance(e, dict) else {"image": None, "box_2d": None} for e in ev] if isinstance(ev, list) else []
+    qw = out.get("quoted_words")
+    qw = [q for q in qw if isinstance(q, str)] if isinstance(qw, list) else []
+    out = {**out, "evidence": ev, "quoted_words": qw}
     return {**out, "verdict": out["verdict"] if ok else "unclear", "confidence": conf if ok else 0.0,
             "reason": str(out.get("reason") or ("unusable judge output" if not ok else ""))}
 
@@ -172,7 +199,7 @@ def run_judge(model, purpose, ctx):
     try:
         res = llm.call(model, ctx["parts"], schema=ctx["schema"], purpose=purpose, thinking=ctx["thinking"])
         out = _clean(res.json)
-    except llm.LLMError as e:
+    except Exception as e:   # gateway errors AND SDK errors (google.genai.errors.APIError is not an LLMError)
         out = {"verdict": "unclear", "confidence": 0.0, "quoted_words": [], "evidence": [], "needs_code": "",
                "changed_by_addendum": False, "reason": f"{model} failed: {type(e).__name__}: {e}"[:300]}
     return out, time.monotonic() - t0
@@ -208,7 +235,7 @@ def verify(claim, ctx):
     if d:
         checks.append(d)
 
-    dim = dimension_check(claim, a.get("quoted_words") or [])
+    dim = dimension_check(claim, (a.get("quoted_words") or []) + (b.get("quoted_words") or []))
     if dim:
         dim["pass"] = verdict == "unclear" or dim["code_verdict"] == verdict
         dim["note"] = dim["detail"]
@@ -221,6 +248,8 @@ def verify(claim, ctx):
     reason = a["reason"] + (" [Downgraded: " + "; ".join(notes) + "]" if notes else "")
     ev = []
     for e in a.get("evidence") or []:
+        if not isinstance(e, dict):
+            continue
         crop = crops.get(e.get("image"))
         if crop and _valid_box(e.get("box_2d")):
             ev.append({"image": e["image"], "bbox": box_to_pt(e["box_2d"], crop["rect"]), "label": e.get("label", "")})

@@ -7,6 +7,7 @@ import datetime as dt
 import hashlib
 import json
 import sys
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -161,7 +162,35 @@ def superseded_twin(cur, sheets, src, rows):
     if not olds:
         return None
     old = max(olds, key=lambda r: r["issue_order"])
-    return _crop(old["sheet"], cur["rect"], sheets, src, rows)
+    dx, dy, n = page_offset(_words(old["sheet"]), _words(cur["sheet"]), rect=cur["rect"])
+    o, c = sheets[old["sheet"]], cur["rect"]
+    rect = [max(0.0, c[0] - dx), max(0.0, c[1] - dy), min(float(o["width"]), c[2] - dx), min(float(o["height"]), c[3] - dy)]
+    twin = _crop(old["sheet"], rect, sheets, src, rows)
+    twin["offset"], twin["offset_matches"] = (dx, dy), n
+    return twin
+
+
+def page_offset(old_words, cur_words, rect=None, k=8, min_len=3, min_matches=3):
+    """(dx, dy, n): how far the content moved between two issues of a sheet (current minus old position), from words
+    that occur exactly once on both sheets (len >= min_len). Reissues move regions by different amounts (ED200
+    shifts 0, 50, 70 and 90 pt in y in different parts of one sheet), so with `rect` (the crop on the current
+    sheet) only the k matched words closest to its centre vote, and the most common rounded (dx, dy) wins (ties:
+    smaller shift). Without `rect` all matched words vote. (0, 0, n) when fewer than min_matches words match."""
+    def once(ws):
+        seen = {}
+        for w in ws:
+            seen.setdefault(w["text"], []).append(w["bbox"])
+        return {t: b[0] for t, b in seen.items() if len(b) == 1 and len(t) >= min_len}
+    A, B = once(old_words), once(cur_words)
+    m = [(B[t], (round(B[t][0] - A[t][0]), round(B[t][1] - A[t][1]))) for t in A if t in B]
+    if rect is not None:
+        cx, cy = (rect[0] + rect[2]) / 2, (rect[1] + rect[3]) / 2
+        m.sort(key=lambda t: (t[0][0] - cx) ** 2 + (t[0][1] - cy) ** 2)
+        m = m[:k]
+    if len(m) < min_matches:
+        return 0.0, 0.0, len(m)
+    (dx, dy), n = max(Counter(v for _, v in m).items(), key=lambda kv: (kv[1], -abs(kv[0][0]) - abs(kv[0][1])))
+    return float(dx), float(dy), n
 
 
 def build_parts(claim, crops):
