@@ -4,6 +4,7 @@ addendum diff, dimension math).
 `verify(claim, ctx)` -> {"verdict", "confidence", "reason", "evidence": [...], "checks": [...]}.
 Everything here except the two model calls is deterministic code. Boxes are pt in rendered page space.
 """
+import math
 import re
 import time
 from collections import Counter
@@ -36,12 +37,19 @@ def _share_inside(wb, box):
     return ix * iy / area
 
 
+_FOLD = str.maketrans({**{c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2212"},
+                       **{c: "'" for c in "\u2018\u2019\u2032"}, **{c: '"' for c in "\u201c\u201d\u2033"}})
+MAX_BOX_AREA = 0.5       # a box covering more than this share of the crop points at nothing in particular
+
+
 def _norm(s):
-    return "".join(s.split()).lower()
+    """Whitespace-free lowercase with unicode dashes and curly quotes folded to ASCII."""
+    return "".join(s.translate(_FOLD).split()).lower()
 
 
 def _valid_box(b):
-    return (isinstance(b, list) and len(b) == 4 and all(isinstance(v, (int, float)) for v in b)
+    return (isinstance(b, list) and len(b) == 4
+            and all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in b)
             and 0 <= b[0] < b[2] <= 1000 and 0 <= b[1] < b[3] <= 1000)
 
 
@@ -49,15 +57,15 @@ def _valid_box(b):
 _Q = "\"”″"
 _UIN = r"(?:\s*[" + _Q + r"]|\s*(?:inches|inch|in)\b)"          # closing inch mark or unit word
 _DIM = re.compile(
-    r"(?<![\w-])(?:"
+    r"(?:(?<![\w-])|(?<=[\"”″'′’]x))(?:"
     # feet with a tick (not "105's"): then a fraction, or a hyphen + inches (quote optional), or a space + inches
     # (closing quote required, so "3' 4 bars" is 3 ft)
     r"(?P<ft>\d+)\s*['′’](?![A-Za-z])(?:"
     r"\s*-?\s*(?P<n2>\d+)/(?P<d2>\d+)" + _UIN +
-    r"|\s*-\s*(?P<w1>\d+)(?:[\s-]+(?P<n1>\d+)/(?P<d1>\d+))?(?:\s*[" + _Q + r"])?"
+    r"|\s*-\s*(?P<w1>\d+(?:\.\d+)?)(?:[\s-]+(?P<n1>\d+)/(?P<d1>\d+))?(?:\s*[" + _Q + r"])?"
     r"|\s+(?P<w1b>\d+)(?:\s+(?P<n1b>\d+)/(?P<d1b>\d+))?\s*[" + _Q + r"]"
     r")?"
-    r"|(?P<ft2>\d+(?:\.\d+)?)\s*(?:feet|foot|ft)\b"
+    r"|(?P<ft2>\d+(?:\.\d+)?)\s*(?:feet|foot|ft)\b(?:[\s-]*(?P<w5>\d+(?:\.\d+)?)\s*(?:inches|inch|in)\b)?"
     r"|(?:(?P<w3>\d+)[\s-]+)?(?P<n3>\d+)/(?P<d3>\d+)" + _UIN +
     r"|(?P<w4>\d+(?:\.\d+)?)" + _UIN + r")")
 
@@ -79,7 +87,7 @@ def find_dims(text):
             v = _f(g["ft"]) * 12 + _f(g["w1"]) + _f(g["w1b"]) + _frac(g["n1"], g["d1"]) + _frac(g["n1b"], g["d1b"]) \
                 + _frac(g["n2"], g["d2"])
         elif g["ft2"] is not None:
-            v = _f(g["ft2"]) * 12
+            v = _f(g["ft2"]) * 12 + _f(g["w5"])
         elif g["n3"] is not None:
             if not _f(g["d3"]):
                 continue
@@ -130,9 +138,14 @@ def grounding_report(out, crops, claim=""):
         if not isinstance(ev, dict):
             problems.append(f"evidence[{i}] is not an object")
             continue
-        b, crop = ev.get("box_2d"), crops.get(ev.get("image"))
+        b, img = ev.get("box_2d"), ev.get("image")
+        crop = crops.get(img) if isinstance(img, str) else None
         if crop is None or not _valid_box(b):
             problems.append(f"evidence[{i}] has a bad box or an unknown image ({ev.get('image')!r}, {b!r})")
+            continue
+        if (b[2] - b[0]) * (b[3] - b[1]) > MAX_BOX_AREA * 1e6:
+            problems.append(f"evidence[{i}] box covers over {MAX_BOX_AREA:.0%} of the {img} crop, "
+                            "so it does not point at anything")
             continue
         pt = box_to_pt(b, crop["rect"])
         boxes.append((ev["image"], pt))
@@ -237,7 +250,10 @@ def _clean(out):
     ok = isinstance(out, dict) and out.get("verdict") in ("conflict", "consistent", "unclear")
     out = out if isinstance(out, dict) else {}
     try:
-        conf = min(1.0, max(0.0, float(out.get("confidence"))))
+        conf = float(out.get("confidence"))
+        if not math.isfinite(conf):
+            raise ValueError("non-finite confidence")
+        conf = min(1.0, max(0.0, conf))
     except (TypeError, ValueError):
         conf, ok = 0.0, False
     ev = out.get("evidence")
@@ -319,7 +335,15 @@ def verify(claim, ctx):
              for q in (o.get("quoted_words") or []) if isinstance(q, str)
              for t in q.split() if acc.get(n, {}).get(t) in ("current_box", "any_box")]
     dim = dimension_check(claim, boxed)
-    if dim:
+    claim_dims = find_dims(claim)
+    if not dim and claim_dims and verdict == "consistent":
+        # the claim states a dimension but no judge boxed one: nothing backs it, so it cannot stay consistent
+        dim = {"by": "code", "check": "dimension", "code_verdict": "unverified",
+               "detail": f"claim states {[t for t, _ in claim_dims]} but no judge quoted a boxed dimension to back it"}
+        dim["pass"] = False
+        checks.append(dim)
+        hard_fail = True
+    elif dim:
         dim["pass"] = verdict == "unclear" or dim["code_verdict"] == verdict
         dim["note"] = dim["detail"]
         checks.append(dim)
@@ -333,7 +357,7 @@ def verify(claim, ctx):
     for e in a.get("evidence") or []:
         if not isinstance(e, dict):
             continue
-        crop = crops.get(e.get("image"))
+        crop = crops.get(e.get("image")) if isinstance(e.get("image"), str) else None
         if crop and _valid_box(e.get("box_2d")):
             ev.append({"image": e["image"], "bbox": box_to_pt(e["box_2d"], crop["rect"]), "label": e.get("label", "")})
     return {"verdict": verdict, "confidence": round(conf, 4), "reason": reason, "evidence": ev, "checks": checks}

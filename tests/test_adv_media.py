@@ -183,9 +183,6 @@ def test_zero_length_wav_has_zero_duration(llm_audio):
     assert out.meta["duration_checked"] is True and out.meta["duration_s"] == 0.0
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="BUG: zero-length WAV (0.0 s) still accepts a claim: "
-                          "claim t=0.0..0.5 on a 0-frame file is kept with t_end clamped to 0.0")
 def test_zero_length_wav_rejects_claims(llm_audio):
     llm_audio["payload"] = {"claims": [C(a=0, b=0.5)]}
     out = ac.extract_claims(wav(secs=0))
@@ -225,9 +222,6 @@ def test_unreadable_wav_still_bounds_timestamps(llm_audio):
     assert out == []
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="BUG: duration trusts the declared data-chunk size: a 64-byte file declaring "
-                          "4 GiB of data reports ~134217 s, so a claim at 1000-1001 s is accepted")
 def test_huge_declared_nframes_bounded_by_real_bytes(llm_audio):
     data = raw_wav(declared_data=0xFFFFFF00, body=b"\0" * 64)
     llm_audio["payload"] = {"claims": [C(a=1000, b=1001)]}
@@ -242,9 +236,6 @@ def test_huge_declared_nframes_is_reported_in_meta(llm_audio):
     assert out.meta["duration_checked"] is True and out.meta["duration_s"] > 100000
 
 
-@pytest.mark.xfail(strict=True, raises=ZeroDivisionError,
-                   reason="BUG: WAV with fmt sample-rate 0 passes wave.open, then duration_s divides by zero; "
-                          "extract_claims only catches wave.Error/EOFError so the request crashes")
 def test_zero_sample_rate_wav_does_not_crash(llm_audio):
     llm_audio["payload"] = {"claims": [C(a=0, b=0.1)]}
     out = ac.extract_claims(raw_wav(declared_data=0, rate_field=0))
@@ -279,9 +270,6 @@ def test_speaker_label_capped_and_defaulted(llm_audio):
     assert out[1]["speaker"] == "Speaker 1" and out[2]["speaker"] == "Speaker 1"
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="GAP: speaker labels pass control characters through unchanged "
-                          "(the module does not normalise speaker text; the UI does not render it today)")
 def test_speaker_control_characters_stripped(llm_audio):
     llm_audio["payload"] = {"claims": [C(speaker="Bob\x00\x07\x1b[31m\nSpeaker 2")]}
     out = ac.extract_claims(wav(secs=5))
@@ -309,9 +297,6 @@ def test_other_script_claims_round_trip(llm_audio, claim, quote):
     assert out[0]["claim"] == claim and out[0]["quote"] == quote
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="BUG: unverified_quote only sees ASCII tokens, so an identical non-Latin claim and "
-                          "quote is flagged unverified (claim 'Унитаз в санузле', quote 'унитаз в санузле')")
 def test_identical_non_latin_claim_and_quote_are_verified(llm_audio):
     llm_audio["payload"] = {"claims": [C(claim="Унитаз в санузле", quote="унитаз в санузле")]}
     out = ac.extract_claims(wav(secs=5))
@@ -396,9 +381,8 @@ NUMBER_CASES = [
     ("six foot", ["6", "feet"], None),
     ("W C two", ["wc", "2"], None),
     ("one-oh-five A", ["105a"], None),
-    ("a hundred and five", ["105"],
-     "GAP: 'hundred' is not parsed, so 'a hundred and five' normalises to ['a', 'hundred', 'and', '5'] not 105"),
-    ("one hundred five", ["105"], "GAP: 'hundred' is not parsed, so 'one hundred five' gives ['100', '5'] not 105"),
+    ("a hundred and five", ["105"], None),
+    ("one hundred five", ["105"], None),
 ]
 
 
@@ -520,18 +504,12 @@ def test_upload_deleted_after_successful_call(llm_video, monkeypatch):
     assert deleted == [up]
 
 
-@pytest.mark.xfail(strict=True, raises=AttributeError,
-                   reason="BUG: a non-string claim (model returns 42) passes _valid via str() but then "
-                          "c['claim'].strip() raises AttributeError, failing the whole request instead of "
-                          "dropping that one claim")
 def test_non_string_claim_is_dropped_not_crashing(llm_video):
     llm_video["payload"] = {"claims": [V(claim=42), V(claim="WC-2 in 105A")]}
     out = vc.extract_claims_from_video(mp4(5), "video/mp4")
     assert [c["claim"] for c in out] == ["WC-2 in 105A"]
 
 
-@pytest.mark.xfail(strict=True, raises=AttributeError,
-                   reason="BUG: a list-valued quote_or_observation passes _valid via str() then crashes on .strip()")
 def test_non_string_observation_is_dropped_not_crashing(llm_video):
     llm_video["payload"] = {"claims": [V(q=["tag"]), V(claim="WC-2 in 105A")]}
     out = vc.extract_claims_from_video(mp4(5), "video/mp4")
@@ -573,9 +551,6 @@ def test_long_claim_text_is_not_truncated_here(llm_video):
     assert vc.extract_claims_from_video(mp4(5), "video/mp4")[0]["claim"] == long
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="GAP: sheet_hint is validated only in app.py; extract_claims_from_video interpolates "
-                          "any string into the prompt, e.g. '<script>' or '../etc'")
 def test_sheet_hint_validated_inside_extractor(llm_video):
     vc.extract_claims_from_video(mp4(5), "video/mp4", "<script>alert(1)</script>")
     assert "<script>" not in llm_video["parts"][1]
@@ -598,10 +573,6 @@ def test_sheet_regex(hint, ok):
     assert bool(vc.SHEET_RE.match(hint)) is ok
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason="BUG: SHEET_RE ends in '$', which also matches before a trailing newline, so "
-                          "'P101\\n' passes the validator. app.py strips first so /api/video is safe today, "
-                          "but any other caller of the regex is not")
 def test_sheet_regex_rejects_trailing_newline():
     assert vc.SHEET_RE.match("P101\n") is None
 

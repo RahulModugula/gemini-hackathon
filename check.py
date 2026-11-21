@@ -174,6 +174,8 @@ def candidates(claim, sheets, src, rows, n=2, k=4):
     idclaim = positive_query(claim) if title else query     # identifier scoring text: no sheet number
     for num in named.values():
         vers = [r for r in rows.values() if r.get("sheet_number") == num and r["sheet"] in sheets]
+        if not vers:
+            continue            # numbered in sheet_index but its source is not loaded
         cur = max([r for r in vers if r.get("current") is not False] or vers, key=lambda r: r["issue_order"])
         crop = best_crop_on(idclaim, query, cur["sheet"], sheets, src, rows, title)
         if crop is None:

@@ -1,7 +1,9 @@
 """T9: audio clip -> checkable claims about the drawings (speaker + approximate timestamps)."""
 import io
 import logging
+import os
 import re
+import unicodedata
 import wave
 
 import llm
@@ -47,7 +49,7 @@ END_SLACK_S = 1.0
 
 log = logging.getLogger("audio_claims")
 
-_TOK = re.compile(r"[a-z0-9]+")
+_TOK = re.compile(r"[^\W_]+")      # letters and digits in any script
 _ONES = {"zero": 0, "oh": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
          "seven": 7, "eight": 8, "nine": 9}
 _TEENS = {"ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
@@ -70,11 +72,32 @@ class Claims(list):
         self.meta = meta if meta is not None else {}
 
 
+def _below_hundred(toks, i):
+    """Value and next index of a spoken number 1-99 starting at toks[i], or (0, i) when there is none."""
+    t = toks[i] if i < len(toks) else None
+    nxt = toks[i + 1] if i + 1 < len(toks) else None
+    if t in _TENS:
+        return _TENS[t] + (_ONES[nxt] if nxt in _ONES and _ONES[nxt] > 0 else 0), i + (2 if nxt in _ONES and _ONES[nxt] > 0 else 1)
+    if t in _TEENS:
+        return _TEENS[t], i + 1
+    if t in _ONES and _ONES[t] > 0:
+        return _ONES[t], i + 1
+    return 0, i
+
+
 def _number_words(toks):
     out, i = [], 0
     while i < len(toks):
         t = toks[i]
         nxt = toks[i + 1] if i + 1 < len(toks) else None
+        if nxt == "hundred" and (t == "a" or _ONES.get(t, 0) > 0):    # "one hundred five", "a hundred and five"
+            j = i + 2
+            if j + 1 < len(toks) and toks[j] == "and" and _below_hundred(toks, j + 1)[0]:
+                j += 1
+            rest, j = _below_hundred(toks, j)
+            out.append(str((1 if t == "a" else _ONES[t]) * 100 + rest))
+            i = j
+            continue
         if t in _TENS:
             v = _TENS[t]
             if nxt in _ONES and _ONES[nxt] > 0:
@@ -84,15 +107,11 @@ def _number_words(toks):
         elif t in _TEENS:
             out.append(str(_TEENS[t]))
         elif t in _ONES and not (t == "oh" and nxt not in _ONES):
-            if nxt == "hundred" and _ONES[t] > 0:
-                out.append(str(_ONES[t] * 100))
+            run = [t]
+            while i + 1 < len(toks) and toks[i + 1] in _ONES:
                 i += 1
-            else:
-                run = [t]
-                while i + 1 < len(toks) and toks[i + 1] in _ONES:
-                    i += 1
-                    run.append(toks[i])
-                out.append("".join(str(_ONES[r]) for r in run))
+                run.append(toks[i])
+            out.append("".join(str(_ONES[r]) for r in run))
         else:
             out.append(t)
         i += 1
@@ -131,7 +150,18 @@ def duration_s(wav):
     """Duration in seconds of a wav file path or bytes. Raises wave.Error/EOFError if unreadable."""
     f = io.BytesIO(wav) if isinstance(wav, (bytes, bytearray)) else str(wav)
     with wave.open(f, "rb") as w:
-        return w.getnframes() / float(w.getframerate())
+        rate = w.getframerate()
+        if rate <= 0:
+            raise wave.Error(f"sample rate {rate} is not positive")
+        return w.getnframes() / float(rate)
+
+
+def _playable_s(wav):
+    """Upper bound on the duration from the bytes actually present, whatever the header declares."""
+    f = io.BytesIO(wav) if isinstance(wav, (bytes, bytearray)) else str(wav)
+    size = len(wav) if isinstance(wav, (bytes, bytearray)) else os.path.getsize(f)
+    with wave.open(f, "rb") as w:
+        return size / (max(1, w.getnchannels() * w.getsampwidth()) * w.getframerate())
 
 
 def _num(x):
@@ -151,9 +181,11 @@ def extract_claims(wav_path_or_bytes, mime="audio/wav"):
         try:
             meta["duration_s"] = duration_s(wav_path_or_bytes)
             meta["duration_checked"] = True
-        except (wave.Error, EOFError) as e:  # compressed / float / not really a wav
+            # the header can declare more audio than the file holds: bound claims by the bytes present
+            meta["playable_s"] = min(meta["duration_s"], _playable_s(wav_path_or_bytes))
+        except (wave.Error, EOFError, OSError) as e:  # compressed / float / not really a wav
             meta["duration_error"] = f"{type(e).__name__}: {e}"
-    dur = meta["duration_s"]
+    dur = meta.get("playable_s", meta["duration_s"])
     res = llm.call(MODEL, [llm.audio_part(wav_path_or_bytes, mime), PROMPT], schema=SCHEMA,
                    thinking="LOW", purpose="audio:claims")
     raw = res.json.get("claims", []) if isinstance(res.json, dict) else []
@@ -184,7 +216,7 @@ def extract_claims(wav_path_or_bytes, mime="audio/wav"):
     for c, claim, quote, a, b in rows:
         if dur is not None:
             a = max(a, 0.0)
-            if a > dur:
+            if a > dur or dur <= 0:      # a 0-frame clip holds nothing to ground a claim in
                 drop("start_after_clip_end", c)
                 continue
             if b > dur + END_SLACK_S:
@@ -195,7 +227,8 @@ def extract_claims(wav_path_or_bytes, mime="audio/wav"):
         elif a < 0 or b < a:
             drop("bad_timestamps", c)
             continue
-        out.append({"claim": claim[:MAX_CLAIM], "speaker": (str(c.get("speaker") or "").strip() or "Speaker 1")[:MAX_SPEAKER],
+        speaker = "".join(ch for ch in str(c.get("speaker") or "") if unicodedata.category(ch)[0] != "C").strip()
+        out.append({"claim": claim[:MAX_CLAIM], "speaker": (speaker or "Speaker 1")[:MAX_SPEAKER],
                     "t_start_s": a, "t_end_s": b, "quote": quote[:MAX_QUOTE],
                     "unverified_quote": not (content_tokens(claim) & content_tokens(quote))})
     for c in out[MAX_CLAIMS:]:

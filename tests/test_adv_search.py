@@ -164,7 +164,6 @@ def test_feet_inch_query_hits_share_a_token_with_the_query(ix, q):
             assert set(S.tokenize(h["snippet"])) & qt, (q, h)
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: 12'' (inch mark, 54 uses in build/words) tokenizes as 12ft, not 12in")
 def test_double_apostrophe_inch_mark_is_normalised_like_double_quote():
     assert S.tokenize("12''") == S.tokenize('12"')
 
@@ -253,7 +252,6 @@ def test_k_larger_than_result_count_is_bounded_and_sheets_unique(ix):
 
 
 @needs_build
-@pytest.mark.xfail(strict=True, reason="BUG: search('A201') returns the same add1-p007 box 3x (line + two cell neighbourhoods on the same word), wasting k")
 def test_search_hits_do_not_repeat_the_same_box(ix):
     keys = [(h["sheet"], tuple(h["bbox"])) for h in ix.search("A201", k=10000)]
     assert len(keys) == len(set(keys))
@@ -274,14 +272,12 @@ def test_search_sheets_never_repeats_a_sheet_number(ix, q):
 
 
 @needs_build
-@pytest.mark.xfail(strict=True, reason="BUG: search(query, k=0) returns 1 hit (append happens before the len>=k break)")
 def test_k_zero_returns_no_hits(ix):
     assert ix.search("grab bar", k=0) == []
     assert ix.search_sheets("grab bar", k=0) == []
 
 
 @needs_build
-@pytest.mark.xfail(strict=True, reason="BUG: negative k (-1) returns 1 hit, same append-before-check cause as k=0")
 def test_negative_k_returns_no_hits(ix):
     assert ix.search("grab bar", k=-1) == []
     assert ix.search_sheets("grab bar", k=-1) == []

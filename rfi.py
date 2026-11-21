@@ -156,7 +156,8 @@ def _references(card, build=None):
         num = r.get("sheet_number") or ev.get("sheet") or "unknown sheet"
         title = f" — {r['title']}" if r.get("title") else ""
         rev = r.get("revision") or ev.get("revision") or "not stated"
-        refs.append(f"Sheet {num}{title}, rev {rev}")
+        note = f" (superseded by {r.get('superseded_by') or 'a later issue'})" if r.get("current") is False else ""
+        refs.append(f"Sheet {num}{title}, rev {rev}{note}")
     refs += [f"Spec {s}" for s in card.get("spec_refs") or []]
     return refs or ["(no sheet cited)"]
 

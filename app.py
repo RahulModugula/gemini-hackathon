@@ -61,12 +61,37 @@ def _bad(msg, code=400):
     return JSONResponse({"error": msg}, status_code=code)
 
 
+def _encodable(obj):
+    """False when obj holds a lone surrogate (valid in a Python str, not encodable as UTF-8 for a response)."""
+    try:
+        json.dumps(obj, ensure_ascii=False).encode()
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+async def _json_body(request):
+    """-> (body, error response). Requires Content-Type application/json: a cross-site text/plain form POST is a
+    CORS 'simple request' that needs no preflight, so it must not reach the checker (LLM spend, ledger writes)."""
+    ctype = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
+    if ctype != "application/json":
+        # form posts keep their long-standing 400 (test_check_form_encoded_body_is_400); either way nothing runs
+        code = 400 if ctype == "application/x-www-form-urlencoded" else 415
+        return None, _bad("Content-Type must be application/json", code)
+    try:
+        return await request.json(), None
+    except (ValueError, RecursionError):      # RecursionError: absurdly nested JSON
+        return None, _bad("body must be valid JSON")
+
+
 # ---- ledger ---------------------------------------------------------------------------------------------
 def _ledger_path():
     return Path(BUILD) / "cards.jsonl"
 
 
 def _append(card):
+    if not _encodable(card):
+        return
     p = _ledger_path()
     p.parent.mkdir(parents=True, exist_ok=True)
     with _lock, p.open("a") as f:
@@ -80,9 +105,11 @@ def _read_ledger():
     out = []
     for ln in p.read_text().splitlines():
         try:
-            out.append(json.loads(ln))
-        except ValueError:
+            card = json.loads(ln)
+        except (ValueError, RecursionError):
             continue
+        if _encodable(card):       # a line with a lone surrogate would make every response encode fail
+            out.append(card)
     return out[::-1]
 
 
@@ -140,16 +167,12 @@ def _finish(card, claim, spend0=None, t0=None):
 # ---- API ------------------------------------------------------------------------------------------------
 @app.post("/api/check")
 async def api_check(request: Request):
-    try:
-        body = await request.json()
-    except ValueError:
-        return _bad("body must be JSON {claim}")
-    claim = body.get("claim") if isinstance(body, dict) else None
-    claim = claim.strip() if isinstance(claim, str) else ""
-    if not claim:
-        return _bad("claim is empty")
-    if len(claim) > MAX_CLAIM:
-        return _bad(f"claim longer than {MAX_CLAIM} characters")
+    body, err = await _json_body(request)
+    if err:
+        return err
+    claim, err = _valid_claim(body.get("claim") if isinstance(body, dict) else None)
+    if err:
+        return _bad(err)
     spend0, t0 = llm.run_spend(), time.time()
     card = _finish(await run_in_threadpool(checker.check, claim), claim, spend0, t0)
     _append(card)
@@ -162,6 +185,8 @@ def _valid_claim(claim):
         return None, "claim is empty"
     if len(claim) > MAX_CLAIM:
         return None, f"claim longer than {MAX_CLAIM} characters"
+    if not _encodable(claim):
+        return None, "claim is not valid text"
     return claim, None
 
 

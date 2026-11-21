@@ -205,8 +205,6 @@ def test_empty_calls_log_means_zero_spend_and_calls_proceed(env, monkeypatch):
     assert len(fc.calls) == 1
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a valid-JSON line that is not an object (e.g. 'null') makes run_spend "
-                   "raise AttributeError, so every live call fails. Input: calls.jsonl containing the single line 'null'")
 def test_valid_non_object_json_line_does_not_break_spend(env):
     fc = env(default=resp())
     _write_log("null\n")
@@ -214,10 +212,6 @@ def test_valid_non_object_json_line_does_not_break_spend(env):
     assert len(fc.calls) == 1
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a crash mid-write leaves a partial last line with no newline; the next "
-                   "append is glued onto it, so that reservation is invisible to run_spend and a later reservation "
-                   "is admitted past the cap. Input: partial line w/o newline, then _reserve(0.5, cap=5.0), "
-                   "then _reserve(4.6, cap=5.0) is admitted (total 5.1)")
 def test_partial_line_without_newline_does_not_hide_next_reservation(env):
     _write_log('{"ts": "x", "run_id": "run-test", "kind": "reserve", "reservation_id": "old", "reserved_usd": 4.9')
     llm._reserve(0.5, 5.0)
@@ -225,9 +219,6 @@ def test_partial_line_without_newline_does_not_hide_next_reservation(env):
         llm._reserve(4.6, 5.0)
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: if the success row cannot be written, the outer handler logs the call "
-                   "with cost 0 and settles its reservation, so a billed call vanishes from the run cap. Input: "
-                   "successful call (1000/200/100 tokens, $0.00375) whose log write raises OSError")
 def test_failed_success_log_still_counts_the_billed_cost(env, monkeypatch):
     env(default=resp())
     real_append = llm._append
@@ -440,9 +431,6 @@ def test_file_video_with_duration_is_estimated_at_300_tokens_per_second():
     assert llm._est_input_tokens([part]) == pytest.approx(3600 * llm.VIDEO_TOKENS_PER_S)
 
 
-@pytest.mark.xfail(strict=True, reason="BUG (latent; video_claims always passes a duration): an uploaded file part "
-                   "with no duration is estimated at a flat 2000 input tokens whatever its length, so an hour of "
-                   "video under-reserves about 1.08M tokens. Input: file_data part, no video_metadata")
 def test_file_video_without_duration_is_not_estimated_as_2000_tokens():
     part = types.Part(file_data=types.FileData(file_uri="https://x/v1beta/files/abc", mime_type="video/mp4"))
     assert llm._est_input_tokens([part]) >= 3600 * llm.VIDEO_TOKENS_PER_S
@@ -693,9 +681,6 @@ def test_every_current_real_sheet_is_cited_with_number_title_and_revision(monkey
         assert expect in text, r["sheet"]
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a superseded sheet is cited as if current. Input: evidence sheet "
-                   "'dwg-p003' (current=False, superseded_by='add1-p006') gives 'Sheet G002 ..., rev 06/02/2026' "
-                   "with no mention of the superseding sheet")
 def test_superseded_sheet_is_not_cited_as_current(monkeypatch):
     rows = {r["sheet"]: r for r in _real_rows()}
     assert rows["dwg-p003"]["current"] is False and rows["dwg-p003"]["superseded_by"] == "add1-p006"
@@ -754,10 +739,6 @@ def test_narrative_stops_at_drawings_heading_and_at_wide_pages(tmp_path):
     assert [q["question"] for q in out] == ["First?"]
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: an upper-case 'QUESTION:' header is not recognised (the header regex is "
-                   "case-sensitive), so no error is raised; the Q&A is dropped and its text is absorbed into the "
-                   "previous response. Input: page text 'Question: A?', 'Response: first answer text.', "
-                   "'QUESTION: B?', 'RESPONSE: second answer.'")
 def test_uppercase_question_header_is_not_absorbed_into_previous_response(tmp_path):
     p = make_pdf(tmp_path / "a.pdf", [(["Question: A?", "Response: first answer text.",
                                         "QUESTION: B?", "RESPONSE: second answer."], 612)])
