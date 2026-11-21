@@ -1,0 +1,3455 @@
+[
+ {
+  "id": "dev_01s",
+  "claim": "On A201, the tag at room 107 reads A5.",
+  "expected": "conflict",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "107",
+  "bbox_pt": [
+   951.1,
+   458.0,
+   1391.1,
+   898.0
+  ],
+  "evidence_tokens": [
+   "A5"
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"A5\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p013 -> add1-p007 (global offset [0.0, 0.0] pt): removed ['A5'], added ['A6']; no addendum bullet matches by word overlap (bullets: ['Alternate designation for cubbies in care rooms.', 'Detail 1/A1001 and reference to sheet.', 'Plan keynote 11 in corridor.']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "A5"
+   ],
+   "new_tokens": [
+    "A6"
+   ],
+   "cluster_bbox_pt": [
+    1201.2,
+    630.8,
+    1211.2,
+    655.8
+   ]
+  }
+ },
+ {
+  "id": "dev_01c",
+  "claim": "On A201, the tag at room 107 reads A6.",
+  "expected": "consistent",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "107",
+  "bbox_pt": [
+   951.1,
+   458.0,
+   1391.1,
+   898.0
+  ],
+  "evidence_tokens": [
+   "A6"
+  ],
+  "provenance": "label consistent: \"A6\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p013 -> add1-p007 (global offset [0.0, 0.0] pt): removed ['A5'], added ['A6']; no addendum bullet matches by word overlap (bullets: ['Alternate designation for cubbies in care rooms.', 'Detail 1/A1001 and reference to sheet.', 'Plan keynote 11 in corridor.']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "A5"
+   ],
+   "new_tokens": [
+    "A6"
+   ],
+   "cluster_bbox_pt": [
+    1201.2,
+    630.8,
+    1211.2,
+    655.8
+   ]
+  }
+ },
+ {
+  "id": "dev_02s",
+  "claim": "On A900, the list entry for room 103 is 19\".",
+  "expected": "conflict",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "103",
+  "bbox_pt": [
+   1995.8,
+   0.0,
+   2435.8,
+   440.0
+  ],
+  "evidence_tokens": [
+   "19\""
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"19\"\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['19\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "19\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_02c",
+  "claim": "On A900, the list entry for room 103 is 18\".",
+  "expected": "consistent",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "103",
+  "bbox_pt": [
+   1995.8,
+   0.0,
+   2435.8,
+   440.0
+  ],
+  "evidence_tokens": [
+   "18\""
+  ],
+  "provenance": "label consistent: \"18\"\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['19\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "19\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_03s",
+  "claim": "On P100, the alternate bid note reads Alternate Bid A4.",
+  "expected": "conflict",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "110A",
+  "bbox_pt": [
+   1104.9,
+   1153.3,
+   1544.9,
+   1593.3
+  ],
+  "evidence_tokens": [
+   "A4"
+  ],
+  "provenance": "REPHRASED in dev_v3 (was \"the tag at room 110A reads A4\"; the note is ~270 pt from room 110A so the room anchor was loose). label conflict: the claim asserts the OLD value \"A4\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p033 -> add2-p008 (global offset [0.0, 0.0] pt): removed ['A4'], added ['A5']; addendum bullet most similar (overlap score 8): REVISE: Alternate bid A4 note to read Alternate bid A5..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "A4"
+   ],
+   "new_tokens": [
+    "A5"
+   ],
+   "cluster_bbox_pt": [
+    1259.5,
+    1394.2,
+    1314.7,
+    1428.7
+   ]
+  }
+ },
+ {
+  "id": "dev_03c",
+  "claim": "On P100, the alternate bid note reads Alternate Bid A5.",
+  "expected": "consistent",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "110A",
+  "bbox_pt": [
+   1104.9,
+   1153.3,
+   1544.9,
+   1593.3
+  ],
+  "evidence_tokens": [
+   "A5"
+  ],
+  "provenance": "REPHRASED in dev_v3 (was \"the tag at room 110A reads A5\"; the note is ~270 pt from room 110A so the room anchor was loose). label consistent: \"A5\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p033 -> add2-p008 (global offset [0.0, 0.0] pt): removed ['A4'], added ['A5']; addendum bullet most similar (overlap score 8): REVISE: Alternate bid A4 note to read Alternate bid A5..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "A4"
+   ],
+   "new_tokens": [
+    "A5"
+   ],
+   "cluster_bbox_pt": [
+    1259.5,
+    1394.2,
+    1314.7,
+    1428.7
+   ]
+  }
+ },
+ {
+  "id": "dev_04s",
+  "claim": "On P101, the water closets in Toilet 109B are tagged WC-2.",
+  "expected": "conflict",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "109B",
+  "bbox_pt": [
+   876.3,
+   629.4,
+   1316.3,
+   1069.4
+  ],
+  "evidence_tokens": [
+   "WC-2"
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"WC-2\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-1']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-1"
+   ],
+   "cluster_bbox_pt": [
+    1062.7,
+    829.8,
+    1152.8,
+    964.3
+   ]
+  }
+ },
+ {
+  "id": "dev_04c",
+  "claim": "On P101, the water closets in Toilet 109B are tagged WC-1.",
+  "expected": "consistent",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "109B",
+  "bbox_pt": [
+   876.3,
+   629.4,
+   1316.3,
+   1069.4
+  ],
+  "evidence_tokens": [
+   "WC-1"
+  ],
+  "provenance": "label consistent: \"WC-1\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-1']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-1"
+   ],
+   "cluster_bbox_pt": [
+    1062.7,
+    829.8,
+    1152.8,
+    964.3
+   ]
+  }
+ },
+ {
+  "id": "dev_05s",
+  "claim": "On E200, the tag at room 109 reads A-39.",
+  "expected": "conflict",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "109",
+  "bbox_pt": [
+   668.8,
+   387.8,
+   1108.8,
+   827.8
+  ],
+  "evidence_tokens": [
+   "A-36"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"A-39\" (same shape as the real \"A-36\"), verified absent from the words of both crops; the real value is \"A-36\". word diff dwg-p049 -> add1-p021 (global offset [0.0, 0.0] pt): removed [], added ['A-36']; no addendum bullet matches by word overlap (bullets: ['General note 6', 'Note 4,5,6', 'Fire Alarm Scope Notes', 'Receptacles about the lockers in the child care ro', 'Receptacles in the crib room and the infants room', 'Fire Alarm Annunciator panel', 'GFI receptacle in utility 117', 'Data Device with wire amount:', 'Details 1/E400 and 2/E400', 'Plane Notes 3,4,5,6 to plan', 'Conduit in Shipping and Receiving']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "A-39"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "A-36"
+   ],
+   "cluster_bbox_pt": [
+    926.7,
+    404.5,
+    1006.1,
+    735.6
+   ]
+  }
+ },
+ {
+  "id": "dev_05c",
+  "claim": "On E200, the tag at room 109 reads A-36.",
+  "expected": "consistent",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "109",
+  "bbox_pt": [
+   668.8,
+   387.8,
+   1108.8,
+   827.8
+  ],
+  "evidence_tokens": [
+   "A-36"
+  ],
+  "provenance": "label consistent: \"A-36\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p049 -> add1-p021 (global offset [0.0, 0.0] pt): removed [], added ['A-36']; no addendum bullet matches by word overlap (bullets: ['General note 6', 'Note 4,5,6', 'Fire Alarm Scope Notes', 'Receptacles about the lockers in the child care ro', 'Receptacles in the crib room and the infants room', 'Fire Alarm Annunciator panel', 'GFI receptacle in utility 117', 'Data Device with wire amount:', 'Details 1/E400 and 2/E400', 'Plane Notes 3,4,5,6 to plan', 'Conduit in Shipping and Receiving']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "A-36"
+   ],
+   "cluster_bbox_pt": [
+    926.7,
+    404.5,
+    1006.1,
+    735.6
+   ]
+  }
+ },
+ {
+  "id": "dev_06s",
+  "claim": "On ED200, room 124 is JANITOR.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "124",
+  "bbox_pt": [
+   704.8,
+   339.5,
+   1144.8,
+   779.5
+  ],
+  "evidence_tokens": [
+   "PROGRAM",
+   "AIDS",
+   "124"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"JANITOR\" (same shape as the real \"PROGRAM\"), verified absent from the words of both crops; the real value is \"PROGRAM\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['124']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "JANITOR"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "124"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_06c",
+  "claim": "On ED200, room 124 is PROGRAM AIDS.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "124",
+  "bbox_pt": [
+   704.8,
+   339.5,
+   1144.8,
+   779.5
+  ],
+  "evidence_tokens": [
+   "PROGRAM",
+   "AIDS",
+   "124"
+  ],
+  "provenance": "label consistent: \"PROGRAM\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['124']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "124"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_07s",
+  "claim": "On A900, the list entry for room 102 is 15\".",
+  "expected": "conflict",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "102",
+  "bbox_pt": [
+   2014.9,
+   0.0,
+   2454.9,
+   440.0
+  ],
+  "evidence_tokens": [
+   "15\""
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"15\"\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['15\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "15\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_07c",
+  "claim": "On A900, the list entry for room 102 is 18\".",
+  "expected": "consistent",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "102",
+  "bbox_pt": [
+   2014.9,
+   0.0,
+   2454.9,
+   440.0
+  ],
+  "evidence_tokens": [
+   "18\""
+  ],
+  "provenance": "label consistent: \"18\"\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['15\"'], added ['18\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "15\""
+   ],
+   "new_tokens": [
+    "18\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_08s",
+  "claim": "On P101, the water closets in Toilet 105A are tagged WC-2.",
+  "expected": "conflict",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "105A",
+  "bbox_pt": [
+   1174.1,
+   667.4,
+   1614.1,
+   1107.4
+  ],
+  "evidence_tokens": [
+   "WC-2"
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"WC-2\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-3']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-3"
+   ],
+   "cluster_bbox_pt": [
+    1371.5,
+    880.8,
+    1409.4,
+    931.6
+   ]
+  }
+ },
+ {
+  "id": "dev_08c",
+  "claim": "On P101, two of the water closets in Toilet 105A are tagged WC-3.",
+  "expected": "consistent",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "105A",
+  "bbox_pt": [
+   1174.1,
+   667.4,
+   1614.1,
+   1107.4
+  ],
+  "evidence_tokens": [
+   "WC-3"
+  ],
+  "provenance": "REPHRASED in dev_v3 (was \"the water closets in Toilet 105A are tagged WC-3\", which is false because the third closet is WC-2). label consistent: current P101 shows WC-3 twice and WC-2 once inside the 105A window; two ARE tagged WC-3. label consistent: \"WC-3\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p034 -> add1-p018 (global offset [3.0, 0.0] pt): removed ['WC-2'], added ['WC-3']; no addendum bullet matches by word overlap (bullets: ['Water closet tags in Toilet 105A.', 'Water closet tag in Toilet 109A.', 'Water closet tag in Toilet 109B.']).",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "WC-2"
+   ],
+   "new_tokens": [
+    "WC-3"
+   ],
+   "cluster_bbox_pt": [
+    1371.5,
+    880.8,
+    1409.4,
+    931.6
+   ]
+  }
+ },
+ {
+  "id": "dev_09s",
+  "claim": "On ED200, room 125 is JANITOR.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125",
+  "bbox_pt": [
+   687.6,
+   571.5,
+   1127.6,
+   1011.5
+  ],
+  "evidence_tokens": [
+   "TOOLS",
+   "125"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"JANITOR\" (same shape as the real \"TOOLS\"), verified absent from the words of both crops; the real value is \"TOOLS\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "JANITOR"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_09c",
+  "claim": "On ED200, room 125 is TOOLS.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125",
+  "bbox_pt": [
+   687.6,
+   571.5,
+   1127.6,
+   1011.5
+  ],
+  "evidence_tokens": [
+   "TOOLS",
+   "125"
+  ],
+  "provenance": "label consistent: \"TOOLS\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_10s",
+  "claim": "On A900, the list entry for room 106 is 25\".",
+  "expected": "conflict",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "106",
+  "bbox_pt": [
+   1999.7,
+   0.0,
+   2439.7,
+   440.0
+  ],
+  "evidence_tokens": [
+   "25\""
+  ],
+  "provenance": "label conflict: the claim asserts the OLD value \"25\"\", which is in this window on the superseded sheet but not (or less) on the current sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['25\"'], added ['24\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale",
+  "change": {
+   "old_tokens": [
+    "25\""
+   ],
+   "new_tokens": [
+    "24\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_10c",
+  "claim": "On A900, the list entry for room 106 is 24\".",
+  "expected": "consistent",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "106",
+  "bbox_pt": [
+   1999.7,
+   0.0,
+   2439.7,
+   440.0
+  ],
+  "evidence_tokens": [
+   "24\""
+  ],
+  "provenance": "label consistent: \"24\"\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p021 -> add1-p013 (global offset [0.0, 0.0] pt): removed ['25\"'], added ['24\"']; addendum bullet most similar (overlap score 3): REVISE: Fixture height Interior Elevation Notes..",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [
+    "25\""
+   ],
+   "new_tokens": [
+    "24\""
+   ],
+   "cluster_bbox_pt": [
+    2174.2,
+    126.0,
+    2296.4,
+    186.3
+   ]
+  }
+ },
+ {
+  "id": "dev_11s",
+  "claim": "On ED200, room 122 is STORAGE.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "122",
+  "bbox_pt": [
+   855.1,
+   570.1,
+   1295.1,
+   1010.1
+  ],
+  "evidence_tokens": [
+   "TRANSITION",
+   "122"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"STORAGE\" (same shape as the real \"TRANSITION\"), verified absent from the words of both crops; the real value is \"TRANSITION\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['122']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "STORAGE"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "122"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_11c",
+  "claim": "On ED200, room 122 is TRANSITION.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "122",
+  "bbox_pt": [
+   855.1,
+   570.1,
+   1295.1,
+   1010.1
+  ],
+  "evidence_tokens": [
+   "TRANSITION",
+   "122"
+  ],
+  "provenance": "label consistent: \"TRANSITION\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['122']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "122"
+   ],
+   "cluster_bbox_pt": [
+    660.4,
+    549.4,
+    1294.9,
+    979.8
+   ]
+  }
+ },
+ {
+  "id": "dev_12s",
+  "claim": "On ED200, room 127 is STORAGE.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "127",
+  "bbox_pt": [
+   1582.0,
+   766.7,
+   2022.0,
+   1206.7
+  ],
+  "evidence_tokens": [
+   "FURNACE",
+   "127"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"STORAGE\" (same shape as the real \"FURNACE\"), verified absent from the words of both crops; the real value is \"FURNACE\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['127']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "STORAGE"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "127"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_12c",
+  "claim": "On ED200, room 127 is FURNACE.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "127",
+  "bbox_pt": [
+   1582.0,
+   766.7,
+   2022.0,
+   1206.7
+  ],
+  "evidence_tokens": [
+   "FURNACE",
+   "127"
+  ],
+  "provenance": "label consistent: \"FURNACE\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['127']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "127"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_13s",
+  "claim": "On ED200, room 125A is STORAGE.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125A",
+  "bbox_pt": [
+   1582.2,
+   835.8,
+   2022.2,
+   1275.8
+  ],
+  "evidence_tokens": [
+   "COAT",
+   "ROOM",
+   "125A"
+  ],
+  "provenance": "label conflict: pure addition, so nothing was there before; the claim asserts a plausible wrong value \"STORAGE\" (same shape as the real \"COAT\"), verified absent from the words of both crops; the real value is \"COAT\". word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125A']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "stale_decoy",
+  "absent_tokens": [
+   "STORAGE"
+  ],
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125A"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_13c",
+  "claim": "On ED200, room 125A is COAT ROOM.",
+  "expected": "consistent",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "125A",
+  "bbox_pt": [
+   1582.2,
+   835.8,
+   2022.2,
+   1275.8
+  ],
+  "evidence_tokens": [
+   "COAT",
+   "ROOM",
+   "125A"
+  ],
+  "provenance": "label consistent: \"COAT\" is in this window on the current sheet and was not (or less) on the superseded sheet. word diff dwg-p046 -> add2-p009 (global offset [0.0, 0.0] pt): removed [], added ['125A']; no addendum bullet matches by word overlap (bullets: ['EXR to ER for MSB  and existing PANEL C']).",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "current",
+  "change": {
+   "old_tokens": [],
+   "new_tokens": [
+    "125A"
+   ],
+   "cluster_bbox_pt": [
+    1778.0,
+    976.6,
+    2170.4,
+    1739.3
+   ]
+  }
+ },
+ {
+  "id": "dev_u01",
+  "claim": "On A201, the product at room 107 is manufactured by Kohler.",
+  "expected": "unclear",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "107",
+  "bbox_pt": [
+   986.2,
+   423.3,
+   1426.2,
+   863.3
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['Kohler'] occur nowhere on add1-p007 or dwg-p013 (checked all 1903+1857 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "Kohler"
+  ]
+ },
+ {
+  "id": "dev_u02",
+  "claim": "On P100, the work at room 110A is scheduled for completion in March 2027.",
+  "expected": "unclear",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "110A",
+  "bbox_pt": [
+   1067.1,
+   1191.5,
+   1507.1,
+   1631.5
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['March', '2027'] occur nowhere on add2-p008 or dwg-p033 (checked all 467+462 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "March",
+   "2027"
+  ]
+ },
+ {
+  "id": "dev_u04",
+  "claim": "On A900, the unit cost for the work at room 105 is $4,500.",
+  "expected": "unclear",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "105",
+  "bbox_pt": [
+   2015.3,
+   0.0,
+   2455.3,
+   440.0
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['$4,500'] occur nowhere on add1-p013 or dwg-p021 (checked all 1202+1184 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   0.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "$4,500"
+  ]
+ },
+ {
+  "id": "dev_u05",
+  "claim": "On P101, the contractor responsible for Toilet 109B is Kellerman Construction.",
+  "expected": "unclear",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "109B",
+  "bbox_pt": [
+   887.8,
+   677.0,
+   1327.8,
+   1117.0
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: ['Kellerman'] occur nowhere on add1-p018 or dwg-p034 (checked all 592+585 words, case-insensitive), so no crop can support or refute it.",
+  "offset_pt": [
+   3.0,
+   0.0
+  ],
+  "kind": "unclear",
+  "absent_tokens": [
+   "Kellerman"
+  ]
+ },
+ {
+  "id": "dev_n01",
+  "claim": "Per Addendum 1, G002 now draws the corridor walls as a 1 hour fire partition.",
+  "expected": "consistent",
+  "sheet_number": "G002",
+  "current_sheet": "add1-p006",
+  "superseded_sheet": "dwg-p003",
+  "anchor": "=",
+  "bbox_pt": [
+   2417.9,
+   41.6,
+   2737.9,
+   151.6
+  ],
+  "evidence_tokens": [
+   "=",
+   "1",
+   "HOUR",
+   "FIRE",
+   "PARTITION",
+   "(CORRIDOR)"
+  ],
+  "provenance": "label consistent: read on add1-p006 (G002): legend entry \"1 HOUR FIRE PARTITION (CORRIDOR)\"; the superseded G002 had no CORRIDOR partition entry (diff added 1FP / (CORRIDOR)).",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n02",
+  "claim": "The code summary allows 250 feet of exit access travel distance in non-sprinklered educational occupancies.",
+  "expected": "conflict",
+  "sheet_number": "G002",
+  "current_sheet": "add1-p006",
+  "superseded_sheet": "dwg-p003",
+  "anchor": "200",
+  "bbox_pt": [
+   2402.6,
+   948.6,
+   2736.5,
+   1058.6
+  ],
+  "evidence_tokens": [
+   "200",
+   "FEET",
+   "IN",
+   "NON-SPRINKLERED",
+   "EDUCATIONAL",
+   "(E)",
+   "OCCUPANCIES"
+  ],
+  "provenance": "label conflict: read on add1-p006 (G002): the sheet says 200 FEET, not 250.",
+  "kind": "manual",
+  "absent_tokens": [
+   "250"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n05",
+  "claim": "The plumbing calculation shows 5 water closets required and 10 provided, including 2 unisex.",
+  "expected": "consistent",
+  "sheet_number": "G002",
+  "current_sheet": "add1-p006",
+  "superseded_sheet": "dwg-p003",
+  "anchor": "5",
+  "bbox_pt": [
+   2402.6,
+   1745.0,
+   2732.2,
+   1855.0
+  ],
+  "evidence_tokens": [
+   "5",
+   "TOTAL",
+   "WC's",
+   "REQ'D,",
+   "10",
+   "TOTAL",
+   "WC's",
+   "(INCL.",
+   "2",
+   "UNISEX)",
+   "PROVIDED"
+  ],
+  "provenance": "label consistent: read on add1-p006 (G002): plumbing calculation line reads exactly that.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n07",
+  "claim": "The G002 code summary names Honeywell as the fire alarm panel manufacturer.",
+  "expected": "unclear",
+  "sheet_number": "G002",
+  "current_sheet": "add1-p006",
+  "superseded_sheet": "dwg-p003",
+  "anchor": null,
+  "bbox_pt": [
+   2000,
+   1010,
+   2740,
+   1290
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: the code summary says fire alarm is required per IBC Ch. 9 but names no manufacturer; Honeywell is on no drawing. Tokens ['Honeywell'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Honeywell"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n10",
+  "claim": "The 507 SF room works out to 42.25 SF per child for 12 children.",
+  "expected": "consistent",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "(507",
+  "bbox_pt": [
+   1591.4,
+   542.2,
+   1911.4,
+   652.2
+  ],
+  "evidence_tokens": [
+   "(507",
+   "SF/12",
+   "Children",
+   "=",
+   "42.25",
+   "SF",
+   "Per",
+   "Child)"
+  ],
+  "provenance": "label consistent: read on add1-p007 (A201): area callout reads (507 SF/12 Children = 42.25 SF Per Child).",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n11",
+  "claim": "The 507 SF room with 12 children comes to 36.75 SF per child.",
+  "expected": "conflict",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": "(507",
+  "bbox_pt": [
+   1591.4,
+   542.2,
+   1911.4,
+   652.2
+  ],
+  "evidence_tokens": [
+   "(507",
+   "SF/12",
+   "Children",
+   "=",
+   "42.25",
+   "SF",
+   "Per",
+   "Child)"
+  ],
+  "provenance": "label conflict: read on add1-p007 (A201): 36.75 belongs to the 1,325 SF / 36 children room; this room reads 42.25.",
+  "kind": "manual",
+  "absent_tokens": [
+   "36.75"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n14",
+  "claim": "What is the lead time on the storefront doors? 12 weeks.",
+  "expected": "unclear",
+  "sheet_number": "A201",
+  "current_sheet": "add1-p007",
+  "superseded_sheet": "dwg-p013",
+  "anchor": null,
+  "bbox_pt": [
+   2189,
+   0,
+   2740,
+   740
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: a plan sheet with no procurement or lead-time information anywhere on the drawings. Tokens ['lead time'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "lead time"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n15",
+  "claim": "The roofer has to patch and repair new roof penetrations from MEP piping, duct and equipment.",
+  "expected": "consistent",
+  "sheet_number": "A203",
+  "current_sheet": "add1-p008",
+  "superseded_sheet": "dwg-p015",
+  "anchor": "ROOFING",
+  "bbox_pt": [
+   2216.0,
+   44.3,
+   2756.6,
+   154.3
+  ],
+  "evidence_tokens": [
+   "ROOFING",
+   "CONTRACTOR",
+   "TO",
+   "PATCH",
+   "AND",
+   "REPAIR",
+   "NEW",
+   "ROOF",
+   "PENETRATIONS",
+   "FROM",
+   "MEP",
+   "PIPING",
+   "/",
+   "DUCT",
+   "/",
+   "EQUIPMENT.",
+   "TIE",
+   "MEMBRANE",
+   "FLASHING",
+   "INTO",
+   "EXISTING",
+   "ROOFING",
+   "MEMBRANE.",
+   "SEE",
+   "MECHACNIAL",
+   "DRAWINGS."
+  ],
+  "provenance": "label consistent: read on add1-p008 (A203): keynote text as quoted; keynote index was added by Addendum 1.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n16",
+  "claim": "The mechanical contractor, not the roofer, patches the roof where new MEP piping and ducts come through.",
+  "expected": "conflict",
+  "sheet_number": "A203",
+  "current_sheet": "add1-p008",
+  "superseded_sheet": "dwg-p015",
+  "anchor": "ROOFING",
+  "bbox_pt": [
+   2216.0,
+   38.8,
+   2756.6,
+   148.8
+  ],
+  "evidence_tokens": [
+   "ROOFING",
+   "CONTRACTOR",
+   "TO",
+   "PATCH",
+   "AND",
+   "REPAIR",
+   "NEW",
+   "ROOF",
+   "PENETRATIONS",
+   "FROM",
+   "MEP",
+   "PIPING",
+   "/",
+   "DUCT",
+   "/",
+   "EQUIPMENT.",
+   "TIE"
+  ],
+  "provenance": "label conflict: read on add1-p008 (A203): keynote assigns the work to the ROOFING CONTRACTOR.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n17",
+  "claim": "The roof plan A203 has no keynotes.",
+  "expected": "conflict",
+  "sheet_number": "A203",
+  "current_sheet": "add1-p008",
+  "superseded_sheet": "dwg-p015",
+  "anchor": "ROOF",
+  "bbox_pt": [
+   2321.7,
+   0.3,
+   2641.7,
+   110.3
+  ],
+  "evidence_tokens": [
+   "ROOF",
+   "PLAN",
+   "KEYNOTES"
+  ],
+  "provenance": "label conflict: read on add1-p008 (A203): Addendum 1 added a ROOF PLAN KEYNOTES table to A203; the bid-set A203 had none.",
+  "kind": "stale",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n19",
+  "claim": "Hold-down clips are required on the acoustical ceiling tile in the vestibules.",
+  "expected": "consistent",
+  "sheet_number": "A301",
+  "current_sheet": "add1-p009",
+  "superseded_sheet": "dwg-p016",
+  "anchor": "PROVIDE",
+  "bbox_pt": [
+   2200.4,
+   423.2,
+   2520.4,
+   533.2
+  ],
+  "evidence_tokens": [
+   "PROVIDE",
+   "HOLD-DOWN",
+   "CLIPS",
+   "AT",
+   "VESTIBULE",
+   "ACT."
+  ],
+  "provenance": "label consistent: read on add1-p009 (A301): ceiling keynote text.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n20",
+  "claim": "Hold-down clips are called for on the corridor acoustical ceiling tile.",
+  "expected": "conflict",
+  "sheet_number": "A301",
+  "current_sheet": "add1-p009",
+  "superseded_sheet": "dwg-p016",
+  "anchor": "PROVIDE",
+  "bbox_pt": [
+   2200.4,
+   423.2,
+   2520.4,
+   533.2
+  ],
+  "evidence_tokens": [
+   "PROVIDE",
+   "HOLD-DOWN",
+   "CLIPS",
+   "AT",
+   "VESTIBULE",
+   "ACT."
+  ],
+  "provenance": "label conflict: read on add1-p009 (A301): keynote says VESTIBULE ACT, not corridor.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n22",
+  "claim": "The ceiling plan notes give the NRC rating the ceiling tile must meet.",
+  "expected": "unclear",
+  "sheet_number": "A301",
+  "current_sheet": "add1-p009",
+  "superseded_sheet": "dwg-p016",
+  "anchor": null,
+  "bbox_pt": [
+   2160,
+   0,
+   2840,
+   370
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: legend and notes name tile size only; no NRC / sound absorption value on the drawings. Tokens ['NRC'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "NRC"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n23",
+  "claim": "Keynote E01 on the exterior elevations is existing CMU wall construction to remain.",
+  "expected": "consistent",
+  "sheet_number": "A400",
+  "current_sheet": "add1-p010",
+  "superseded_sheet": "dwg-p017",
+  "anchor": "E01",
+  "bbox_pt": [
+   2225.2,
+   48.8,
+   2545.2,
+   158.8
+  ],
+  "evidence_tokens": [
+   "E01",
+   "EXISTING",
+   "CMU",
+   "WALL",
+   "CONSTRUCTION",
+   "TO",
+   "REMAIN."
+  ],
+  "provenance": "label consistent: read on add1-p010 (A400): keynote row E01.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n24",
+  "claim": "Exterior elevation keynote E01 is a new aluminum glazing assembly.",
+  "expected": "conflict",
+  "sheet_number": "A400",
+  "current_sheet": "add1-p010",
+  "superseded_sheet": "dwg-p017",
+  "anchor": "E01",
+  "bbox_pt": [
+   2225.2,
+   48.8,
+   2545.2,
+   158.8
+  ],
+  "evidence_tokens": [
+   "E01",
+   "EXISTING",
+   "CMU",
+   "WALL",
+   "CONSTRUCTION",
+   "TO",
+   "REMAIN."
+  ],
+  "provenance": "label conflict: read on add1-p010 (A400): E01 is existing CMU wall to remain (the glazing assembly is E02).",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n26",
+  "claim": "A400 does not have an exterior elevation keynote table.",
+  "expected": "conflict",
+  "sheet_number": "A400",
+  "current_sheet": "add1-p010",
+  "superseded_sheet": "dwg-p017",
+  "anchor": "EXTERIOR",
+  "bbox_pt": [
+   2341.7,
+   10.3,
+   2661.7,
+   120.3
+  ],
+  "evidence_tokens": [
+   "EXTERIOR",
+   "ELEVATION",
+   "KEYNOTES"
+  ],
+  "provenance": "label conflict: read on add1-p010 (A400): the table EXTERIOR ELEVATION KEYNOTES was added by Addendum 1 and is on the current sheet.",
+  "kind": "stale",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n27",
+  "claim": "The elevation notes on A400 state the storefront glazing U-factor is 0.30.",
+  "expected": "unclear",
+  "sheet_number": "A400",
+  "current_sheet": "add1-p010",
+  "superseded_sheet": "dwg-p017",
+  "anchor": null,
+  "bbox_pt": [
+   2230,
+   17,
+   2840,
+   370
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: keynotes describe components but give no thermal performance values. Tokens ['U-factor', 'u factor'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "U-factor",
+   "u factor"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n28",
+  "claim": "The wall section shows gypsum board laminated to new CMU over the existing 3-hour firewall.",
+  "expected": "consistent",
+  "sheet_number": "A500",
+  "current_sheet": "add1-p011",
+  "superseded_sheet": "dwg-p018",
+  "anchor": "GWB",
+  "bbox_pt": [
+   2319.2,
+   492.7,
+   2639.2,
+   602.7
+  ],
+  "evidence_tokens": [
+   "GWB",
+   "LAMINATED",
+   "TO",
+   "NEW",
+   "CMU",
+   "OVER",
+   "EXISTING",
+   "3-HOUR",
+   "FIREWALL."
+  ],
+  "provenance": "label consistent: read on add1-p011 (A500): detail keynote.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n29",
+  "claim": "The wall section shows gypsum board laminated to new CMU over an existing 1-hour fire barrier.",
+  "expected": "conflict",
+  "sheet_number": "A500",
+  "current_sheet": "add1-p011",
+  "superseded_sheet": "dwg-p018",
+  "anchor": "GWB",
+  "bbox_pt": [
+   2319.2,
+   492.7,
+   2639.2,
+   602.7
+  ],
+  "evidence_tokens": [
+   "GWB",
+   "LAMINATED",
+   "TO",
+   "NEW",
+   "CMU",
+   "OVER",
+   "EXISTING",
+   "3-HOUR",
+   "FIREWALL."
+  ],
+  "provenance": "label conflict: read on add1-p011 (A500): the keynote says 3-HOUR FIREWALL.",
+  "kind": "manual",
+  "absent_tokens": [
+   "1-HOUR"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n32",
+  "claim": "Per Addendum 1, the flex rooms 109 A/B wall mounted sink is set at 30 inches to the rim.",
+  "expected": "consistent",
+  "sheet_number": "A800",
+  "current_sheet": "add1-p012",
+  "superseded_sheet": "dwg-p020",
+  "anchor": "FLEX",
+  "bbox_pt": [
+   2079.7,
+   120.3,
+   2399.7,
+   230.3
+  ],
+  "evidence_tokens": [
+   "FLEX",
+   "109",
+   "A/B",
+   "-",
+   "30\"",
+   "TO",
+   "RIM"
+  ],
+  "provenance": "label consistent: read on add1-p012 (A800): entry added by Addendum 1 (word diff: FLEX 109 A/B - 30\" TO RIM added).",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n33",
+  "claim": "The wall mounted sink in the Threes 105 room is set at 25 inches to the rim.",
+  "expected": "conflict",
+  "sheet_number": "A800",
+  "current_sheet": "add1-p012",
+  "superseded_sheet": "dwg-p020",
+  "anchor": "THREES",
+  "bbox_pt": [
+   2078.3,
+   98.2,
+   2398.3,
+   208.2
+  ],
+  "evidence_tokens": [
+   "THREES",
+   "105",
+   "-",
+   "24\"",
+   "TO",
+   "RIM"
+  ],
+  "provenance": "label conflict: read on add1-p012 (A800): current entry is 24\"; 25\" was the bid-set value (diff removed 25\"). Superseded sheet dwg-p020 still has ['25\"'].",
+  "kind": "stale",
+  "absent_tokens": [
+   "25\""
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n36",
+  "claim": "The enlarged Activity Center 110 plan on A800 is labelled as Alt A4.",
+  "expected": "consistent",
+  "sheet_number": "A800",
+  "current_sheet": "add1-p012",
+  "superseded_sheet": "dwg-p020",
+  "anchor": "ENLARGED",
+  "bbox_pt": [
+   655.9,
+   230.8,
+   1060.4,
+   340.8
+  ],
+  "evidence_tokens": [
+   "ENLARGED",
+   "ACTIVITY",
+   "CENTER",
+   "110",
+   "(ALT",
+   "A4)"
+  ],
+  "provenance": "label consistent: read on add1-p012 (A800): title reads (ALT A4); bid-set read (ALT A3). Superseded sheet dwg-p020 still has ['A3'].",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n37",
+  "claim": "The enlarged Activity Center 110 plan is an Alt A3 item.",
+  "expected": "conflict",
+  "sheet_number": "A800",
+  "current_sheet": "add1-p012",
+  "superseded_sheet": "dwg-p020",
+  "anchor": "ENLARGED",
+  "bbox_pt": [
+   655.9,
+   230.8,
+   1060.4,
+   340.8
+  ],
+  "evidence_tokens": [
+   "ENLARGED",
+   "ACTIVITY",
+   "CENTER",
+   "110",
+   "(ALT",
+   "A4)"
+  ],
+  "provenance": "label conflict: read on add1-p012 (A800): current title is (ALT A4); A3 was the bid-set label. Superseded sheet dwg-p020 still has ['A3'].",
+  "kind": "stale",
+  "absent_tokens": [
+   "A3"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n41",
+  "claim": "The sink height list has Flex 109 A/B at 24 inches to the rim.",
+  "expected": "conflict",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "FLEX",
+  "bbox_pt": [
+   2063.4,
+   120.1,
+   2383.4,
+   230.1
+  ],
+  "evidence_tokens": [
+   "FLEX",
+   "109",
+   "A/B",
+   "-",
+   "30\"",
+   "TO",
+   "RIM"
+  ],
+  "provenance": "label conflict: read on add1-p013 (A900): Flex 109 A/B is 30\" TO RIM.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n44",
+  "claim": "The general wall notes on A1000 call for 5/8 inch Type X gypsum board on all metal stud and shaft walls unless noted.",
+  "expected": "consistent",
+  "sheet_number": "A1000",
+  "current_sheet": "add1-p014",
+  "superseded_sheet": "dwg-p022",
+  "anchor": "PROVIDE",
+  "bbox_pt": [
+   2343.4,
+   121.5,
+   2759.9,
+   231.5
+  ],
+  "evidence_tokens": [
+   "PROVIDE",
+   "5/8\"",
+   "TYPE",
+   "'X'",
+   "GYPSUM",
+   "BOARD",
+   "FOR",
+   "ALL",
+   "METAL",
+   "STUD",
+   "&",
+   "SHAFT",
+   "WALLS",
+   "UNLESS",
+   "NOTED",
+   "OTHERWISE."
+  ],
+  "provenance": "label consistent: read on add1-p014 (A1000): general wall note.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n45",
+  "claim": "Metal stud and shaft walls get 1/2 inch Type X gypsum board unless noted.",
+  "expected": "conflict",
+  "sheet_number": "A1000",
+  "current_sheet": "add1-p014",
+  "superseded_sheet": "dwg-p022",
+  "anchor": "PROVIDE",
+  "bbox_pt": [
+   2343.4,
+   116.0,
+   2759.9,
+   226.0
+  ],
+  "evidence_tokens": [
+   "PROVIDE",
+   "5/8\"",
+   "TYPE",
+   "'X'",
+   "GYPSUM",
+   "BOARD",
+   "FOR",
+   "ALL",
+   "METAL",
+   "STUD",
+   "&",
+   "SHAFT",
+   "WALLS",
+   "UNLESS"
+  ],
+  "provenance": "label conflict: read on add1-p014 (A1000): note says 5/8\", not 1/2\".",
+  "kind": "manual",
+  "absent_tokens": [
+   "1/2\""
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n50",
+  "claim": "Glazing type GL-2 is 3/16 inch fire rated glass.",
+  "expected": "conflict",
+  "sheet_number": "A1001",
+  "current_sheet": "add1-p015",
+  "superseded_sheet": "dwg-p023",
+  "anchor": "GL-2",
+  "bbox_pt": [
+   887.7,
+   115.3,
+   1207.7,
+   225.3
+  ],
+  "evidence_tokens": [
+   "GL-2",
+   "1/4\"",
+   "THICK",
+   "CLEAR",
+   "TEMPERED",
+   "FLOAT",
+   "GLASS"
+  ],
+  "provenance": "label conflict: read on add1-p015 (A1001): GL-2 is 1/4\" clear tempered float glass; the fire rated glass is GL-3.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n52",
+  "claim": "In the room finish schedule, Utility 108 has a sealed concrete floor and RB-1 base.",
+  "expected": "consistent",
+  "sheet_number": "A1100",
+  "current_sheet": "add2-p007",
+  "superseded_sheet": "dwg-p025",
+  "anchor": "108",
+  "bbox_pt": [
+   1267.6,
+   494.5,
+   1591.5,
+   604.5
+  ],
+  "evidence_tokens": [
+   "108",
+   "UTILITY",
+   "SCONC",
+   "RB-1"
+  ],
+  "provenance": "label consistent: read on add2-p007 (A1100): row 108 UTILITY: floor SCONC, base RB-1.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n54",
+  "claim": "Kitchen 111 gets LVT-1 on the floor per the room finish schedule.",
+  "expected": "conflict",
+  "sheet_number": "A1100",
+  "current_sheet": "add2-p007",
+  "superseded_sheet": "dwg-p025",
+  "anchor": "111",
+  "bbox_pt": [
+   1234.7,
+   608.3,
+   1554.7,
+   718.3
+  ],
+  "evidence_tokens": [
+   "111",
+   "KITCHEN",
+   "EPF-1"
+  ],
+  "provenance": "label conflict: read on add2-p007 (A1100): Kitchen 111 floor is EPF-1 (epoxy flooring), not LVT-1.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n58",
+  "claim": "The Color and Material Schedule lists the toilet partition TP-1 as Scranton Hiny Hiders in Linen.",
+  "expected": "consistent",
+  "sheet_number": "A1100",
+  "current_sheet": "add2-p007",
+  "superseded_sheet": "dwg-p025",
+  "anchor": "TP-1",
+  "bbox_pt": [
+   289.4,
+   1006.0,
+   885.2,
+   1116.0
+  ],
+  "evidence_tokens": [
+   "TP-1",
+   "Toilet",
+   "Partition",
+   "Scranton",
+   "Hiny",
+   "Hiders",
+   "Linen"
+  ],
+  "provenance": "label consistent: read on add2-p007 (A1100): TP-1 row.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n61",
+  "claim": "The epoxy flooring EPF-1 has a 14 week lead time.",
+  "expected": "unclear",
+  "sheet_number": "A1100",
+  "current_sheet": "add2-p007",
+  "superseded_sheet": "dwg-p025",
+  "anchor": "EPF-1",
+  "bbox_pt": [
+   269.2,
+   325.9,
+   589.2,
+   435.9
+  ],
+  "evidence_tokens": [
+   "EPF-1",
+   "Epoxy",
+   "Flooring",
+   "Sherwin",
+   "Williams"
+  ],
+  "provenance": "label unclear: EPF-1 row gives manufacturer/product/color only; no lead time. Tokens ['lead time'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "lead time"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n62",
+  "claim": "The plumbing fixture schedule lists WC-3 as the American Standard Cadet 2462.016, floor mount at a 15.0\" rim height.",
+  "expected": "consistent",
+  "sheet_number": "P001",
+  "current_sheet": "add1-p017",
+  "superseded_sheet": "dwg-p030",
+  "anchor": "WC-3",
+  "bbox_pt": [
+   557.7,
+   369.1,
+   2139.5,
+   479.1
+  ],
+  "evidence_tokens": [
+   "WC-3",
+   "WATER",
+   "CLOSET",
+   "FLOOR",
+   "SET",
+   "AMERICAN",
+   "STANDARD",
+   "FLOOR",
+   "MOUNT",
+   "WITH",
+   "15.0\"",
+   "RIM",
+   "HEIGHT,",
+   "1.6",
+   "GPF"
+  ],
+  "provenance": "label consistent: read on add1-p017 (P001): WC-3 row was added by Addendum 1.",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n63",
+  "claim": "The plumbing fixture schedule lists only two water closet types, WC-1 and WC-2.",
+  "expected": "conflict",
+  "sheet_number": "P001",
+  "current_sheet": "add1-p017",
+  "superseded_sheet": "dwg-p030",
+  "anchor": "WC-3",
+  "bbox_pt": [
+   557.7,
+   369.1,
+   923.0,
+   479.1
+  ],
+  "evidence_tokens": [
+   "WC-3",
+   "WATER",
+   "CLOSET",
+   "FLOOR",
+   "SET",
+   "AMERICAN",
+   "STANDARD"
+  ],
+  "provenance": "label conflict: read on add1-p017 (P001): WC-3 now exists; the bid-set P001 had only WC-1 and WC-2.",
+  "kind": "stale",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n67",
+  "claim": "P001 says the water heater is a gas unit from A. O. Smith.",
+  "expected": "unclear",
+  "sheet_number": "P001",
+  "current_sheet": "add1-p017",
+  "superseded_sheet": "dwg-p030",
+  "anchor": "GAS",
+  "bbox_pt": [
+   2370.7,
+   1526.0,
+   2690.7,
+   1636.0
+  ],
+  "evidence_tokens": [
+   "GAS",
+   "WATER",
+   "HEATER"
+  ],
+  "provenance": "label unclear: key calls it GAS WATER HEATER but names no manufacturer; no A. O. Smith anywhere. Tokens ['A. O. Smith', 'A.O. Smith'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "A. O. Smith",
+   "A.O. Smith"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n68",
+  "claim": "The water closet in Toilet 102A on P101 is tagged WC-2.",
+  "expected": "consistent",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "WC-2",
+  "bbox_pt": [
+   1621.1,
+   585.8,
+   1941.1,
+   695.8
+  ],
+  "evidence_tokens": [
+   "WC-2",
+   "102A"
+  ],
+  "provenance": "label consistent: read on add1-p018 (P101): single WC tag beside the 102A label.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n70",
+  "claim": "The electrical symbol list includes a floorbox combination power, telephone and data outlet.",
+  "expected": "conflict",
+  "sheet_number": "E000",
+  "current_sheet": "add1-p019",
+  "superseded_sheet": "dwg-p044",
+  "anchor": "DATA",
+  "bbox_pt": [
+   1336.7,
+   339.6,
+   1656.7,
+   449.6
+  ],
+  "evidence_tokens": [
+   "DATA",
+   "OUTLET",
+   "-",
+   "MONITOR"
+  ],
+  "provenance": "label conflict: read on add1-p019 (E000): Addendum 1 removed the FLOORBOX COMBINATION POWER, TELEPHONE, DATA entry; current list has none.",
+  "kind": "stale",
+  "absent_tokens": [
+   "FLOORBOX"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n71",
+  "claim": "On E000 there is a symbol for a monitor data outlet.",
+  "expected": "consistent",
+  "sheet_number": "E000",
+  "current_sheet": "add1-p019",
+  "superseded_sheet": "dwg-p044",
+  "anchor": "DATA",
+  "bbox_pt": [
+   1336.7,
+   339.6,
+   1656.7,
+   449.6
+  ],
+  "evidence_tokens": [
+   "DATA",
+   "OUTLET",
+   "-",
+   "MONITOR"
+  ],
+  "provenance": "label consistent: read on add1-p019 (E000): added by Addendum 1 (\"DATA OUTLET - MONITOR\").",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n77",
+  "claim": "The existing compressor gets removed by the contractor, not the owner.",
+  "expected": "conflict",
+  "sheet_number": "ED200",
+  "current_sheet": "add2-p009",
+  "superseded_sheet": "dwg-p046",
+  "anchor": "EXISTING",
+  "bbox_pt": [
+   2372.5,
+   487.8,
+   2736.8,
+   597.8
+  ],
+  "evidence_tokens": [
+   "EXISTING",
+   "COMPRESSOR",
+   "TO",
+   "BE",
+   "REMOVED",
+   "BY",
+   "OWNER.",
+   "DISCONNECT",
+   "AND",
+   "REMOVE"
+  ],
+  "provenance": "label conflict: read on add2-p009 (ED200): compressor is removed by OWNER.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n79",
+  "claim": "The new fire alarm control panel on E200 sits in the childcare space and serves both it and the adjacent OWLS tenant space.",
+  "expected": "consistent",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "THE",
+  "bbox_pt": [
+   2372.7,
+   704.9,
+   2735.0,
+   814.9
+  ],
+  "evidence_tokens": [
+   "THE",
+   "NEW",
+   "FIRE",
+   "ALARM",
+   "CONTROL",
+   "PANEL",
+   "(FACP)",
+   "LOCATED",
+   "WITHIN",
+   "THE",
+   "CHILDCARE",
+   "ADJACENT",
+   "OWLS",
+   "TENANT",
+   "SPACE",
+   "(UNIT",
+   "3373)."
+  ],
+  "provenance": "label consistent: read on add1-p021 (E200): fire alarm scope note (added by Addendum 1).",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n80",
+  "claim": "For bidding, assume about 16 new initiating devices and 23 notification appliances in the warehouse and shipping/receiving spaces.",
+  "expected": "conflict",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "FOR",
+  "bbox_pt": [
+   2372.7,
+   819.2,
+   2730.1,
+   929.2
+  ],
+  "evidence_tokens": [
+   "FOR",
+   "BIDDING",
+   "PURPOSES,",
+   "PROVIDE",
+   "APPROXIMATELY",
+   "(23)",
+   "OF",
+   "NEW",
+   "INITIATING",
+   "DEVICES",
+   "AND",
+   "(16)",
+   "OF",
+   "NOTIFICATION",
+   "APPLIANCES",
+   "WITHIN",
+   "THE",
+   "WAREHOUSE",
+   "AND"
+  ],
+  "provenance": "label conflict: read on add1-p021 (E200): note gives 23 initiating and 16 notification (counts are swapped in the claim).",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n83",
+  "claim": "The special outlet schedule on E400 has the 12U IT rack in Utility 108 on circuit 37.",
+  "expected": "consistent",
+  "sheet_number": "E400",
+  "current_sheet": "add1-p022",
+  "superseded_sheet": "dwg-p052",
+  "anchor": "IT",
+  "bbox_pt": [
+   1742.5,
+   113.7,
+   2120.9,
+   223.7
+  ],
+  "evidence_tokens": [
+   "IT",
+   "12U",
+   "RACK",
+   "UTILITY",
+   "108",
+   "A",
+   "37"
+  ],
+  "provenance": "label consistent: read on add1-p022 (E400): row IT, added by Addendum 1.",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n84",
+  "claim": "In the special outlet schedule the door access outlet DA is on circuit 33.",
+  "expected": "conflict",
+  "sheet_number": "E400",
+  "current_sheet": "add1-p022",
+  "superseded_sheet": "dwg-p052",
+  "anchor": "DA",
+  "bbox_pt": [
+   1740.7,
+   102.2,
+   2120.9,
+   212.2
+  ],
+  "evidence_tokens": [
+   "DA",
+   "DOOR",
+   "ACCESS",
+   "UTILITY",
+   "108",
+   "A",
+   "35"
+  ],
+  "provenance": "label conflict: read on add1-p022 (E400): DA is on circuit 35.",
+  "kind": "manual",
+  "absent_tokens": [
+   "33"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n88",
+  "claim": "Demolition keynote D07 removes the existing ceiling and soffit throughout the entire project area.",
+  "expected": "consistent",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": "D07",
+  "bbox_pt": [
+   1373.8,
+   127.1,
+   1972.0,
+   237.1
+  ],
+  "evidence_tokens": [
+   "D07",
+   "REMOVE",
+   "EXISTING",
+   "CEILING",
+   "/",
+   "SOFFIT",
+   "&",
+   "ALL",
+   "RELATED",
+   "CONSTRUCTION",
+   "THROUGHOUT",
+   "ENTIRE",
+   "PROJECT",
+   "AREA",
+   "/",
+   "SCOPE",
+   "OF",
+   "WORK."
+  ],
+  "provenance": "label consistent: read on add2-p006 (AD201): keynote D07 (revised by Addendum 2).",
+  "kind": "current",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n89",
+  "claim": "Demolition keynote D07 is removal of the existing carpet flooring.",
+  "expected": "conflict",
+  "sheet_number": "AD201",
+  "current_sheet": "add2-p006",
+  "superseded_sheet": "dwg-p012",
+  "anchor": "D07",
+  "bbox_pt": [
+   1373.8,
+   127.1,
+   1972.0,
+   237.1
+  ],
+  "evidence_tokens": [
+   "D07",
+   "REMOVE",
+   "EXISTING",
+   "CEILING",
+   "/",
+   "SOFFIT",
+   "&",
+   "ALL",
+   "RELATED",
+   "CONSTRUCTION",
+   "THROUGHOUT",
+   "ENTIRE",
+   "PROJECT",
+   "AREA",
+   "/",
+   "SCOPE",
+   "OF",
+   "WORK."
+  ],
+  "provenance": "label conflict: read on add2-p006 (AD201): D07 is the ceiling/soffit; carpet flooring is D32.",
+  "kind": "manual",
+  "absent_tokens": [
+   "CARPET"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n91",
+  "claim": "The foundation plumbing plan has the contractor provide Schedule 80 CPVC waste and vent piping from the dishwasher discharge to the grease interceptor.",
+  "expected": "consistent",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "PROVIDE",
+  "bbox_pt": [
+   1031.8,
+   1241.0,
+   1351.8,
+   1359.2
+  ],
+  "evidence_tokens": [
+   "PROVIDE",
+   "SCH",
+   "80",
+   "CPVC",
+   "WASTE",
+   "DISHWASHER",
+   "DISCHARGE",
+   "TO",
+   "GREASE",
+   "INTERCEPTOR."
+  ],
+  "provenance": "label consistent: read on add2-p008 (P100): plan note.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n92",
+  "claim": "The pump-out drain piping on the foundation plumbing plan is 4\" Schedule 40 PVC.",
+  "expected": "conflict",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "3\"",
+  "bbox_pt": [
+   1314.0,
+   1416.5,
+   1634.0,
+   1526.5
+  ],
+  "evidence_tokens": [
+   "3\"",
+   "SCH.",
+   "40",
+   "PVC",
+   "PUMP-OUT"
+  ],
+  "provenance": "label conflict: read on add2-p008 (P100): note says 3\" SCH. 40 PVC PUMP-OUT DRAIN PIPING.",
+  "kind": "manual",
+  "absent_tokens": [
+   "4\""
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n94",
+  "claim": "Per the lighting plan notes, the bottom of fixtures is approximately 10'-0\" AFF.",
+  "expected": "conflict",
+  "sheet_number": "E100",
+  "current_sheet": "add2-p010",
+  "superseded_sheet": "dwg-p048",
+  "anchor": "BOTTOM",
+  "bbox_pt": [
+   2357.1,
+   202.2,
+   2677.1,
+   312.2
+  ],
+  "evidence_tokens": [
+   "BOTTOM",
+   "OF",
+   "FIXTURES",
+   "SHALL",
+   "BE",
+   "APPROXIMATELY",
+   "8'-0\"",
+   "AFF."
+  ],
+  "provenance": "label conflict: read on add2-p010 (E100): sheet note says approximately 8'-0\" AFF.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n95",
+  "claim": "Door 100A.1 is a 3'-0\" by 7'-0\" door with a 20 minute rating and the FEMA impact rated door comment.",
+  "expected": "consistent",
+  "sheet_number": "A1002",
+  "current_sheet": "dwg-p024",
+  "superseded_sheet": null,
+  "anchor": "100A.1",
+  "bbox_pt": [
+   1126.5,
+   126.9,
+   2091.1,
+   236.9
+  ],
+  "evidence_tokens": [
+   "100A.1",
+   "3'",
+   "-",
+   "0\"",
+   "7'",
+   "-",
+   "0\"",
+   "HM2",
+   "20",
+   "MIN.",
+   "FEMA",
+   "IMPACT",
+   "RATED",
+   "DOOR"
+  ],
+  "provenance": "label consistent: read on dwg-p024 (A1002): door schedule row 100A.1.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n96",
+  "claim": "Door 105B.1 is 3'-0\" wide.",
+  "expected": "conflict",
+  "sheet_number": "A1002",
+  "current_sheet": "dwg-p024",
+  "superseded_sheet": null,
+  "anchor": "105B.1",
+  "bbox_pt": [
+   1098.7,
+   362.7,
+   1418.7,
+   472.7
+  ],
+  "evidence_tokens": [
+   "105B.1",
+   "6'",
+   "-",
+   "0\"",
+   "7'",
+   "-",
+   "0\"",
+   "WD1-2"
+  ],
+  "provenance": "label conflict: read on dwg-p024 (A1002): door 105B.1 is 6'-0\" x 7'-0\" (type WD1-2).",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n97",
+  "claim": "Door 099.1, the vestibule door, is 7'-2\" high with a door operator.",
+  "expected": "consistent",
+  "sheet_number": "A1002",
+  "current_sheet": "dwg-p024",
+  "superseded_sheet": null,
+  "anchor": "099.1",
+  "bbox_pt": [
+   1129.2,
+   100.7,
+   2052.9,
+   210.7
+  ],
+  "evidence_tokens": [
+   "099.1",
+   "3'",
+   "-",
+   "4\"",
+   "7'",
+   "-",
+   "2\"",
+   "AL1",
+   "DOOR",
+   "OPERATOR"
+  ],
+  "provenance": "label consistent: read on dwg-p024 (A1002): door schedule row 099.1.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n98",
+  "claim": "The door schedule gives the Schlage hardware model for door 101.1.",
+  "expected": "unclear",
+  "sheet_number": "A1002",
+  "current_sheet": "dwg-p024",
+  "superseded_sheet": null,
+  "anchor": "101.1",
+  "bbox_pt": [
+   1098.4,
+   140.0,
+   1418.4,
+   250.0
+  ],
+  "evidence_tokens": [
+   "101.1",
+   "3'",
+   "-",
+   "0\"",
+   "7'",
+   "-",
+   "0\"",
+   "WD4"
+  ],
+  "provenance": "label unclear: the door schedule has a hardware SET NO. column (14) but no manufacturer; Schlage is on no drawing. Tokens ['Schlage'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Schlage"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n101",
+  "claim": "Door 104.1 is a 3'-4\" door with a 20 minute rating and a 270 degree swing.",
+  "expected": "consistent",
+  "sheet_number": "A1002",
+  "current_sheet": "dwg-p024",
+  "superseded_sheet": null,
+  "anchor": "104.1",
+  "bbox_pt": [
+   1129.2,
+   297.2,
+   2046.5,
+   407.2
+  ],
+  "evidence_tokens": [
+   "104.1",
+   "3'",
+   "-",
+   "4\"",
+   "7'",
+   "-",
+   "0\"",
+   "WD1",
+   "20",
+   "MIN.",
+   "270",
+   "DEG.",
+   "SWING"
+  ],
+  "provenance": "label consistent: read on dwg-p024 (A1002): row 104.1.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n102",
+  "claim": "G001 says the toilet seat or urinal lip is 12\" AFF for children ages 3-4.",
+  "expected": "consistent",
+  "sheet_number": "G001",
+  "current_sheet": "dwg-p002",
+  "superseded_sheet": null,
+  "anchor": "TOILET",
+  "bbox_pt": [
+   1958.0,
+   230.6,
+   2278.0,
+   340.6
+  ],
+  "evidence_tokens": [
+   "TOILET",
+   "SEAT/URINAL",
+   "LIP",
+   "\u2022",
+   "12\"",
+   "A.F.F.",
+   "FOR",
+   "CHILDREN",
+   "AGES",
+   "3-4"
+  ],
+  "provenance": "label consistent: read on dwg-p002 (G001): child height mounting notes, first group.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n103",
+  "claim": "On the G001 child height notes, toilet seat height for ages 3-4 is 15\" AFF.",
+  "expected": "conflict",
+  "sheet_number": "G001",
+  "current_sheet": "dwg-p002",
+  "superseded_sheet": null,
+  "anchor": "TOILET",
+  "bbox_pt": [
+   1958.0,
+   230.6,
+   2278.0,
+   340.6
+  ],
+  "evidence_tokens": [
+   "TOILET",
+   "SEAT/URINAL",
+   "LIP",
+   "\u2022",
+   "12\"",
+   "A.F.F.",
+   "FOR",
+   "CHILDREN",
+   "AGES",
+   "3-4"
+  ],
+  "provenance": "label conflict: read on dwg-p002 (G001): ages 3-4 is 12\" AFF (15\" appears only inside the 12\"-15\" range for ages 5-8).",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n104",
+  "claim": "The landscape notes say all playground equipment, edging and surfacing is provided by Northland Recreation.",
+  "expected": "consistent",
+  "sheet_number": "L2.00",
+  "current_sheet": "dwg-p011",
+  "superseded_sheet": null,
+  "anchor": "All",
+  "bbox_pt": [
+   2199.2,
+   589.3,
+   2720.6,
+   699.3
+  ],
+  "evidence_tokens": [
+   "All",
+   "playground",
+   "equipment,",
+   "edging",
+   "and",
+   "surfacing",
+   "provided",
+   "by",
+   "Northland",
+   "Recreation."
+  ],
+  "provenance": "label consistent: read on dwg-p011 (L2.00): landscape note.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n105",
+  "claim": "L2.00 has the playground equipment supplied by the contractor from Playworld.",
+  "expected": "conflict",
+  "sheet_number": "L2.00",
+  "current_sheet": "dwg-p011",
+  "superseded_sheet": null,
+  "anchor": "All",
+  "bbox_pt": [
+   2199.2,
+   589.3,
+   2720.6,
+   699.3
+  ],
+  "evidence_tokens": [
+   "All",
+   "playground",
+   "equipment,",
+   "edging",
+   "and",
+   "surfacing",
+   "provided",
+   "by",
+   "Northland",
+   "Recreation."
+  ],
+  "provenance": "label conflict: read on dwg-p011 (L2.00): note says provided by Northland Recreation.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n106",
+  "claim": "L2.00 requires line posts of the chain-link fence to be at least 3\" in diameter.",
+  "expected": "conflict",
+  "sheet_number": "L2.00",
+  "current_sheet": "dwg-p011",
+  "superseded_sheet": null,
+  "anchor": "o.c.",
+  "bbox_pt": [
+   2194.5,
+   379.9,
+   2736.6,
+   489.9
+  ],
+  "evidence_tokens": [
+   "o.c.",
+   "spacing.",
+   "Line",
+   "posts",
+   "shall",
+   "be",
+   "min.",
+   "2-1/2\"",
+   "dia,",
+   "terminal",
+   "posts",
+   "shall",
+   "be",
+   "min.",
+   "3\"",
+   "dia",
+   "and"
+  ],
+  "provenance": "label conflict: read on dwg-p011 (L2.00): line posts min. 2-1/2\" dia; the 3\" is for terminal posts.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n107",
+  "claim": "E300 fixture type AA is the Lithonia 2x4 flat panel troffer at 3200 lumens and 24.6 watts.",
+  "expected": "consistent",
+  "sheet_number": "E300",
+  "current_sheet": "dwg-p051",
+  "superseded_sheet": null,
+  "anchor": "AA",
+  "bbox_pt": [
+   1650.1,
+   95.7,
+   2294.9,
+   205.7
+  ],
+  "evidence_tokens": [
+   "AA",
+   "2x4",
+   "FLAT",
+   "PANEL",
+   "TROFFER",
+   "MODULE",
+   "3200",
+   "3500",
+   "80",
+   "24.6",
+   "UNV",
+   "2.25\"",
+   "LITHONIA"
+  ],
+  "provenance": "label consistent: read on dwg-p051 (E300): light fixture schedule row AA.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n108",
+  "claim": "Lighting fixture type AB is rated 3200 lumens.",
+  "expected": "conflict",
+  "sheet_number": "E300",
+  "current_sheet": "dwg-p051",
+  "superseded_sheet": null,
+  "anchor": "AB",
+  "bbox_pt": [
+   1650.1,
+   116.8,
+   2142.6,
+   226.8
+  ],
+  "evidence_tokens": [
+   "AB",
+   "2x4",
+   "FLAT",
+   "PANEL",
+   "TROFFER",
+   "MODULE",
+   "4000",
+   "3500",
+   "80",
+   "36.7"
+  ],
+  "provenance": "label conflict: read on dwg-p051 (E300): row AB is 4000 lumens (3200 is type AA).",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n110",
+  "claim": "Note 13 on A202 asks for blocking at all wall hung equipment and furniture.",
+  "expected": "consistent",
+  "sheet_number": "A202",
+  "current_sheet": "dwg-p014",
+  "superseded_sheet": null,
+  "anchor": "13.",
+  "bbox_pt": [
+   2189.2,
+   393.6,
+   2617.0,
+   503.6
+  ],
+  "evidence_tokens": [
+   "13.",
+   "PROVIDE",
+   "BLOCKING",
+   "AT",
+   "ALL",
+   "WALL",
+   "HUNG",
+   "EQUIPMENT",
+   "AND",
+   "FURNITURE",
+   "AS",
+   "REQUIRED."
+  ],
+  "provenance": "label consistent: read on dwg-p014 (A202): general construction note 13.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n112",
+  "claim": "C1.10 says to notify Public Works at least 24 hours before starting work in the right of way.",
+  "expected": "conflict",
+  "sheet_number": "C1.10",
+  "current_sheet": "dwg-p004",
+  "superseded_sheet": null,
+  "anchor": "NOTIFY",
+  "bbox_pt": [
+   1318.7,
+   1543.8,
+   1814.5,
+   1653.8
+  ],
+  "evidence_tokens": [
+   "NOTIFY",
+   "THE",
+   "PUBLIC",
+   "WORKS",
+   "INSPECTION",
+   "DEPT.",
+   "AT",
+   "LEAST",
+   "48",
+   "HOURS",
+   "BEFORE",
+   "STARTING"
+  ],
+  "provenance": "label conflict: read on dwg-p004 (C1.10): note says 48 HOURS.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n113",
+  "claim": "The roof plan A203 identifies the new roof membrane as Carlisle.",
+  "expected": "unclear",
+  "sheet_number": "A203",
+  "current_sheet": "add1-p008",
+  "superseded_sheet": "dwg-p015",
+  "anchor": "EXISTING",
+  "bbox_pt": [
+   1049.7,
+   607.0,
+   1369.7,
+   717.0
+  ],
+  "evidence_tokens": [
+   "EXISTING",
+   "MEMBRANE",
+   "ROOF"
+  ],
+  "provenance": "label unclear: A203 only shows existing membrane roof; no roofing manufacturer anywhere. Tokens ['Carlisle'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Carlisle"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n114",
+  "claim": "The cubbies on A900 are Wesco units.",
+  "expected": "unclear",
+  "sheet_number": "A900",
+  "current_sheet": "add1-p013",
+  "superseded_sheet": "dwg-p021",
+  "anchor": "36",
+  "bbox_pt": [
+   509.2,
+   1600.5,
+   829.2,
+   1710.5
+  ],
+  "evidence_tokens": [
+   "36",
+   "TOTAL",
+   "CUBBIES"
+  ],
+  "provenance": "label unclear: A900 counts cubbies and tags them (A6) but names no manufacturer. Tokens ['Wesco'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Wesco"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n115",
+  "claim": "A1100 names Bright White as the grout color for the porcelain wall tile PTW-1.",
+  "expected": "unclear",
+  "sheet_number": "A1100",
+  "current_sheet": "add2-p007",
+  "superseded_sheet": "dwg-p025",
+  "anchor": "PTW-1",
+  "bbox_pt": [
+   289.4,
+   778.3,
+   631.4,
+   888.3
+  ],
+  "evidence_tokens": [
+   "PTW-1",
+   "Porcelain",
+   "Tile",
+   "Wall",
+   "Daltile",
+   "Stencil"
+  ],
+  "provenance": "label unclear: PTW-1 row says \"Grout: to be selected from awarded MFR standard color\"; no color is named. Tokens ['Bright White'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Bright White"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n116",
+  "claim": "Per A1100, the PTF-1 porcelain floor tile is installed in a herringbone pattern.",
+  "expected": "unclear",
+  "sheet_number": "A1100",
+  "current_sheet": "add2-p007",
+  "superseded_sheet": "dwg-p025",
+  "anchor": "PTF-1",
+  "bbox_pt": [
+   250.6,
+   741.1,
+   570.6,
+   851.1
+  ],
+  "evidence_tokens": [
+   "PTF-1",
+   "Porcelain",
+   "Tile",
+   "Floor",
+   "Daltile"
+  ],
+  "provenance": "label unclear: PTF-1 row says \"Installation: TBD\"; no pattern is given. Tokens ['herringbone'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "herringbone"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n117",
+  "claim": "E200 says the new fire alarm control panel is a Notifier unit.",
+  "expected": "unclear",
+  "sheet_number": "E200",
+  "current_sheet": "add1-p021",
+  "superseded_sheet": "dwg-p049",
+  "anchor": "THE",
+  "bbox_pt": [
+   2372.7,
+   695.0,
+   2735.0,
+   805.0
+  ],
+  "evidence_tokens": [
+   "THE",
+   "NEW",
+   "FIRE",
+   "ALARM",
+   "CONTROL",
+   "PANEL",
+   "(FACP)",
+   "LOCATED",
+   "WITHIN",
+   "THE",
+   "CHILDCARE"
+  ],
+  "provenance": "label unclear: the fire alarm notes describe the FACP scope but name no manufacturer. Tokens ['Notifier'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Notifier"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n118",
+  "claim": "The E000 symbol list specifies Leviton as the duplex receptacle manufacturer.",
+  "expected": "unclear",
+  "sheet_number": "E000",
+  "current_sheet": "add1-p019",
+  "superseded_sheet": "dwg-p044",
+  "anchor": "DUPLEX",
+  "bbox_pt": [
+   975.9,
+   97.8,
+   1328.2,
+   207.8
+  ],
+  "evidence_tokens": [
+   "DUPLEX",
+   "RECEPTACLE",
+   "-",
+   "GROUND",
+   "FAULT",
+   "CIRCUIT",
+   "INTERRUPTER",
+   "TYPE."
+  ],
+  "provenance": "label unclear: symbol list defines receptacle types only; no manufacturers. Tokens ['Leviton'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Leviton"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n120",
+  "claim": "P100 shows the grease interceptor as a Schier unit.",
+  "expected": "unclear",
+  "sheet_number": "P100",
+  "current_sheet": "add2-p008",
+  "superseded_sheet": "dwg-p033",
+  "anchor": "GREASE",
+  "bbox_pt": [
+   1020.4,
+   1260.0,
+   1340.4,
+   1370.0
+  ],
+  "evidence_tokens": [
+   "GREASE",
+   "INTERCEPTOR."
+  ],
+  "provenance": "label unclear: P100 only calls it GREASE INTERCEPTOR; no manufacturer. Tokens ['Schier'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Schier"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n121",
+  "claim": "The photocell for the exterior lighting is a Tork model.",
+  "expected": "conflict",
+  "sheet_number": "E300",
+  "current_sheet": "dwg-p051",
+  "superseded_sheet": null,
+  "anchor": "PHOTOCELL",
+  "bbox_pt": [
+   448.1,
+   1497.0,
+   768.1,
+   1607.0
+  ],
+  "evidence_tokens": [
+   "PHOTOCELL",
+   "SHALL",
+   "BE",
+   "INTERMATIC",
+   "EK4436SM"
+  ],
+  "provenance": "label conflict: read on dwg-p051 (E300): E300 lighting notes specify the photocell as INTERMATIC EK4436SM (and the timeclock as INTERMATIC ET2825C).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Tork"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n122",
+  "claim": "A400 says the storefront is by Kawneer.",
+  "expected": "unclear",
+  "sheet_number": "A400",
+  "current_sheet": "add1-p010",
+  "superseded_sheet": "dwg-p017",
+  "anchor": "E03",
+  "bbox_pt": [
+   2212.0,
+   75.1,
+   2532.0,
+   185.1
+  ],
+  "evidence_tokens": [
+   "E03",
+   "NEW",
+   "ALUM.",
+   "FULL",
+   "LITE",
+   "STOREFRONT",
+   "DOOR"
+  ],
+  "provenance": "label unclear: keynote E03 is a generic storefront door/glazing assembly; Kawneer appears nowhere. Tokens ['Kawneer'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Kawneer"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n123",
+  "claim": "P101 says the plumbing contractor must finish rough-in by April 30.",
+  "expected": "unclear",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": null,
+  "bbox_pt": [
+   860,
+   560,
+   1540,
+   1040
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: a plan sheet; no schedule or milestone dates. Tokens ['April'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "April"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n124",
+  "claim": "The special outlet schedule on E400 lists the UPS runtime for the 12U rack as 15 minutes.",
+  "expected": "unclear",
+  "sheet_number": "E400",
+  "current_sheet": "add1-p022",
+  "superseded_sheet": "dwg-p052",
+  "anchor": "IT",
+  "bbox_pt": [
+   1742.5,
+   113.7,
+   2120.9,
+   223.7
+  ],
+  "evidence_tokens": [
+   "IT",
+   "12U",
+   "RACK",
+   "UTILITY",
+   "108",
+   "A",
+   "37"
+  ],
+  "provenance": "label unclear: the IT row lists circuit, load (1000 W) and notes only; no runtime or UPS data. Tokens ['runtime'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "runtime"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n126",
+  "claim": "All three water closets in Toilet 105A are tagged WC-3.",
+  "expected": "conflict",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "WC-3",
+  "bbox_pt": [
+   1220.2,
+   842.3,
+   1540.2,
+   1004.3
+  ],
+  "evidence_tokens": [
+   "WC-3",
+   "WC-3",
+   "WC-2"
+  ],
+  "provenance": "label conflict: read on add1-p018 (P101): current P101 105A shows WC-3, WC-3 and WC-2 (the third is WC-2), so \"all three WC-3\" is false.",
+  "kind": "stale",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n127",
+  "claim": "The water closet in Toilet 102A is tagged WC-1 on P101.",
+  "expected": "conflict",
+  "sheet_number": "P101",
+  "current_sheet": "add1-p018",
+  "superseded_sheet": "dwg-p034",
+  "anchor": "WC-2",
+  "bbox_pt": [
+   1621.1,
+   585.8,
+   1941.1,
+   695.8
+  ],
+  "evidence_tokens": [
+   "WC-2",
+   "102A"
+  ],
+  "provenance": "label conflict: read on add1-p018 (P101): single WC tag beside 102A reads WC-2.",
+  "kind": "manual",
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n128",
+  "claim": "The roof insulation in the A500 sections is R-30.",
+  "expected": "unclear",
+  "sheet_number": "A500",
+  "current_sheet": "add1-p011",
+  "superseded_sheet": "dwg-p018",
+  "anchor": "ROOF",
+  "bbox_pt": [
+   1367.9,
+   290.6,
+   1687.9,
+   400.6
+  ],
+  "evidence_tokens": [
+   "ROOF",
+   "STRUCTURE",
+   "SLOPES"
+  ],
+  "provenance": "label unclear: the sections show roof structure and decking; no insulation type or R-value appears on any sheet. Tokens ['R-30', 'R-value'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "R-30",
+   "R-value"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n129",
+  "claim": "The washer and dryer in Laundry 116 are Speed Queen units.",
+  "expected": "unclear",
+  "sheet_number": "E400",
+  "current_sheet": "add1-p022",
+  "superseded_sheet": "dwg-p052",
+  "anchor": "W-1",
+  "bbox_pt": [
+   1739.2,
+   216.8,
+   2130.3,
+   326.8
+  ],
+  "evidence_tokens": [
+   "W-1",
+   "ELECTRICAL",
+   "WASHER",
+   "1",
+   "LAUNDRY",
+   "116",
+   "A",
+   "17,19"
+  ],
+  "provenance": "label unclear: the special outlet schedule lists \"ELECTRICAL WASHER 1\" / \"ELECTRICAL DRYER 1\" with loads only; no appliance brand. Tokens ['Speed Queen'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Speed Queen"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n130",
+  "claim": "The 1 inch IGU in the A1001 window assemblies is argon filled.",
+  "expected": "unclear",
+  "sheet_number": "A1001",
+  "current_sheet": "add1-p015",
+  "superseded_sheet": "dwg-p023",
+  "anchor": "GL-1",
+  "bbox_pt": [
+   874.6,
+   93.6,
+   1194.6,
+   203.6
+  ],
+  "evidence_tokens": [
+   "GL-1",
+   "1\"",
+   "INSULATED",
+   "TEMPERED",
+   "GLASS",
+   "UNIT"
+  ],
+  "provenance": "label unclear: GL-1 is only described as a 1\" insulated tempered glass unit; no gas fill is stated anywhere. Tokens ['argon'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "argon"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n131",
+  "claim": "The landscape notes give the playground fall height as 6 feet.",
+  "expected": "unclear",
+  "sheet_number": "L2.00",
+  "current_sheet": "dwg-p011",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   2160,
+   560,
+   2840,
+   940
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: the playground notes name the equipment supplier only; no fall height or surfacing depth. Tokens ['fall height'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "fall height"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n132",
+  "claim": "C1.10 says the curb and gutter concrete comes from Wells Concrete.",
+  "expected": "unclear",
+  "sheet_number": "C1.10",
+  "current_sheet": "dwg-p004",
+  "superseded_sheet": null,
+  "anchor": "ALL",
+  "bbox_pt": [
+   1847.8,
+   1465.4,
+   2373.8,
+   1575.4
+  ],
+  "evidence_tokens": [
+   "ALL",
+   "CONCRETE",
+   "FOR",
+   "CURB",
+   "AND",
+   "GUTTER,",
+   "ROADWAY",
+   "AND",
+   "SIDEWALKS",
+   "MUST",
+   "CONFORM",
+   "TO",
+   "THE"
+  ],
+  "provenance": "label unclear: the concrete note gives strength and the WisDOT spec; no supplier. Tokens ['Wells'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "Wells"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n133",
+  "claim": "G001 says the ADA signage package is a $2,500 allowance.",
+  "expected": "unclear",
+  "sheet_number": "G001",
+  "current_sheet": "dwg-p002",
+  "superseded_sheet": null,
+  "anchor": null,
+  "bbox_pt": [
+   2000,
+   30,
+   2740,
+   300
+  ],
+  "evidence_tokens": [],
+  "provenance": "label unclear: G001 gives mounting heights only; no allowances or costs on any drawing. Tokens ['2,500'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "2,500"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ },
+ {
+  "id": "dev_n134",
+  "claim": "E300 gives a 5 year warranty on the type AA troffers.",
+  "expected": "unclear",
+  "sheet_number": "E300",
+  "current_sheet": "dwg-p051",
+  "superseded_sheet": null,
+  "anchor": "AA",
+  "bbox_pt": [
+   1650.1,
+   95.7,
+   2142.6,
+   205.7
+  ],
+  "evidence_tokens": [
+   "AA",
+   "2x4",
+   "FLAT",
+   "PANEL",
+   "TROFFER",
+   "MODULE",
+   "3200",
+   "3500",
+   "80",
+   "24.6"
+  ],
+  "provenance": "label unclear: the fixture schedule lists photometrics, driver and mounting only; no warranty term. Tokens ['5-year', '5 year'] occur on no current sheet (checked all 54 current sheets, case-insensitive substring).",
+  "kind": "manual",
+  "absent_tokens": [
+   "5-year",
+   "5 year"
+  ],
+  "source": "hand-read v3 (no model calls)"
+ }
+]
