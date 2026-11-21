@@ -117,10 +117,15 @@ export async function trust() {
   const s = slide('Can you trust it?');
   if (!m || !m.n) { s.append(el('p', 'sl-k', 'The held-out eval results are not on this machine.')); return s; }
   const g = el('div', 'trust');
-  const stat = (b, t) => { const x = el('div', 'st'); x.append(el('b', null, b), el('span', null, t)); g.append(x); };
-  stat(String(m.false_alarms), `false alarms on ${m.n} frozen held-out claims`);
-  stat(`${m.answered_right} of ${m.answered}`, 'right when it gave a verdict');
-  stat(String(m.n - m.answered), 'times it said unclear instead of guessing');
-  s.append(g, el('p', 'foot2', 'Runs: ' + m.runs.map(r => `${r.label} (n=${r.n}, ${r.date})`).join('; ') + '. End to end: search, crop, two judges, code verifier.'));
+  const stat = (b, t, sub) => { const x = el('div', 'st'); x.append(el('b', null, b), el('span', null, t)); if (sub) x.append(el('small', null, sub)); g.append(x); };
+  const pct = v => Math.round(v * 100);
+  const v2 = m.runs.find(r => /v2/.test(r.label || '')) || m.runs[m.runs.length - 1];
+  if (v2 && v2.correct != null && Array.isArray(v2.accuracy_ci95)) {
+    stat(`${v2.correct} / ${v2.n}`, 'correct on held-out set v2', `${pct(v2.accuracy)}% accuracy, 95% CI ${pct(v2.accuracy_ci95[0])}–${pct(v2.accuracy_ci95[1])}%`);
+  }
+  stat(String(m.false_alarms), 'false alarms', `across both held-out sets, ${m.n} claims`);
+  stat(`${m.answered_right} / ${m.answered}`, 'right when it gave a verdict', `said unclear on the other ${m.n - m.answered} instead of guessing`);
+  const dates = [...new Set(m.runs.map(r => r.date).filter(Boolean))].join(', ');
+  s.append(g, el('p', 'foot2', `Frozen held-out runs, ${dates}: ` + m.runs.map(r => `${r.label} (n=${r.n})`).join(', ') + '. End to end: search, crop, two judges, code verifier.'));
   return s;
 }

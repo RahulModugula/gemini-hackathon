@@ -634,6 +634,7 @@ async def api_heldout():
         n, cov = int(m.get("n") or 0), float(m.get("coverage") or 0)
         answered = round(cov * n)
         runs.append({"label": m.get("label"), "date": m.get("date"), "n": n, "false_alarms": m.get("false_alarms"),
+                     "correct": m.get("correct"), "accuracy": m.get("accuracy"), "accuracy_ci95": m.get("accuracy_ci95"),
                      "answered": answered, "answered_right": round(float(m.get("selective_accuracy") or 0) * answered)})
     if not runs:
         return None
