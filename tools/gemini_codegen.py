@@ -29,7 +29,10 @@ Card JSON shape (array of): {id, claim, speaker, timestamp, verdict: "conflict"|
 
 
 def main():
-    notes = " ".join(sys.argv[1:])
+    args = [a for a in sys.argv[1:] if a != "--force"]
+    if (ROOT / "ui" / "index.html").exists() and "--force" not in sys.argv[1:]:
+        raise SystemExit("ui/index.html has human edits (API wiring); refusing to overwrite. Re-run with --force.")
+    notes = " ".join(args)
     cards = json.loads((ROOT / "ui" / "cards.json").read_text())
     prompt = SPEC + "\nSample card:\n" + json.dumps(cards[0], indent=1)
     if notes:

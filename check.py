@@ -144,7 +144,7 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
     card.update(verdict=res["verdict"], confidence=res["confidence"], reason=res["reason"], checks=res["checks"])
     # Only boxes on the current sheet are evidence; the superseded image only explains what changed.
     card["evidence"] = [{"sheet": cur["sheet"], "revision": cur["revision"], "bbox": [round(v, 2) for v in e["bbox"]],
-                         "crop": cur["path"], "label": e["label"]} for e in res["evidence"] if e["image"] == "current"]
+                         "crop": cur["path"], "crop_rect_pt": [round(v, 1) for v in cur["rect"]], "label": e["label"]} for e in res["evidence"] if e["image"] == "current"]
     return card
 
 

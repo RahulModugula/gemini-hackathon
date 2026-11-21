@@ -16,7 +16,20 @@ h1{margin:0;font-size:18px;letter-spacing:.5px;color:#fff;white-space:nowrap}
 .bar{display:flex;flex:1 1 260px;gap:8px}
 #claimIn{flex:1;min-width:0;padding:8px 10px;background:#0b1f3a;border:1px solid #7fb8ff;border-radius:4px;color:#fff}
 #claimIn::placeholder{color:#a9c7ec}
-#micBtn{padding:8px 12px;background:#0b1f3a;border:1px solid #5579a6;border-radius:4px;color:#93b0d6;cursor:not-allowed;opacity:.65}
+#micBtn,#goBtn{padding:8px 12px;background:#0b1f3a;border:1px solid #7fb8ff;border-radius:4px;cursor:pointer}
+#micBtn.rec{background:#e5484d;border-color:#e5484d;color:#fff}
+button:disabled{opacity:.55;cursor:wait}
+.replay{padding:2px 8px;border:1px solid #f5d90a;border-radius:3px;font-size:11px;font-weight:700;color:#f5d90a;text-transform:uppercase}
+.status{padding:8px 10px;margin-bottom:8px;background:#0b1f3a;border-left:3px solid #7fb8ff;font-size:13px}
+.status.bad{border-left-color:#e5484d;color:#ffdadb}
+.rfiBtn{margin:0 0 12px;padding:8px 14px;background:#7fb8ff;color:#0b1f3a;border:0;border-radius:4px;font-weight:700;cursor:pointer}
+.modalBg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal{background:#12305a;border:1px solid #7fb8ff;border-radius:4px;padding:16px;max-width:720px;width:100%;max-height:90vh;display:flex;flex-direction:column;gap:10px}
+.modal pre{margin:0;white-space:pre-wrap;overflow:auto;background:#0b1f3a;padding:10px;border:1px solid #355b8c;font-size:13px}
+.modal .acts{display:flex;gap:8px;justify-content:flex-end}
+.modal .acts button{padding:6px 14px;background:#0b1f3a;border:1px solid #7fb8ff;border-radius:4px;cursor:pointer;font-weight:600}
+#off3d{position:absolute;top:8px;left:8px;max-width:320px;max-height:60%;overflow:auto;padding:8px 10px;background:rgba(11,31,58,.92);border:1px solid #7fb8ff;border-radius:4px;font-size:12px;z-index:5}
+#off3d ul{margin:4px 0 0;padding-left:16px}
 nav{display:flex;gap:6px}
 .tab{padding:8px 14px;background:#0b1f3a;border:1px solid #7fb8ff;border-radius:4px;cursor:pointer;font-weight:600}
 .tab.act{background:#7fb8ff;color:#0b1f3a}
@@ -64,6 +77,7 @@ main{padding:14px 16px}
 .foot{font-size:12px;color:#b8d2f2;border-top:1px solid #355b8c;padding-top:8px}
 #v3d{display:none;position:relative;min-height:68vh;height:calc(100vh - 110px);background:#08162b;border:1px solid #7fb8ff;border-radius:4px;overflow:hidden}
 #c3d{width:100%;height:100%;display:block}
+#c3d canvas{width:100%;height:100%;display:block}
 #tip3d{position:fixed;display:none;pointer-events:none;max-width:280px;padding:6px 9px;background:#0b1f3a;border:1px solid #7fb8ff;border-radius:4px;color:#fff;font-size:12px;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.6)}
 .err{padding:12px;background:#48141a;border:1px solid #e5484d;color:#ffdadb;border-radius:4px}
 @media (max-width:700px){
@@ -75,9 +89,11 @@ main{padding:14px 16px}
 <body>
 <header>
   <h1>Drawing Claim Checker</h1>
+  <span id="replayBadge" class="replay" hidden>replay mode</span>
   <div class="bar">
-    <input id="claimIn" type="text" placeholder="Say or type a claim" aria-label="Say or type a claim">
-    <button id="micBtn" type="button" disabled title="Voice coming soon">Mic</button>
+    <input id="claimIn" type="text" maxlength="500" placeholder="Say or type a claim" aria-label="Say or type a claim">
+    <button id="goBtn" type="button">Check</button>
+    <button id="micBtn" type="button" title="Record a claim">Mic</button>
   </div>
   <nav aria-label="Views">
     <button id="tabCards" class="tab act" type="button">Cards</button>
@@ -86,12 +102,13 @@ main{padding:14px 16px}
 </header>
 <main>
   <section id="cardsView">
-    <div id="ledger" class="panel" role="list" aria-label="Claims ledger"></div>
+    <div id="ledgerBox" class="panel"><div id="status" class="status" hidden></div><div id="ledger" role="list" aria-label="Claims ledger"></div></div>
     <div id="detail" class="panel" aria-live="polite"></div>
   </section>
   <section id="v3d">
     <div id="c3d"></div>
     <div id="tip3d"></div>
+    <div id="off3d" hidden></div>
   </section>
 </main>
 <script type="module">
@@ -103,17 +120,98 @@ const el=(t,c,txt)=>{const e=document.createElement(t);if(c)e.className=c;if(txt
 const vCls=v=>v==='conflict'?'v-conflict':v==='consistent'?'v-consistent':'v-other';
 const vHex=v=>v==='conflict'?0xe5484d:v==='consistent'?0x30a46c:0x8b8d98;
 
-let cards=[],selId=null,revMode='current',filterTxt='';
+let cards=[],selId=null,revMode='current';
 let threeInit=false,renderer,scene,camera,controls,raycaster,mouse,pins=[];
 
 $('tabCards').onclick=()=>{location.hash=selId?`#card=${encodeURIComponent(selId)}`:'#cards';};
 $('tab3d').onclick=()=>{location.hash='#3d';};
-$('claimIn').addEventListener('input',e=>{filterTxt=e.target.value.trim().toLowerCase();renderLedger();});
+const setStatus=(t,bad)=>{const s=$('status');s.hidden=!t;s.className='status'+(bad?' bad':'');s.textContent=t||'';};
+async function api(path,opts){
+  const r=await fetch(path,opts);
+  let j=null;try{j=await r.json();}catch(e){}
+  if(!r.ok)throw new Error((j&&j.error)?(r.status===503?'Service unavailable: '+j.error:j.error):'HTTP '+r.status);
+  return j;
+}
+function addCards(list){
+  cards=list.concat(cards);
+  if(list.length)selId=list[0].id;
+  revMode='current';
+  if(location.hash&&location.hash!=='#cards'&&location.hash!=='#3d')location.hash='#cards';
+  rebuild3D();applyRoute();
+}
+async function submitClaim(){
+  const claim=$('claimIn').value.trim();
+  if(!claim)return;
+  $('goBtn').disabled=$('claimIn').disabled=true;
+  setStatus('checking…');
+  try{
+    const card=await api('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({claim})});
+    $('claimIn').value='';setStatus('');addCards([card]);
+  }catch(e){setStatus('Check failed: '+e.message,true);}
+  finally{$('goBtn').disabled=$('claimIn').disabled=false;}
+}
+$('goBtn').onclick=submitClaim;
+$('claimIn').addEventListener('keydown',e=>{if(e.key==='Enter')submitClaim();});
+
+let rec=null;
+$('micBtn').onclick=async()=>{
+  if(rec){rec.stop();return;}
+  if(!navigator.mediaDevices||!window.MediaRecorder){setStatus('Recording is not supported in this browser.',true);return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}
+  catch(e){setStatus('Microphone unavailable: '+e.message,true);return;}
+  const chunks=[];
+  rec=new MediaRecorder(stream);
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  rec.onstop=async()=>{
+    stream.getTracks().forEach(t=>t.stop());
+    const mime=(rec.mimeType||'audio/webm').split(';')[0];
+    rec=null;$('micBtn').classList.remove('rec');$('micBtn').textContent='Mic';
+    setStatus('transcribing and checking…');$('micBtn').disabled=true;
+    try{
+      const res=await api('/api/audio',{method:'POST',headers:{'Content-Type':mime},body:new Blob(chunks,{type:mime})});
+      const n=res.claims.length;
+      setStatus(n?`Heard ${n} claim${n>1?'s':''}: `+res.claims.map(c=>`"${c.claim}"`).join(' · '):'No checkable claims heard.');
+      addCards(res.cards);
+    }catch(e){setStatus('Audio failed: '+e.message,true);}
+    finally{$('micBtn').disabled=false;}
+  };
+  rec.start();$('micBtn').classList.add('rec');$('micBtn').textContent='Stop';setStatus('recording… click Stop when done');
+};
+
+function showModal(title,body,note){
+  const bg=el('div','modalBg');
+  const m=el('div','modal');
+  const acts=el('div','acts');
+  const cp=el('button',null,'Copy');cp.type='button';
+  const cl=el('button',null,'Close');cl.type='button';
+  const close=()=>{bg.remove();document.removeEventListener('keydown',esc);};
+  const esc=e=>{if(e.key==='Escape')close();};
+  document.addEventListener('keydown',esc);
+  cl.onclick=close;
+  bg.onclick=e=>{if(e.target===bg)close();};
+  cp.onclick=async()=>{try{await navigator.clipboard.writeText(body);cp.textContent='Copied';}catch(e){cp.textContent='Copy failed';}};
+  acts.append(cp,cl);
+  m.append(el('h2','dclaim',title));
+  if(note)m.append(el('div','status',note));
+  m.append(el('pre','mono',body),el('div','foot','Draft only. Nothing is sent.'),acts);
+  bg.append(m);document.body.append(bg);
+}
+async function draftRfi(c,btn){
+  btn.disabled=true;const old=btn.textContent;btn.textContent='drafting…';
+  try{
+    const r=await api('/api/rfi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({card_id:c.id})});
+    if(r.status==='blocked')showModal('RFI blocked',r.text||'',`Blocked: already answered in ${r.answered_by}: "${r.quote}"`);
+    else showModal('RFI draft',r.text||'');
+  }catch(e){setStatus('RFI failed: '+e.message,true);}
+  finally{btn.disabled=false;btn.textContent=old;}
+}
+fetch('/api/health').then(r=>r.json()).then(h=>{if(h&&h.cache_mode==='replay')$('replayBadge').hidden=false;}).catch(()=>{});
 
 function parseHash(){
   const h=location.hash.slice(1);
   if(h==='3d')return {tab:'3d'};
-  if(h.startsWith('card='))return {tab:'cards',card:decodeURIComponent(h.slice(5))};
+  if(h.startsWith('card=')){try{return {tab:'cards',card:decodeURIComponent(h.slice(5))};}catch(e){return {tab:'cards'};}}
   return {tab:'cards'};
 }
 
@@ -138,7 +236,7 @@ function applyRoute(){
 function renderLedger(){
   const box=$('ledger');
   box.textContent='';
-  const list=filterTxt?cards.filter(c=>(c.claim||'').toLowerCase().includes(filterTxt)||(c.id||'').toLowerCase().includes(filterTxt)):cards;
+  const list=cards;
   if(!list.length){box.append(el('div',null,'No matching claims.'));return;}
   for(const c of list){
     const btn=el('button','row'+(c.id===selId?' sel':''));
@@ -156,7 +254,8 @@ function renderLedger(){
     btn.onclick=()=>{
       selId=c.id;
       revMode='current';
-      if(location.hash==='#3d')location.hash=`#card=${encodeURIComponent(c.id)}`;
+      const h=`#card=${encodeURIComponent(c.id)}`;
+      if(location.hash!==h)location.hash=h;
       else{renderLedger();renderDetail();}
     };
     box.append(btn);
@@ -215,7 +314,9 @@ function renderDetail(){
       idx++;
       const b=it.box_2d_on_crop;
       if(Array.isArray(b)&&b.length===4){
-        const [ymin,xmin,ymax,xmax]=b;
+        const cl=v=>Math.max(0,Math.min(1000,Number(v)||0));
+        const y0=cl(Math.min(b[0],b[2])),y1=cl(Math.max(b[0],b[2])),x0=cl(Math.min(b[1],b[3])),x1=cl(Math.max(b[1],b[3]));
+        const [ymin,xmin,ymax,xmax]=[y0,x0,y1,x1];
         const bx=el('div','bbox '+vCls(c.verdict));
         bx.style.top=(ymin/10)+'%';
         bx.style.left=(xmin/10)+'%';
@@ -246,6 +347,11 @@ function renderDetail(){
   }
 
   if(c.reason)d.append(el('p','reason',c.reason));
+  if(c.verdict==='conflict'||c.verdict==='unclear'){
+    const rb=el('button','rfiBtn','RFI');rb.type='button';
+    rb.onclick=()=>draftRfi(c,rb);
+    d.append(rb);
+  }
   const cost=Number(c.cost_usd||0).toFixed(4);
   const lat=Number(c.latency_s||0);
   d.append(el('div','foot mono',`cost $${cost} · latency ${lat}s`));
@@ -282,30 +388,7 @@ function init3D(){
   floor.rotation.x=-Math.PI/2;
   scene.add(floor);
 
-  const stemGeo=new THREE.CylinderGeometry(0.6,0.6,12,12);
-  const headGeo=new THREE.SphereGeometry(3,16,16);
-  pins=[];
-  for(const c of cards){
-    const col=vHex(c.verdict);
-    const mat=new THREE.MeshStandardMaterial({color:col});
-    for(const ev of (c.evidence||[])){
-      if(ev.sheet!=='add1-p018'||!Array.isArray(ev.bbox)||ev.bbox.length<4)continue;
-      const x=((ev.bbox[0]+ev.bbox[2])/2)*0.1-151.2;
-      const z=((ev.bbox[1]+ev.bbox[3])/2)*0.1-108;
-      const grp=new THREE.Group();
-      grp.position.set(x,0,z);
-      const stem=new THREE.Mesh(stemGeo,mat);
-      stem.position.y=6;
-      const head=new THREE.Mesh(headGeo,mat);
-      head.position.y=13.5;
-      const u={card:c,ev};
-      stem.userData=u;
-      head.userData=u;
-      grp.add(stem,head);
-      scene.add(grp);
-      pins.push(stem,head);
-    }
-  }
+  rebuild3D();
 
   raycaster=new THREE.Raycaster();
   mouse=new THREE.Vector2();
@@ -360,6 +443,53 @@ function init3D(){
   loop();
 }
 
+const FLOOR_SHEET='add1-p018';
+let pinGroups=[];
+function rebuild3D(){
+  if(!threeInit)return;
+  for(const g of pinGroups)scene.remove(g);
+  pinGroups=[];pins=[];
+  const stemGeo=new THREE.CylinderGeometry(0.6,0.6,12,12);
+  const headGeo=new THREE.SphereGeometry(3,16,16);
+  const off=[],seen={};
+  for(const c of cards){
+    const evs=(c.evidence||[]).filter(ev=>Array.isArray(ev.bbox)&&ev.bbox.length>=4);
+    if(evs.length&&!evs.some(ev=>ev.sheet===FLOOR_SHEET))off.push(c);
+    const mat=new THREE.MeshStandardMaterial({color:vHex(c.verdict)});
+    for(const ev of evs){
+      if(ev.sheet!==FLOOR_SHEET)continue;
+      const k=Math.round(ev.bbox[0]/20)+','+Math.round(ev.bbox[1]/20),n=seen[k]=(seen[k]||0)+1;
+      const x=((ev.bbox[0]+ev.bbox[2])/2)*0.1-151.2+(n-1)*4;
+      const z=((ev.bbox[1]+ev.bbox[3])/2)*0.1-108+(n-1)*4;
+      const grp=new THREE.Group();
+      grp.position.set(x,0,z);
+      const stem=new THREE.Mesh(stemGeo,mat);
+      stem.position.y=6;
+      const head=new THREE.Mesh(headGeo,mat);
+      head.position.y=13.5;
+      const u={card:c,ev};
+      stem.userData=u;
+      head.userData=u;
+      grp.add(stem,head);
+      scene.add(grp);
+      pinGroups.push(grp);
+      pins.push(stem,head);
+    }
+  }
+  const box=$('off3d');
+  box.textContent='';
+  box.hidden=!off.length;
+  if(off.length){
+    box.append(el('div',null,'Not on this sheet ('+FLOOR_SHEET+')'));
+    const ul=el('ul');
+    for(const c of off){
+      const sheets=[...new Set((c.evidence||[]).map(e=>e.sheet).filter(Boolean))].join(', ');
+      ul.append(el('li',null,`${c.claim||''} [${sheets}]`));
+    }
+    box.append(ul);
+  }
+}
+
 function resize3D(){
   if(!threeInit)return;
   const cont=$('c3d');
@@ -373,16 +503,17 @@ function resize3D(){
 window.addEventListener('resize',()=>{if($('v3d').style.display!=='none')resize3D();});
 window.addEventListener('hashchange',applyRoute);
 
-fetch('./cards.json')
+fetch('/api/cards')
   .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  .catch(()=>fetch('./cards.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}))
   .then(data=>{
     cards=Array.isArray(data)?data:[];
     if(cards.length)selId=cards[0].id;
     applyRoute();
   })
   .catch(err=>{
-    $('ledger').innerHTML='';
-    $('ledger').append(el('div','err','Failed to load cards.json: '+err.message));
+    $('ledger').textContent='';
+    $('ledger').append(el('div','err','Failed to load cards: '+err.message));
   });
 </script>
 </body>
