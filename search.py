@@ -64,7 +64,7 @@ def _inches(whole, num, den):
 def tokenize(text):
     """Lowercase tokens. 3'-0 1/2" -> 3ft, 0.5in; 1/2" -> 0.5in; 36" -> 36in; WC-1 -> wc, 1, wc1;
     105A.2 -> 105a, 2, 105a2."""
-    t = text.lower()
+    t = text.lower().replace("''", '"')      # a doubled apostrophe is the typewriter inch mark
     out = []
 
     def feet(m):
@@ -264,14 +264,21 @@ class Index:
                 "snippet": d["text"][:160], "kind": d["kind"]}
 
     def search(self, query, k=10, use_idf=True):
+        if k <= 0:
+            return []
         cand, terms = self._candidates(query, use_idf)
-        out, used = [], set()
+        out, used, boxes = [], set(), set()
         for sc, d in cand:
             ks = {(d["sheet"], i) for i in d["wids"]}
             if len(ks & used) > OVERLAP_SKIP * len(ks):
                 continue
             used |= ks
-            out.append(self._hit(sc, d, terms))
+            hit = self._hit(sc, d, terms)
+            key = (hit["sheet"], tuple(hit["bbox"]))
+            if key in boxes:            # a line and its cell neighbourhoods can box the same word
+                continue
+            boxes.add(key)
+            out.append(hit)
             if len(out) >= k:
                 break
         return out
@@ -280,6 +287,8 @@ class Index:
         """Best sheets: one entry per sheet_number (current beats superseded via the penalty). Sheet score is
         the best hit times (COVERAGE_FLOOR + idf-weighted share of query terms found in the sheet's top hits),
         so a sheet matching every concept beats a legend that matches one term many times."""
+        if k <= 0:
+            return []
         cand, terms = self._candidates(query, use_idf)
         idf = {t: max(self.lw.idf.get(t, 0), self.cell.idf.get(t, 0)) * w for t, w in terms.items()}
         total = sum(idf.values()) or 1.0

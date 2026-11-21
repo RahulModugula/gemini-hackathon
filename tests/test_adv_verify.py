@@ -118,8 +118,6 @@ def test_inverted_and_out_of_range_boxes_are_rejected_by_grounding(world):
         assert probs and "bad box" in probs[0], (bad, probs)
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: _valid_box accepts booleans (isinstance(True, int)), so "
-                   "[True, False, 10, 10] is a valid 0-1000 box and is read as coordinates 1, 0, 10, 10")
 def test_boolean_box_coordinates_are_rejected(world):
     probs = verify.grounding({"verdict": "consistent", "quoted_words": [], "evidence": [
         {"image": "current", "box_2d": [True, False, 10, 10]}]}, world["crops"])
@@ -179,14 +177,11 @@ def test_quote_split_across_lines_still_grounds(world):
     assert verify.grounding(out, world["crops"]) == []
 
 
-UNICODE_DASH_BUG = ("BUG: _norm only strips whitespace and lowercases, so a judge quoting WC-2 with a non-breaking "
-                    "hyphen or en dash is not grounded against the ASCII-hyphen word in the PDF (verdict downgraded)")
-
 
 @pytest.mark.parametrize("dash", [
-    pytest.param("‑", id="non-breaking-hyphen", marks=pytest.mark.xfail(strict=True, reason=UNICODE_DASH_BUG)),
-    pytest.param("–", id="en-dash", marks=pytest.mark.xfail(strict=True, reason=UNICODE_DASH_BUG)),
-    pytest.param("‐", id="unicode-hyphen", marks=pytest.mark.xfail(strict=True, reason=UNICODE_DASH_BUG)),
+    pytest.param("‑", id="non-breaking-hyphen"),
+    pytest.param("–", id="en-dash"),
+    pytest.param("‐", id="unicode-hyphen"),
 ])
 def test_unicode_dash_quote_grounds_like_ascii_hyphen(world, dash):
     """The PDF says WC-2 with an ASCII hyphen; a judge quoting WC-2 with another dash is the same word."""
@@ -194,8 +189,6 @@ def test_unicode_dash_quote_grounds_like_ascii_hyphen(world, dash):
     assert verify.grounding(out, world["crops"]) == []
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a quote is grounded by any box that covers its word; a box covering the "
-                   "whole crop ([0,0,1000,1000]) grounds every quoted word on the sheet, so a giant box passes trivially")
 def test_giant_box_covering_the_whole_crop_does_not_ground_a_quote(world):
     out = judge(quoted=("WC-2",), box=[0, 0, 1000, 1000])
     assert verify.grounding(out, world["crops"]), "giant box grounded WC-2 without pointing at it"
@@ -216,9 +209,6 @@ def test_unclear_verdict_with_empty_evidence_is_not_flagged(world):
     assert verify.grounding(judge("unclear", quoted=(), box=None), world["crops"]) == []
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: judge evidence with a list or dict as `image` raises TypeError "
-                   "(unhashable) inside grounding(), which is outside run_judge's try, so one bad judge output "
-                   "crashes check() instead of degrading to unclear")
 def test_unhashable_image_field_does_not_crash(world):
     out = judge("conflict", quoted=("WC-2",), box=box_for(world, {"WC-2"}), image=["current"])
     probs = verify.grounding(out, world["crops"])          # must return problems, not raise
@@ -263,15 +253,11 @@ def test_finite_out_of_range_confidence_is_clamped(conf):
     assert 0.0 <= verify._clean({"verdict": "conflict", "confidence": conf})["confidence"] <= 1.0
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: NaN confidence is silently coerced to 0.0 and the verdict is kept, so the "
-                   "card says conflict at 0.0 instead of treating the judge output as unusable (unclear)")
 def test_nan_confidence_makes_the_output_unclear():
     out = verify._clean({"verdict": "conflict", "confidence": float("nan"), "reason": "r"})
     assert out["verdict"] == "unclear"
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: inf confidence is clamped to 1.0 and the verdict is kept, so a judge "
-                   "reporting inf gets a full-confidence verdict; non-finite confidence should be unusable")
 def test_inf_confidence_makes_the_output_unclear():
     out = verify._clean({"verdict": "conflict", "confidence": float("inf"), "reason": "r"})
     assert out["verdict"] == "unclear" and out["confidence"] < 1.0
@@ -312,21 +298,15 @@ def test_known_dimension_forms(text, inches):
     assert [v for _, v in verify.find_dims(text)] == pytest.approx(inches)
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a dimension pair with no space between the marks (3'-0\"x7'-0\") loses the "
-                   "second dimension: the lookbehind (?<![\\w-]) rejects a digit after 'x'")
 @pytest.mark.parametrize("text,inches", [("3'-0\"x7'-0\"", [36.0, 84.0]), ("36\"x84\"", [36.0, 84.0])])
 def test_unspaced_x_dimension_pairs_keep_both_values(text, inches):
     assert [v for _, v in verify.find_dims(text)] == pytest.approx(inches)
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: feet and inches written with unit words (3ft 6in) are two separate "
-                   "dimensions [36, 6] instead of one 42 in value")
 def test_feet_and_inches_with_unit_words_are_one_dimension():
     assert [v for _, v in verify.find_dims("3ft 6in")] == pytest.approx([42.0])
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: decimal inches after feet (3'-6.5\") parse as 3'-6 plus a stray 5\" "
-                   "giving [42, 5]; the correct value is 42.5")
 def test_decimal_inches_after_feet_are_not_split():
     assert [v for _, v in verify.find_dims("3'-6.5\"")] == pytest.approx([42.5])
 
@@ -368,8 +348,6 @@ def test_dimension_check_consistent_and_conflict_and_skip():
     assert verify.dimension_check("No dimension here", ["34\""]) is None
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a claim that states a dimension is not checked at all when the judges "
-                   "quote no dimension, so a 'consistent' verdict on 36\" AFF goes through unverified")
 def test_claim_dimension_with_no_quoted_dimension_is_not_consistent(world, monkeypatch):
     box = box_for(world, {"WC-2"})
     a = judge("consistent", 0.9, quoted=("WC-2",), box=box)
@@ -431,9 +409,6 @@ def test_check_nonsense_claim_with_confident_judges_still_unclear(world, monkeyp
     assert g["pass"] is False and "cheese" in g["detail"]
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a claim naming a sheet number that exists in sheet_index but not in "
-                   "sheets (e.g. its source is missing) crashes candidates() with ValueError: max() of an empty "
-                   "sequence instead of returning no candidate")
 def test_named_sheet_absent_from_sheets_does_not_crash(world):
     rows = dict(world["rows"])
     rows["ghost-p1"] = {"sheet": "ghost-p1", "source": "addX", "issue_order": 9, "sheet_number": "Q9.9",
