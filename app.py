@@ -3,12 +3,14 @@ import asyncio
 import hashlib
 import json
 import os
+import queue
 import threading
 import time
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import Query
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -102,6 +104,13 @@ def _box_2d(bbox, rect):
             cl((bbox[3] - rect[1]) / h * 1000), cl((bbox[2] - rect[0]) / w * 1000)]
 
 
+def seal_hash(claim, evidence):
+    """First 8 hex of sha256(claim + evidence boxes + sheet ids): changes if the claim, any box or any sheet changes."""
+    payload = json.dumps([claim, [[e.get("sheet"), e.get("bbox")] for e in evidence or []]],
+                         separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(payload.encode()).hexdigest()[:8]
+
+
 def _finish(card, claim, spend0=None, t0=None):
     """Add id, rewrite crop paths to /crops/<file>, add the UI's box_2d_on_crop."""
     card = dict(card)
@@ -116,6 +125,9 @@ def _finish(card, claim, spend0=None, t0=None):
             e["box_2d_on_crop"] = _box_2d(e["bbox"], e["crop_rect_pt"])
         evs.append(e)
     card["evidence"] = evs
+    card["checks"] = [{**ck, "superseded_crop": "/crops/" + Path(ck["superseded_crop"]).name}
+                      if ck.get("superseded_crop") else ck for ck in card.get("checks") or []]
+    card["seal"] = seal_hash(claim, evs)
     if t0 is not None:
         card["latency_s"] = round(time.time() - t0, 1)
     if spend0 is not None:
@@ -140,6 +152,62 @@ async def api_check(request: Request):
     card = _finish(await run_in_threadpool(checker.check, claim), claim, spend0, t0)
     _append(card)
     return card
+
+
+def _valid_claim(claim):
+    claim = claim.strip() if isinstance(claim, str) else ""
+    if not claim:
+        return None, "claim is empty"
+    if len(claim) > MAX_CLAIM:
+        return None, f"claim longer than {MAX_CLAIM} characters"
+    return claim, None
+
+
+def _sse(event, data):
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+@app.get("/api/check/stream")
+async def api_check_stream(claim: str = Query("")):
+    """Server-Sent Events: `step` events {step, status, t, ...} as check() progresses, then one `card` event with the
+    finished card (same body as POST /api/check), or one `error` event {error: <exception type>} (never the message)."""
+    claim, err = _valid_claim(claim)
+    if err:
+        return _bad(err)
+    q = queue.Queue()
+    t0 = time.time()
+    spend0 = llm.run_spend()
+
+    def progress(step, status, **info):
+        q.put(("step", {"step": step, "status": status, "t": round(time.time() - t0, 3), **info}))
+
+    def work():
+        try:
+            card = _finish(checker.check(claim, progress=progress), claim, spend0, t0)
+            _append(card)
+            q.put(("step", {"step": "sealed", "status": "done", "t": round(time.time() - t0, 3), "seal": card["seal"]}))
+            q.put(("card", card))
+        except Exception as e:  # noqa: BLE001 - only the type name leaves the server
+            q.put(("error", {"error": type(e).__name__}))
+        q.put(None)
+
+    def gen():
+        threading.Thread(target=work, daemon=True).start()
+        while (item := q.get()) is not None:
+            yield _sse(*item)
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/api/metrics")
+async def api_metrics():
+    """Honest eval numbers from build/metrics.json; null when the file is absent or unreadable (the UI hides the strip)."""
+    try:
+        data = json.loads((Path(BUILD) / "metrics.json").read_text())
+        return data if isinstance(data, dict) else None
+    except (OSError, ValueError):
+        return None
 
 
 @app.get("/api/cards")

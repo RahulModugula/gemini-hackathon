@@ -158,3 +158,70 @@ def test_static(env):
     (tmp / "crops" / "z.png").write_bytes(b"png")
     assert c.get("/crops/z.png").content == b"png"             # build crop
     assert c.get("/crops/..%2Fapp.py").status_code == 404
+
+
+def _sse(text):
+    out = []
+    for block in text.strip().split("\n\n"):
+        ev, data = block.split("\n", 1)
+        out.append((ev.removeprefix("event: "), json.loads(data.removeprefix("data: "))))
+    return out
+
+
+def test_stream_emits_steps_then_card_and_appends_ledger(env, monkeypatch):
+    c, tmp, _ = env
+
+    def fake_check(claim, progress=None):
+        for st in ("search", "crop", "judge_a", "judge_b", "grounding", "revision"):
+            progress(st, "start")
+            progress(st, "done")
+        return json.loads(json.dumps(CARD)) | {"claim": claim}
+
+    monkeypatch.setattr(appmod.checker, "check", fake_check)
+    r = c.get("/api/check/stream", params={"claim": "  Toilet 105A is WC-2 "})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
+    ev = _sse(r.text)
+    assert [k for k, _ in ev] == ["step"] * 13 + ["card"]
+    steps = [d for k, d in ev if k == "step"]
+    assert [s["step"] for s in steps][:2] == ["search", "search"] and steps[-1]["step"] == "sealed"
+    assert all("t" in s and s["status"] in ("start", "done") for s in steps)
+    card = ev[-1][1]
+    assert card["claim"] == "Toilet 105A is WC-2" and card["id"].startswith("c_") and len(card["seal"]) == 8
+    assert steps[-1]["seal"] == card["seal"]
+    assert len((tmp / "cards.jsonl").read_text().splitlines()) == 1
+
+
+def test_stream_validation_and_error_event(env, monkeypatch):
+    c, tmp, _ = env
+    assert c.get("/api/check/stream").status_code == 400
+    assert c.get("/api/check/stream", params={"claim": "x" * 501}).status_code == 400
+
+    def boom(claim, progress=None):
+        raise llm.CapExceeded("cap hit AIzaSECRETKEY prompt: Toilet 105A")
+
+    monkeypatch.setattr(appmod.checker, "check", boom)
+    r = c.get("/api/check/stream", params={"claim": "q"})
+    assert _sse(r.text) == [("error", {"error": "CapExceeded"})]
+    assert "SECRET" not in r.text and not (tmp / "cards.jsonl").exists()
+
+
+def test_seal_hash_depends_on_claim_boxes_and_sheets():
+    ev = [{"sheet": "s1", "bbox": [1, 2, 3, 4]}]
+    h = appmod.seal_hash("c", ev)
+    assert len(h) == 8 and h == appmod.seal_hash("c", ev)
+    assert h != appmod.seal_hash("d", ev)
+    assert h != appmod.seal_hash("c", [{"sheet": "s1", "bbox": [1, 2, 3, 5]}])
+    assert h != appmod.seal_hash("c", [{"sheet": "s2", "bbox": [1, 2, 3, 4]}])
+
+
+def test_metrics_endpoint(env):
+    c, tmp, _ = env
+    assert c.get("/api/metrics").json() is None
+    (tmp / "metrics.json").write_text('{"accuracy": 0.9}')
+    assert c.get("/api/metrics").json() == {"accuracy": 0.9}
+
+
+def test_finish_rewrites_superseded_crop_path():
+    card = appmod._finish({"claim": "c", "evidence": [], "checks": [{"by": "code", "check": "addendum_diff",
+                                                                    "superseded_crop": "build/crops/old.png"}]}, "c")
+    assert card["checks"][0]["superseded_crop"] == "/crops/old.png"

@@ -497,3 +497,43 @@ def test_grounding_check_detail_records_accepted_rules(monkeypatch, world):
            "crops": {"current": world["cur"]}, "narrative": []}
     g = next(c for c in verify.verify(CLAIM, ctx)["checks"] if c.get("check") == "grounding")
     assert g["pass"] and g["accepted"]["A"]["WC-3"] == "current_box" and "current_box" in g["detail"]
+
+
+def test_addendum_diff_boxes_land_on_the_changed_words(monkeypatch, world):
+    """diff_boxes: box_2d on the crop for words only on one version; the current WC-3s sit inside the crop's 0-1000 frame."""
+    card = run(monkeypatch, judge_json(world))
+    diff = next(c for c in card["checks"] if c.get("check") == "addendum_diff")
+    boxes = diff["diff_boxes"]
+    assert diff["current_sheet"] == "add1-p018" and diff["superseded_sheet"].startswith("dwg-")
+    assert diff["superseded_crop"].startswith("build/crops/") and (HERE / diff["superseded_crop"]).stat().st_size > 1000
+    assert len(boxes["current"]) == sum(diff["only_current"].values())
+    assert len(boxes["superseded"]) == sum(diff["only_superseded"].values())
+    assert boxes["current"] and boxes["superseded"]
+    for b in boxes["current"] + boxes["superseded"]:
+        assert 0 <= b[0] < b[2] <= 1000 and 0 <= b[1] < b[3] <= 1000
+    cur = world["cur"]
+    wc3 = [verify.pt_to_box(w["bbox"], cur["rect"]) for w in cur["words"] if w["text"] == "WC-3"]
+    assert wc3 and all(b in boxes["current"] for b in wc3)
+
+
+def test_diff_boxes_unit():
+    crop = {"rect": [0, 0, 100, 100], "words": [{"text": "A", "bbox": [10, 10, 20, 20]}, {"text": "B", "bbox": [30, 30, 40, 40]},
+                                                {"text": "B", "bbox": [50, 50, 60, 60]}]}
+    assert verify.diff_boxes(crop, {"B": 1}) == [[300, 300, 400, 400]]      # each text used at most n times
+    assert verify.diff_boxes(crop, {}) == []
+
+
+def test_progress_callback_order_and_judge_threads(monkeypatch, world):
+    events = []
+    monkeypatch.setattr(llm, "call", fake({ROLES["judge"]: judge_json(world), ROLES["second"]: judge_json(world)}))
+    card = check.check(CLAIM, progress=lambda step, status, **info: events.append((step, status, info.get("cand"))))
+    assert [e[:2] for e in events[:4]] == [("search", "start"), ("search", "done"), ("crop", "start"), ("crop", "done")]
+    cands = {e[2] for e in events[4:]}
+    assert cands == {0, 1}                                    # two candidates, every later event tagged with its index
+    for i in cands:                                           # per candidate: both judges finish before grounding
+        ev = [e[:2] for e in events if e[2] == i]
+        assert {("judge_a", "start"), ("judge_b", "start"), ("judge_a", "done"), ("judge_b", "done")} <= set(ev)
+        g = ev.index(("grounding", "start"))
+        assert ev.index(("judge_a", "done")) < g and ev.index(("judge_b", "done")) < g
+        assert ev[-4:] == [("grounding", "start"), ("grounding", "done"), ("revision", "start"), ("revision", "done")]
+    assert card["verdict"] == "conflict"

@@ -30,7 +30,8 @@
      1668.6,
      1149.8
     ],
-    "label": "TOILET 105A room tag"
+    "label": "TOILET 105A room tag",
+    "sheet_number": "P101"
    },
    {
     "sheet": "add1-p018",
@@ -54,7 +55,8 @@
      1668.6,
      1149.8
     ],
-    "label": "Two water closets revised to WC-3 inside addendum cloud"
+    "label": "Two water closets revised to WC-3 inside addendum cloud",
+    "sheet_number": "P101"
    },
    {
     "sheet": "add1-p018",
@@ -78,7 +80,8 @@
      1668.6,
      1149.8
     ],
-    "label": "Third water closet labeled WC-2"
+    "label": "Third water closet labeled WC-2",
+    "sheet_number": "P101"
    },
    {
     "sheet": "dwg-p034",
@@ -102,7 +105,8 @@
      1665.6,
      1149.8
     ],
-    "label": "All three water closets previously labeled WC-2"
+    "label": "All three water closets previously labeled WC-2",
+    "sheet_number": "P101"
    }
   ],
   "spec_refs": [],
@@ -115,8 +119,75 @@
    },
    {
     "by": "code",
-    "verdict": "info",
-    "note": "word diff vs superseded: {'only_superseded': {'WC-2': 2}, 'only_current': {'WC-3': 2, '1': 2}}"
+    "check": "grounding",
+    "pass": true,
+    "detail": "every evidence box covers PDF words"
+   },
+   {
+    "by": "code",
+    "check": "currency",
+    "pass": true,
+    "detail": "evidence sheet is current"
+   },
+   {
+    "by": "code",
+    "check": "addendum_diff",
+    "info": true,
+    "pass": true,
+    "only_superseded": {
+     "WC-2": 2
+    },
+    "only_current": {
+     "WC-3": 2,
+     "1": 2
+    },
+    "narrative": [],
+    "current_sheet": "add1-p018",
+    "superseded_sheet": "dwg-p034",
+    "superseded_crop": "crops/ex1_wc_105a_all_wc2_superseded.png",
+    "diff_boxes": {
+     "superseded": [
+      [
+       438,
+       913,
+       453,
+       946
+      ],
+      [
+       629,
+       429,
+       643,
+       462
+      ]
+     ],
+     "current": [
+      [
+       544,
+       429,
+       558,
+       462
+      ],
+      [
+       486,
+       429,
+       500,
+       462
+      ],
+      [
+       288,
+       514,
+       304,
+       521
+      ],
+      [
+       343,
+       373,
+       359,
+       380
+      ]
+     ]
+    },
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
    }
   ],
   "changed_by_addendum": true,
@@ -156,7 +227,8 @@
      1668.6,
      1149.8
     ],
-    "label": "Revision cloud 1 enclosing two WC-3 water closets"
+    "label": "Revision cloud 1 enclosing two WC-3 water closets",
+    "sheet_number": "P101"
    },
    {
     "sheet": "add1-p018",
@@ -180,7 +252,8 @@
      1668.6,
      1149.8
     ],
-    "label": "TOILET 105A room label"
+    "label": "TOILET 105A room label",
+    "sheet_number": "P101"
    },
    {
     "sheet": "dwg-p034",
@@ -204,7 +277,8 @@
      1665.6,
      1149.8
     ],
-    "label": "Two WC-2 water closets prior to Addendum 1"
+    "label": "Two WC-2 water closets prior to Addendum 1",
+    "sheet_number": "P101"
    }
   ],
   "spec_refs": [],
@@ -217,8 +291,75 @@
    },
    {
     "by": "code",
-    "verdict": "info",
-    "note": "word diff vs superseded: {'only_superseded': {'WC-2': 2}, 'only_current': {'WC-3': 2, '1': 2}}"
+    "check": "grounding",
+    "pass": true,
+    "detail": "every evidence box covers PDF words"
+   },
+   {
+    "by": "code",
+    "check": "currency",
+    "pass": true,
+    "detail": "evidence sheet is current"
+   },
+   {
+    "by": "code",
+    "check": "addendum_diff",
+    "info": true,
+    "pass": true,
+    "only_superseded": {
+     "WC-2": 2
+    },
+    "only_current": {
+     "WC-3": 2,
+     "1": 2
+    },
+    "narrative": [],
+    "current_sheet": "add1-p018",
+    "superseded_sheet": "dwg-p034",
+    "superseded_crop": "crops/ex2_wc_105a_add1_change_superseded.png",
+    "diff_boxes": {
+     "superseded": [
+      [
+       438,
+       913,
+       453,
+       946
+      ],
+      [
+       629,
+       429,
+       643,
+       462
+      ]
+     ],
+     "current": [
+      [
+       544,
+       429,
+       558,
+       462
+      ],
+      [
+       486,
+       429,
+       500,
+       462
+      ],
+      [
+       288,
+       514,
+       304,
+       521
+      ],
+      [
+       343,
+       373,
+       359,
+       380
+      ]
+     ]
+    },
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
    }
   ],
   "changed_by_addendum": false,
@@ -258,7 +399,8 @@
      1356.8,
      1194.0
     ],
-    "label": "TOILET 109A"
+    "label": "TOILET 109A",
+    "sheet_number": "P101"
    },
    {
     "sheet": "add1-p018",
@@ -282,7 +424,8 @@
      1356.8,
      1194.0
     ],
-    "label": "WC-1 water closet in Toilet 109A"
+    "label": "WC-1 water closet in Toilet 109A",
+    "sheet_number": "P101"
    }
   ],
   "spec_refs": [],
@@ -295,8 +438,74 @@
    },
    {
     "by": "code",
-    "verdict": "info",
-    "note": "word diff vs superseded: {'only_superseded': {'WC-2': 2}, 'only_current': {'WC-1': 2, '1': 2}}"
+    "check": "grounding",
+    "pass": true,
+    "detail": "every evidence box covers PDF words"
+   },
+   {
+    "by": "code",
+    "check": "currency",
+    "pass": true,
+    "detail": "evidence sheet is current"
+   },
+   {
+    "by": "code",
+    "check": "addendum_diff",
+    "info": true,
+    "pass": true,
+    "only_superseded": {
+     "WC-2": 2
+    },
+    "only_current": {
+     "WC-1": 2,
+     "1": 2
+    },
+    "narrative": [],
+    "current_sheet": "add1-p018",
+    "superseded_sheet": "dwg-p034",
+    "diff_boxes": {
+     "superseded": [
+      [
+       300,
+       481,
+       314,
+       515
+      ],
+      [
+       544,
+       480,
+       558,
+       513
+      ]
+     ],
+     "current": [
+      [
+       469,
+       787,
+       483,
+       820
+      ],
+      [
+       300,
+       487,
+       314,
+       520
+      ],
+      [
+       424,
+       246,
+       440,
+       253
+      ],
+      [
+       258,
+       972,
+       274,
+       980
+      ]
+     ]
+    },
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
    }
   ],
   "changed_by_addendum": false,

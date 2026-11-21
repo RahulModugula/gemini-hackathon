@@ -280,8 +280,11 @@ def test_inf_confidence_makes_the_output_unclear():
 # ---- final verdict rule over all judge pairs ---------------------------------------------------------
 @pytest.mark.parametrize("va,vb", list(itertools.product(VERDICTS, VERDICTS)), ids=lambda v: str(v))
 def test_disagreement_matrix_final_verdict(world, monkeypatch, va, vb):
-    a = judge(va, 0.9, box=box_for(world, {"105A", "WC-2"}))
-    b = judge(vb, 0.8, box=box_for(world, {"105A", "WC-2"}))
+    # a conflict must quote the contradicting tag (WC-3), not only the claim's own words
+    q = {"conflict": ("105A", "WC-3"), "consistent": ("105A", "WC-2"), "unclear": ("105A", "WC-2")}
+    box = box_for(world, {"105A", "WC-2", "WC-3"})
+    a = judge(va, 0.9, quoted=q[va], box=box)
+    b = judge(vb, 0.8, quoted=q[vb], box=box)
     monkeypatch.setattr(llm, "call", fake({"A": a, "B": b}))
     res = verify.verify(CLAIM, verify_ctx(world))
     if va == vb:
@@ -377,8 +380,8 @@ def test_claim_dimension_with_no_quoted_dimension_is_not_consistent(world, monke
 
 # ---- check() end to end with mocked judges -----------------------------------------------------------
 def test_check_named_sheet_claim_card(world, monkeypatch):
-    out = judge(box=box_for(world, {"105A", "WC-2", "WC-3"}))
-    card = run_check(monkeypatch, PREFIXED, out, judge(conf=0.8, box=box_for(world, {"105A", "WC-2", "WC-3"})))
+    out = judge(quoted=("105A", "WC-3"), box=box_for(world, {"105A", "WC-2", "WC-3"}))
+    card = run_check(monkeypatch, PREFIXED, out, judge(conf=0.8, quoted=("105A", "WC-3"), box=box_for(world, {"105A", "WC-2", "WC-3"})))
     assert_card_valid(card, PREFIXED, world["sheets"])
     assert card["verdict"] == "conflict" and card["confidence"] == 0.8
     assert any(c.get("check") == "named_sheet" for c in card["checks"])
@@ -386,7 +389,7 @@ def test_check_named_sheet_claim_card(world, monkeypatch):
 
 
 def test_check_unnamed_claim_card(world, monkeypatch):
-    out = judge(box=box_for(world, {"105A", "WC-2", "WC-3"}))
+    out = judge(quoted=("105A", "WC-3"), box=box_for(world, {"105A", "WC-2", "WC-3"}))
     card = run_check(monkeypatch, CLAIM, out)
     assert_card_valid(card, CLAIM, world["sheets"])
     assert card["verdict"] == "conflict" and card["evidence"][0]["sheet"] == "add1-p018"

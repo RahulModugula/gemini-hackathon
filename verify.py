@@ -167,13 +167,18 @@ def grounding_report(out, crops, claim=""):
             problems.append(f"quoted word {tok!r} is not {where}")
         else:
             accepted[tok] = ok
-        real_evidence |= in_cur and not in_claim
+        # A consistent verdict is proven by the claim's own words sitting in a current box ("WC-2" on P101).
+        # A conflict must point at the contradicting word (WC-3), so a quote copied from the claim does not count.
+        real_evidence |= in_cur and (verdict == "consistent" or not in_claim)
     if verdict != "unclear":
         if not quoted or not any(img == "current" for img, _ in boxes):
             problems.append("a conflict/consistent verdict needs at least one quoted word and one evidence box "
                             "on the current sheet")
-        elif not real_evidence:
+        elif not real_evidence and verdict == "conflict":
             problems.append("no current evidence box contains a quoted word that is not just copied from the claim")
+        elif not real_evidence:
+            unboxed = [t for t, rule in accepted.items() if rule == "claim_value"]
+            problems.append(f"no quoted word is inside a current evidence box (only repeated from the claim: {unboxed})")
     return problems, accepted
 
 
@@ -193,6 +198,20 @@ def currency(sheets, rows):
     return problems
 
 
+MAX_DIFF_BOXES = 60
+
+
+def diff_boxes(crop, only):
+    """box_2d ([ymin, xmin, ymax, xmax], 0-1000 on the crop) of the words of `crop` counted in `only`
+    ({text: n}): words that exist on this version and not on the other. Each text is used at most n times."""
+    left, out = dict(only), []
+    for w in crop["words"]:
+        if left.get(w["text"], 0) > 0 and len(out) < MAX_DIFF_BOXES:
+            left[w["text"]] -= 1
+            out.append(pt_to_box(w["bbox"], crop["rect"]))
+    return out
+
+
 def addendum_diff(crops, narrative=()):
     cur, old = crops.get("current"), crops.get("superseded")
     if not old:
@@ -201,6 +220,8 @@ def addendum_diff(crops, narrative=()):
     only_old, only_cur = dict(a - b), dict(b - a)
     return {"by": "code", "check": "addendum_diff", "info": True, "pass": True,
             "only_superseded": only_old, "only_current": only_cur, "narrative": list(narrative),
+            "current_sheet": cur["sheet"], "superseded_sheet": old["sheet"], "superseded_crop": old.get("path"),
+            "diff_boxes": {"superseded": diff_boxes(old, only_old), "current": diff_boxes(cur, only_cur)},
             "detail": f"{cur['sheet']} vs {old['sheet']}: -{sum(only_old.values())} +{sum(only_cur.values())} words"}
 
 
@@ -228,8 +249,22 @@ def _clean(out):
             "reason": str(out.get("reason") or ("unusable judge output" if not ok else ""))}
 
 
-def run_judge(model, purpose, ctx):
+def _emit(ctx, step, status, **info):
+    cb = ctx.get("progress")
+    if cb:
+        cb(step, status, **info)
+
+
+def run_judge(model, purpose, ctx, step=None):
     """-> (cleaned output, latency seconds). A gateway failure is an unclear verdict, never an exception."""
+    step = step or purpose
+    _emit(ctx, step, "start", model=model)
+    out, lat = _run_judge(model, purpose, ctx)
+    _emit(ctx, step, "done", model=model, verdict=out["verdict"])
+    return out, lat
+
+
+def _run_judge(model, purpose, ctx):
     t0 = time.monotonic()
     try:
         res = llm.call(model, ctx["parts"], schema=ctx["schema"], purpose=purpose, thinking=ctx["thinking"])
@@ -243,8 +278,8 @@ def run_judge(model, purpose, ctx):
 def verify(claim, ctx):
     """ctx: judge, second (model names), parts, schema, thinking, crops, rows, narrative."""
     with ThreadPoolExecutor(max_workers=2) as ex:   # independent calls: latency = the slower one
-        fa = ex.submit(run_judge, ctx["judge"], "judge", ctx)
-        fb = ex.submit(run_judge, ctx["second"], "judge_second", ctx)
+        fa = ex.submit(run_judge, ctx["judge"], "judge", ctx, "judge_a")
+        fb = ex.submit(run_judge, ctx["second"], "judge_second", ctx, "judge_b")
         (a, la), (b, lb) = fa.result(), fb.result()
     crops = ctx["crops"]
     checks = [_model_entry(ctx["judge"], a, la), _model_entry(ctx["second"], b, lb)]
@@ -256,6 +291,7 @@ def verify(claim, ctx):
         notes.append(f"judges disagree ({a['verdict']} vs {b['verdict']})")
         conf = min(conf, MODEL_CAP)
 
+    _emit(ctx, "grounding", "start")
     probs, acc = [], {}
     for n, o in ((ctx["judge"], a), (ctx["second"], b)):
         pr, ac = grounding_report(o, crops, claim)
@@ -266,6 +302,8 @@ def verify(claim, ctx):
                    "detail": "; ".join(probs) or ("all boxes cover words and all quotes are grounded" + (f" ({rules})" if rules else ""))})
     hard_fail |= bool(probs)
 
+    _emit(ctx, "grounding", "done", ok=not probs)
+    _emit(ctx, "revision", "start")
     probs2 = currency([crops["current"]["sheet"]], ctx["rows"])
     checks.append({"by": "code", "check": "currency", "pass": not probs2,
                    "detail": "; ".join(probs2) or "evidence sheet is current"})
@@ -274,6 +312,7 @@ def verify(claim, ctx):
     d = addendum_diff(crops, ctx.get("narrative", ()))
     if d:
         checks.append(d)
+    _emit(ctx, "revision", "done", ok=not probs2)
 
     dim = dimension_check(claim, (a.get("quoted_words") or []) + (b.get("quoted_words") or []))
     if dim:

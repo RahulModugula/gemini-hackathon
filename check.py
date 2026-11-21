@@ -261,7 +261,7 @@ def build_parts(claim, crops):
     return parts
 
 
-def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema):
+def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema, progress=None):
     crops = {"current": cur}
     if cur.get("twin"):
         crops["superseded"] = cur["twin"]
@@ -269,7 +269,8 @@ def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr,
     narrative = [{"action": ch["action"], "text": ch["text"]} for n in narr
                  if n["source"] == cur["source"] and n["sheet_number"] == r.get("sheet_number") for ch in n["changes"]]
     ctx = {"judge": judge, "second": second, "thinking": thinking, "schema": schema,
-           "parts": build_parts(claim, crops), "crops": crops, "rows": rows, "narrative": narrative}
+           "parts": build_parts(claim, crops), "crops": crops, "rows": rows, "narrative": narrative,
+           "progress": progress}
     return cur, verify.verify(claim, ctx)
 
 
@@ -279,25 +280,36 @@ def _rank(res):
     return (bool(g.get("pass")), res["verdict"] != "unclear", res["confidence"])
 
 
-def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING):
+def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING, progress=None):
+    """progress(step, status, **info), optional. step: search | crop | judge_a | judge_b | grounding | revision;
+    status: start | done. Judge/grounding/revision events carry cand=<index> and sheet=<id>, one set per candidate;
+    they are called from worker threads."""
+    emit = progress or (lambda *a, **k: None)
     sheets, src, rows, narr = _load()
+    emit("search", "start")
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     card = {"claim": claim, "speaker": None, "timestamp": now, "verdict": "unclear", "confidence": 0.0,
             "evidence": [], "spec_refs": [], "checks": [], "reason": "", "rfi_draft": None}
     cands, notes = candidates(claim, sheets, src, rows)
+    emit("search", "done", hits=len(cands), sheet=cands[0]["sheet"] if cands else None)
     if not cands:
         card["reason"] = "No sheet matched the claim."
         card["checks"].append({"by": "code", "check": "search", "pass": False, "detail": "no search hits"})
         return card
     schema = json.loads(SCHEMA.read_text())
+    emit("crop", "start")
     for c in cands:          # render here (pymupdf is not thread-safe), then judge every candidate at once
         render(c, src)
         twin = superseded_twin(c, sheets, src, rows)
         c["twin"] = render(twin, src) if twin else None
+    emit("crop", "done", superseded=any(c["twin"] for c in cands))
+
+    def per_cand(i, c):
+        return None if progress is None else (lambda step, status, **info: progress(step, status, cand=i, sheet=c["sheet"], **info))
     # each candidate runs a judge pair concurrently: at most 2 x 2 = 4 model calls in flight
     with ThreadPoolExecutor(max_workers=len(cands)) as ex:
-        results = list(ex.map(lambda c: _run_candidate(claim, c, judge, second, thinking, sheets, src, rows, narr,
-                                                       schema), cands))
+        results = list(ex.map(lambda ic: _run_candidate(claim, ic[1], judge, second, thinking, sheets, src, rows, narr,
+                                                        schema, per_cand(*ic)), enumerate(cands)))
     best = max(range(len(results)), key=lambda i: (_rank(results[i][1]), -i))
     cur, res = results[best]
     card.update(verdict=res["verdict"], confidence=res["confidence"], reason=res["reason"], checks=list(res["checks"]))
@@ -310,7 +322,7 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
                                    "confidence": r["confidence"], "grounding_pass": _rank(r)[0], "detail": r["reason"]})
     # Only boxes on the current sheet are evidence; the superseded image only explains what changed.
     card["evidence"] = [{"sheet": cur["sheet"], "revision": cur["revision"], "bbox": [round(v, 2) for v in e["bbox"]],
-                         "crop": cur["path"], "crop_rect_pt": [round(v, 1) for v in cur["rect"]], "label": e["label"]} for e in res["evidence"] if e["image"] == "current"]
+                         "sheet_number": cur["sheet_number"], "crop": cur["path"], "crop_rect_pt": [round(v, 1) for v in cur["rect"]], "label": e["label"]} for e in res["evidence"] if e["image"] == "current"]
     return card
 
 
