@@ -1,0 +1,92 @@
+# Data contracts
+
+Later pieces (checker, audit, UI) plug into these shapes. Produced by `ingest.py` unless noted.
+Coordinates are PDF points, origin top-left, unless a field says otherwise.
+
+## build/sheets.json
+```json
+{
+  "dpi": 150, "tile_px": 1024, "overlap_px": 64,
+  "sources": [
+    {"source": "dwg",  "path": "data/...drawings.pdf", "issue_order": 0, "sheets": 54, "skipped_non_drawing_pages": []},
+    {"source": "add1", "path": "data/addendum-1.pdf",  "issue_order": 1, "sheets": 17, "skipped_non_drawing_pages": [1,2,3,4,5,23,...]},
+    {"source": "nope", "path": "...", "error": "missing"}          // missing inputs are listed, never dropped
+  ],
+  "sheets": [
+    {
+      "sheet": "dwg-p001",        // stable id = <source>-p<page>; NOT the title-block number (ticket 5 maps it)
+      "source": "dwg",            // dwg | add1 | add2
+      "issue_order": 0,           // higher supersedes lower for the same title-block number
+      "page": 1,                  // 1-based page within that source PDF
+      "width": 3024.0, "height": 2160.0, "rotation": 0,   // pt
+      "text_length": 1234,        // total chars across words
+      "word_count": 210,
+      "has_text_layer": true,     // false => needs vision; words file will be empty; list it, don't guess
+      "words_file": "words/dwg-p001.json",
+      "tiles": [ {"file": "tiles/dwg-p001_r0c0.png", "row": 0, "col": 0, "bbox_pt": [x0, y0, x1, y1]} ]
+    }
+  ]
+}
+```
+Only drawing-size pages (long edge >= ~17 in) are sheets; addendum narrative and spec pages are skipped
+and listed in `skipped_non_drawing_pages`. Tiles are `tile_px` at `dpi` with `overlap_px` overlap;
+`bbox_pt` is the tile's region on the page. pt -> tile px: `(x - bbox_pt[0]) * dpi / 72`.
+
+**Rotation:** `width`/`height` are `page.rect` *after* `/Rotate` (the 8 civil/landscape sheets are 270°).
+Word boxes and tile `bbox_pt` are in that rendered space. PyMuPDF calls that take unrotated coordinates
+(`get_text(clip=)`, `search_for`) need `rect * page.derotation_matrix` first.
+
+## build/sheet_index.json (`analyze_sheets.py`, ticket 5 seed)
+```json
+{
+  "summary": {"sheets": 76, "superseded": ["A201", ...], "revised_twice": ["A1100", "ED200"],
+              "conflicts": [], "unmatched": [], ...},
+  "rows": [
+    {"sheet": "add1-p007", "source": "add1", "issue_order": 1, "sheet_number": "A201",
+     "discipline": "Architectural", "current": true, "superseded_by": null, "word_count": 812, "tiles": 35}
+  ]
+}
+```
+`current`/`superseded_by` are null when the number is unmatched or listed in `conflicts` (same number twice
+in one issue). Still to add in ticket 5: `title`, `revision` date.
+
+**Gemini boxes:** Gemini returns `[ymin, xmin, ymax, xmax]` normalised 0–1000 on the image it saw.
+Convert to pt on that tile before writing a card: `x = bbox_pt[0] + xmin/1000 * (bbox_pt[2]-bbox_pt[0])`.
+Cards always store pt, never model-native boxes.
+
+## build/words/<sheet>.json
+```json
+{
+  "sheet": "dwg-p001", "source": "dwg", "page": 1, "width": 3024.0, "height": 2160.0,
+  "unit": "pt", "origin": "top-left",
+  "words": [ {"text": "DOOR", "bbox": [x0, y0, x1, y1], "block": 0, "line": 0, "word": 0} ]
+}
+```
+
+## Card (checker output; consumed by UI/audit)
+```json
+{
+  "claim": "string, one checkable statement",
+  "speaker": "string or null",          // from audio; null for typed claims
+  "timestamp": "2026-11-21T14:03:12Z",  // when the claim was made (clip time or typed time)
+  "verdict": "conflict | consistent | unclear",
+  "confidence": 0.0,
+  "evidence": [
+    {"sheet": "dwg-p012", "revision": "add1", "bbox": [x0, y0, x1, y1], "crop": "build/crops/<file>.png"}
+  ],
+  "spec_refs": ["08 71 00 2.1.A"],
+  "checks": [                           // one entry per model judgement + any code math
+    {"by": "gemini-4-hydrogen", "verdict": "conflict", "confidence": 0.8, "note": "..."},
+    {"by": "gemini-4-carbon",   "verdict": "conflict", "confidence": 0.7, "note": "..."},
+    {"by": "code",              "verdict": "conflict", "note": "3'-0\" + 2'-6\" != 6'-0\""}
+  ],
+  "rfi_draft": {"text": "...", "status": "draft | blocked", "answered_by": "add1 p2 Q5" } // or null
+}
+```
+Rules:
+- `confidence` in [0,1]. Final `verdict` is `unclear` unless both model checks agree (spec rule).
+- `evidence[].bbox` is in pt, same space as the words files, and `sheet` must exist in sheets.json.
+  `revision` is the source tag of the sheet the crop came from; it must be the current one (ticket 5).
+- `rfi_draft` is null when verdict is `consistent`. `status: "blocked"` requires `answered_by`
+  pointing at the addendum Q&A that already answers it (ticket 11). Nothing is sent without a human click.
+- Every model call behind a card is logged (model, tokens in/out, latency, cost) — see PLAN review note 3.
