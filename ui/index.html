@@ -279,7 +279,7 @@ main{padding:16px 24px 40px}
   box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
 .cam{position:absolute;left:0;top:0;transform-origin:0 0;opacity:0;transition:opacity .3s}
 .stage.ready .cam{opacity:1}
-.sheetimg{position:absolute;inset:0;width:100%;height:100%;background:var(--paperw);box-shadow:0 0 0 1px rgba(0,0,0,.25),0 40px 120px rgba(0,0,0,.55)}
+.sheetimg{position:absolute;inset:0;width:100%;height:100%;background:var(--paperw);filter:contrast(1.35);box-shadow:0 0 0 1px rgba(0,0,0,.25),0 40px 120px rgba(0,0,0,.55)}
 .cropimg{position:absolute;opacity:0;transition:opacity .45s ease-out .05s}
 .stage.landed .cropimg{opacity:1}
 .ov{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
@@ -472,6 +472,7 @@ body.present .rfiBtn{font-size:20px}
   body.present .stamp{font-size:44px}body.present .dclaim{font-size:26px}
 }
 @media (max-width:480px){.present-btn{display:none}.brand{font-size:15px}}
+.still *,.still *::before,.still *::after{animation:none!important;transition:none!important}
 @media (prefers-reduced-motion:reduce){.cam{transition:none!important}.stage .ebox,.stage .cloud,.stage .delta,.stage .cropimg,.stage .room-hl,.stage .room-ln{transition:none!important}}
 @keyframes pulse{50%{opacity:.35}}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -548,6 +549,7 @@ const vCls=v=>v==='conflict'?'v-conflict':v==='consistent'?'v-consistent':'v-oth
 const vWord=v=>v==='conflict'?'Conflict':v==='consistent'?'Consistent':'Unclear';
 const SHEET_W=3024,SHEET_H=2160;
 const Q=new URLSearchParams(location.search);   // test hooks: ?card=&state=zoom0|landed|wipe|whole&wipe=&run=&hold=&present=
+if(Q.get('state'))document.documentElement.classList.add('still');   // screenshot states: no transitions, so a capture never lands mid-fade
 
 let cards=[],selId=null,heard=null,samples=[],cacheMode=null,stage=null,stageCard=null;
 const TRACE=document.getElementById('trace');

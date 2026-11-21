@@ -502,7 +502,7 @@ async def api_rfi(request: Request):
 
 # ---- sheet stage: full-sheet render + room outlines ------------------------------------------------------
 _SHEET_RE = re.compile(r"^(dwg|add\d{1,2})-p\d{3}$")
-SHEET_PX = 2400                 # long edge of the full-sheet render the UI zooms across
+SHEET_PX = 3600                # long edge of the full-sheet render the UI zooms across
 _render_lock = threading.Lock()
 _rooms_memo = {}
 
