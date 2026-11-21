@@ -65,6 +65,12 @@ def main(out="studio", dpi=200):
             files["word_diff"] = {"only_superseded": dict(a - b), "only_current": dict(b - a)}
         (d / "words.txt").write_text("\n".join(lines) + "\n")
         (d / "claim.txt").write_text(ex["claim"] + "\n")
+        # Paste-ready files for AI Studio: no manual {{...}} replacement needed.
+        system, _, template = (Path(__file__).parent / "prompts/judge_v0.md").read_text().partition("\n---\n")
+        (out / "1_SYSTEM_INSTRUCTIONS.txt").write_text(system.strip() + "\n")
+        images = "IMAGE 1 = CURRENT sheet" + (", IMAGE 2 = SUPERSEDED sheet" if old else "")
+        (d / "2_PASTE_AS_MESSAGE.txt").write_text(
+            images + "\n\n" + template.strip().replace("{{claim}}", ex["claim"]).replace("{{words}}", "\n".join(lines)) + "\n")
         manifest.append({**ex, "files": files})
         print(ex["id"], "->", d, files.get("word_diff", ""))
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
