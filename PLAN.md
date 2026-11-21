@@ -19,7 +19,11 @@ site-walk video vs drawings (T21) · Managed Agents auditor→verifier handoff (
 **Out of scope:** any employer's data or code · non-Gemini-4 models · sending anything without a human click · Genie 4.
 
 ## Spec
-- Models: Argon conducts, Hydrogen checks and hears clips, Carbon judges, Neon handles quick questions.
+- Models (decided 2026-11-21 from `studio/compare_models.py`: all four 3/3 and fully grounded on 3 dev packs;
+  Neon 11.5 s and 2.5x the cost of the others): **Argon = primary judge**, **Carbon = second judge** (run in
+  parallel; disagreement → unclear) and whole-set audit, **Neon = audit/schedules/background agent**,
+  **Hydrogen = basic work** (claim extraction, audio → claims, query rewriting, already-answered confirm).
+  Roles live in one place (`roles.py`). Re-decide on the larger addenda dev set.
 - Verdicts: conflict | consistent | unclear with confidence. `unclear` unless both models agree **and** the grounding check passes.
 - Card: see CONTRACT.md (claim, speaker, timestamp, verdict, confidence, evidence with sheet/revision/box/crop,
   spec refs, checks, RFI draft).
