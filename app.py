@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import queue
+import re
 import threading
 import time
 from pathlib import Path
@@ -19,6 +20,7 @@ import check as checker
 import llm
 import rfi
 import video_claims
+import video_frames
 
 try:
     from google.genai import errors as genai_errors
@@ -247,6 +249,37 @@ async def api_audio(request: Request):
     return {"claims": claims, "cards": list(cards)}
 
 
+def _check_with(text, extra):
+    """checker.check, passing field photos only when there are some."""
+    return checker.check(text, extra_images=extra) if extra else checker.check(text)
+
+
+def _frame_evidence(vpath, vsha, c):
+    """Extract the claim's frame; for a VISUAL claim also locate the thing on that frame (an image call) and build the
+    field photo for the judges (the boxed region, else the whole frame). -> (video_evidence or None, extra_images or
+    None). Does not raise: a failure here only means the card has no video evidence."""
+    frames_dir = Path(BUILD) / "frames"
+    try:
+        fr = video_frames.extract_frame(vpath, c["frame_t_s"], frames_dir, vsha)
+    except (KeyError, TypeError, OSError, RuntimeError, ValueError):
+        return None, None
+    ve = {"frame": "/frames/" + fr["path"].name, "t_s": c["frame_t_s"], "box_2d": None, "kind": c["kind"]}
+    if c["kind"] != "visual":
+        return ve, None
+    try:
+        loc = video_claims.locate_in_frame(fr["path"], c["claim"], c["quote_or_observation"])
+    except Exception:    # model/SDK errors: keep the frame, skip the box
+        loc = {"box_2d": None, "text_read": ""}
+    ve["box_2d"] = loc["box_2d"]
+    if loc["text_read"]:
+        ve["text_read"] = loc["text_read"]
+    img = fr["path"]
+    if loc["box_2d"]:
+        img = video_frames.crop_region(fr["path"], loc["box_2d"], fr["path"].with_name(fr["path"].stem + "_crop.jpg"))
+    label = f"FIELD PHOTO from the site video at {video_frames.fmt_t(c['frame_t_s'])}"
+    return ve, [{"path": img, "mime": "image/jpeg", "label": label}]
+
+
 @app.post("/api/video")
 async def api_video(request: Request, sheet: str | None = None):
     mime = (request.headers.get("content-type") or "").split(";")[0].strip().lower()
@@ -272,6 +305,8 @@ async def api_video(request: Request, sheet: str | None = None):
     dur = await run_in_threadpool(video_claims.video_duration_s, data)
     if dur is None:
         return _bad("could not read the video (expected an MP4 or MOV)")
+    vpath, vsha = await run_in_threadpool(video_frames.store_video, data, mime, Path(BUILD) / "videos")
+    video_url = "/videos/" + vpath.name
     claims = await run_in_threadpool(video_claims.extract_claims_from_video, data, mime, hint, dur)
     sem = asyncio.Semaphore(VIDEO_CONCURRENCY)
 
@@ -279,14 +314,17 @@ async def api_video(request: Request, sheet: str | None = None):
         async with sem:
             t0 = time.time()
             text = video_claims.checkable(c["claim"], hint)
-            card = await run_in_threadpool(checker.check, text)
+            ve, extra = await run_in_threadpool(_frame_evidence, vpath, vsha, c)
+            card = await run_in_threadpool(_check_with, text, extra)
         card = _finish(card, text, t0=t0)
         card["source"], card["t_start_s"], card["t_end_s"], card["kind"] = "video", c["t_start_s"], c["t_end_s"], c["kind"]
+        card["video_url"], card["video_evidence"] = video_url, ve
+        c["frame_box_2d"] = ve["box_2d"] if ve else None
         _append(card)
         return card
 
     cards = await asyncio.gather(*(one(c) for c in claims))
-    return {"claims": claims, "cards": list(cards), "video_s": round(dur, 2)}
+    return {"claims": claims, "cards": list(cards), "video_s": round(dur, 2), "video_url": video_url}
 
 
 @app.post("/api/rfi")
@@ -317,6 +355,28 @@ async def crops(name: str):
         if (d / name).is_file():
             return FileResponse(d / name)
     return _bad("not found", 404)
+
+
+_FRAME_RE = re.compile(r"^[0-9a-f]{20}(_crop)?\.jpg$")
+_VIDEO_RE = re.compile(r"^[0-9a-f]{40}\.(mp4|mov)$")
+
+
+@app.get("/frames/{name}")
+async def frames(name: str):
+    if not _FRAME_RE.match(name):
+        return _bad("not found", 404)
+    p = Path(BUILD) / "frames" / name
+    return FileResponse(p) if p.is_file() else _bad("not found", 404)
+
+
+@app.get("/videos/{name}")
+async def videos(name: str):
+    if not _VIDEO_RE.match(name):
+        return _bad("not found", 404)
+    p = Path(BUILD) / "videos" / name
+    if not p.is_file():
+        return _bad("not found", 404)
+    return FileResponse(p, media_type="video/quicktime" if name.endswith(".mov") else "video/mp4")
 
 
 @app.get("/")

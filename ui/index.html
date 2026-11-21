@@ -56,7 +56,7 @@ nav{display:flex;gap:2px;background:var(--board-2);padding:3px;border-radius:6px
 .btn{padding:10px 18px;background:var(--text);color:var(--ink);border:0;border-radius:6px;font-weight:700}
 .btn.ghost{background:transparent;color:var(--text);border:1.5px solid var(--line)}
 .btn.ghost:hover{border-color:var(--text)}
-#micBtn{display:flex;align-items:center;gap:8px}
+#micBtn,#vidBtn{display:flex;align-items:center;gap:8px}
 #micBtn .dot{width:10px;height:10px;border-radius:50%;background:var(--red-on-dark)}
 #micBtn.rec{background:var(--red);border-color:var(--red);color:#fff}
 #micBtn.rec .dot{background:#fff;animation:pulse 1s infinite}
@@ -142,6 +142,11 @@ main{padding:16px 24px 40px}
 .fcap{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:5px 8px;background:var(--ink);color:var(--paper);font-size:13px;font-weight:600}
 .fcap .mono{font-weight:400;font-size:12px;opacity:.85}
 .fcap.old{background:var(--ink-2)}
+.vidPanel{margin:0 0 14px;padding:10px;border:1.5px solid var(--ink);background:#fff;color:var(--ink)}
+.vidPanel h3{margin:0 0 6px;font-size:13px;font-weight:700;letter-spacing:.3px}
+.vidPanel .imgWrap{cursor:pointer;max-width:420px}
+.vidPanel video{display:block;width:100%;max-width:420px;max-height:220px;margin-top:8px;background:#000}
+.vidPanel .txt{margin-top:6px;font-size:12px}
 .imgWrap{position:relative;display:block;border:1.5px solid var(--ink);background:#fff;line-height:0}
 .imgWrap img{display:block;width:100%;height:auto}
 .bbox{position:absolute;border:2px solid var(--grey);background:rgba(107,118,128,.16);pointer-events:none}
@@ -258,6 +263,8 @@ main{padding:16px 24px 40px}
     <input id="claimIn" type="text" maxlength="500" placeholder="Say or type a claim, e.g. All the water closets in Toilet 105A are type WC-2." aria-label="Say or type a claim">
     <button id="goBtn" class="btn" type="button">Check claim</button>
     <button id="micBtn" class="btn ghost" type="button" title="Record a claim"><span class="dot" aria-hidden="true"></span><span id="micTxt">Mic</span></button>
+    <button id="vidBtn" class="btn ghost" type="button" title="Check a site video">Video</button>
+    <input id="vidIn" type="file" accept="video/mp4,video/quicktime" hidden aria-label="Site video file">
   </div>
   <div id="status" class="status" role="status" hidden></div>
   <div id="trace" class="trace" hidden aria-live="polite"></div>
@@ -507,6 +514,21 @@ $('micBtn').onclick=async()=>{
   rec.start();$('micBtn').classList.add('rec');$('micTxt').textContent='Stop';setStatus('Recording… press Stop when done.');
 };
 
+$('vidBtn').onclick=()=>$('vidIn').click();
+$('vidIn').onchange=async()=>{
+  const f=$('vidIn').files[0];$('vidIn').value='';
+  if(!f)return;
+  const sheet=(prompt('Drawing sheet for this walk (optional, e.g. P101)','')||'').trim();
+  $('vidBtn').disabled=true;setStatus('Reading the video and checking each claim\u2026');
+  try{
+    const res=await api('/api/video'+(sheet?'?sheet='+encodeURIComponent(sheet):''),{method:'POST',headers:{'Content-Type':f.type||'video/mp4'},body:f});
+    const n=res.claims.length;
+    setStatus(n?'Found '+n+' claim'+(n>1?'s':'')+' in '+res.video_s+'s of video':'No checkable claims in the video.');
+    addCards(res.cards);
+  }catch(e){setStatus('Video failed: '+e.message,true);}
+  finally{$('vidBtn').disabled=false;}
+};
+
 function showModal(title,body,note){
   const prev=document.activeElement;
   const bg=el('div','modalBg');
@@ -645,6 +667,29 @@ function figure(capL,capR,old,src,alt){
   return {f,wrap};
 }
 
+const fmtT=t=>{const s=Math.max(0,Math.floor(Number(t)||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+function videoPanel(c){
+  const ve=c.video_evidence;
+  const p=el('section','vidPanel');p.setAttribute('aria-label','Site video evidence');
+  p.append(el('h3',null,'Site video \u00b7 '+fmtT(ve.t_s)));
+  const wrap=el('div','imgWrap');
+  const img=el('img');img.src=ve.frame;img.alt='Video frame at '+fmtT(ve.t_s);
+  wrap.append(img);
+  if(Array.isArray(ve.box_2d)&&ve.box_2d.length===4){
+    const bx=el('div','bbox '+vCls(c.verdict));place(bx,ve.box_2d);
+    bx.append(el('span','btag mono','V'));wrap.append(bx);
+  }
+  p.append(wrap);
+  if(ve.text_read)p.append(el('div','txt mono','read: '+ve.text_read));
+  if(c.video_url){
+    const v=el('video');v.src=c.video_url;v.controls=true;v.preload='metadata';v.muted=true;
+    wrap.title='Click to play the video from '+fmtT(ve.t_s);
+    wrap.onclick=()=>{v.currentTime=Number(ve.t_s)||0;v.play().catch(()=>{});};
+    p.append(v);
+  }
+  return p;
+}
+
 function renderDetail(animate){
   const d=$('detail');
   d.textContent='';
@@ -698,6 +743,7 @@ function renderDetail(animate){
     cmp.append(B.f);
   }
   if(x){for(const b of (x.boxes.current||[])){const dx=el('div','dbox');place(dx,b);A.wrap.append(dx);}}
+  if(c.video_evidence&&c.video_evidence.frame)left.append(videoPanel(c));
   left.append(cmp);
   if(hasSup){
     const n=el('p','cmpnote');n.append(el('span','sw'),'Amber marks words that appear on only one issue of this region'+(diffSummary(c)?': '+diffSummary(c):'')+'.');

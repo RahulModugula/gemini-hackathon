@@ -248,7 +248,12 @@ def page_offset(old_words, cur_words, rect=None, k=8, min_len=3, min_matches=3):
     return float(dx), float(dy), n
 
 
-def build_parts(claim, crops):
+EXTRA_NOTE = ("{label}. This is a FIELD PHOTO, not a drawing sheet. Compare what it shows with the drawing crop(s) when "
+              "judging the claim. Your verdict is still about the CURRENT drawing sheet; evidence boxes and quoted "
+              "words must come from the drawing images (IMAGE 1 / IMAGE 2) only, never from this photo.")
+
+
+def build_parts(claim, crops, extra_images=None):
     system, _, template = PROMPT.read_text().partition("\n---\n")
     lines = []
     parts = [llm.text_part(system.strip())]
@@ -257,11 +262,14 @@ def build_parts(claim, crops):
         if c:
             parts += [llm.text_part(f"{label} {c['sheet_number']} ({c['sheet']})"), llm.image_part(c["png"], "image/png")]
             lines += [f"[{key} sheet {c['sheet_number']} = {c['sheet']}] words in crop:", " ".join(w["text"] for w in c["words"])]
+    for x in extra_images or []:
+        parts += [llm.text_part(EXTRA_NOTE.format(label=x.get("label") or "FIELD PHOTO")),
+                  llm.image_part(x["path"], x.get("mime", "image/jpeg"))]
     parts.append(llm.text_part(template.strip().replace("{{claim}}", claim).replace("{{words}}", "\n".join(lines))))
     return parts
 
 
-def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema, progress=None):
+def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr, schema, progress=None, extra_images=None):
     crops = {"current": cur}
     if cur.get("twin"):
         crops["superseded"] = cur["twin"]
@@ -269,7 +277,7 @@ def _run_candidate(claim, cur, judge, second, thinking, sheets, src, rows, narr,
     narrative = [{"action": ch["action"], "text": ch["text"]} for n in narr
                  if n["source"] == cur["source"] and n["sheet_number"] == r.get("sheet_number") for ch in n["changes"]]
     ctx = {"judge": judge, "second": second, "thinking": thinking, "schema": schema,
-           "parts": build_parts(claim, crops), "crops": crops, "rows": rows, "narrative": narrative,
+           "parts": build_parts(claim, crops, extra_images), "crops": crops, "rows": rows, "narrative": narrative,
            "progress": progress}
     return cur, verify.verify(claim, ctx)
 
@@ -280,10 +288,11 @@ def _rank(res):
     return (bool(g.get("pass")), res["verdict"] != "unclear", res["confidence"])
 
 
-def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING, progress=None):
+def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINKING, progress=None, extra_images=None):
     """progress(step, status, **info), optional. step: search | crop | judge_a | judge_b | grounding | revision;
     status: start | done. Judge/grounding/revision events carry cand=<index> and sheet=<id>, one set per candidate;
-    they are called from worker threads."""
+    they are called from worker threads. extra_images: optional [{"path", "mime", "label"}] field photos (e.g. a
+    site-video frame crop) sent to both judges beside the drawing crops; verdict semantics are unchanged."""
     emit = progress or (lambda *a, **k: None)
     sheets, src, rows, narr = _load()
     emit("search", "start")
@@ -309,7 +318,7 @@ def check(claim, *, judge=ROLES["judge"], second=ROLES["second"], thinking=THINK
     # each candidate runs a judge pair concurrently: at most 2 x 2 = 4 model calls in flight
     with ThreadPoolExecutor(max_workers=len(cands)) as ex:
         results = list(ex.map(lambda ic: _run_candidate(claim, ic[1], judge, second, thinking, sheets, src, rows, narr,
-                                                        schema, per_cand(*ic)), enumerate(cands)))
+                                                        schema, per_cand(*ic), extra_images), enumerate(cands)))
     best = max(range(len(results)), key=lambda i: (_rank(results[i][1]), -i))
     cur, res = results[best]
     card.update(verdict=res["verdict"], confidence=res["confidence"], reason=res["reason"], checks=list(res["checks"]))
