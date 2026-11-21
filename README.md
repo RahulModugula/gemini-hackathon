@@ -123,6 +123,22 @@ wrong build. The one false alarm (v3, `ho3-30`) was a claim that coils are "matc
 schedule lists Trane and names no condenser, so the frozen label is *unclear* and the system said *conflict*. We
 report it as labelled.
 
+### Against a simple baseline
+
+Same 94 frozen claims (held-out v2 + v3). Baseline = one Gemini 4 Argon call on the whole sheet, no second judge,
+no verification (`tools/baseline_eval.py`).
+
+| | Raw accuracy (95% CI) | Answered | **Right when it answered** | **False alarms** |
+|---|---|---|---|---|
+| Single-call baseline (sheet given) | 77/94 = 81.9% (73–88%) | 75 | 58/75 = 77% | **15** |
+| Single-call baseline (sheet found by search) | 76/94 = 80.9% (72–88%) | 66 | 53/66 = 80% | **11** |
+| **SheetSight** | 59/94 = 62.8% | 35 | **34/35 = 97%** | **1** |
+
+The baseline answers more and wins on raw accuracy, but it is wrong about 1 in 4 times it answers and raises 15
+false alarms. On a job site a false alarm means tearing out correct work or sending a pointless RFI. SheetSight
+answers fewer and says *unclear* (with where to look) when it can't prove an answer. Next step: use the
+baseline's coverage with our verifier as the gate.
+
 Dev v3 (111 claims, used for tuning): 79/111 (71.2%). Its 3 false alarms were one pattern (a claim naming something
 the sheet never mentions); a prompt rule fixed it, re-checked on a dev subset at 19/19 with conflict recall unchanged.
 
