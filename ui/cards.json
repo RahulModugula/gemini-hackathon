@@ -187,7 +187,13 @@
       ]
      ]
     },
-    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words",
+    "superseded_rect_pt": [
+     1145.6,
+     629.8,
+     1665.6,
+     1149.8
+    ]
    }
   ],
   "changed_by_addendum": true,
@@ -359,7 +365,13 @@
       ]
      ]
     },
-    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words",
+    "superseded_rect_pt": [
+     1145.6,
+     629.8,
+     1665.6,
+     1149.8
+    ]
    }
   ],
   "changed_by_addendum": false,
@@ -467,15 +479,15 @@
      "superseded": [
       [
        300,
-       481,
+       487,
        314,
-       515
+       520
       ],
       [
        544,
-       480,
+       486,
        558,
-       513
+       519
       ]
      ],
      "current": [
@@ -505,7 +517,13 @@
       ]
      ]
     },
-    "detail": "add1-p018 vs dwg-p034: -2 +4 words"
+    "detail": "add1-p018 vs dwg-p034: -2 +4 words",
+    "superseded_rect_pt": [
+     833.8,
+     674.0,
+     1353.8,
+     1194.0
+    ]
    }
   ],
   "changed_by_addendum": false,
