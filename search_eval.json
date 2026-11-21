@@ -3,8 +3,8 @@
   "queries": [
     {
       "query": "water closet tags in toilet 105A",
-      "expected": ["A1100", "P101"],
-      "evidence": "grep 'WC-|water closet': A1100 (add1-p016/add2-p007/dwg-p025) lines 'WC-1', 'P-1/VWC-1'; P101 (add1-p018/dwg-p034) 10 lines 'WC-1','WC-2'. grep '105A': both A1100 and P101 contain '105A'. P001 has WC-1 but no 105A."
+      "expected": ["P101"],
+      "evidence": "grep 'WC-|water closet': P101 (add1-p018/dwg-p034) 10 lines 'WC-1','WC-2'; grep '105A': P101 contains '105A' and the WC-1/WC-2/WC-3 tags sit within ~30-70 pt of the 105A room tag (words file coordinates) but on different text lines. A1100 only has WC-1 in a finish schedule; P001 has the fixture schedule but no 105A."
     },
     {
       "query": "grab bar mounting height",
